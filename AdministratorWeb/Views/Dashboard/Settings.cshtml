@@ -278,10 +278,10 @@
                             Robot Camera Feed
                         </label>
                         <div class="relative rounded-lg overflow-hidden bg-slate-900/50 border-2 border-slate-600/50">
-                            @if (ViewData["RobotCameraUrl"] != null)
+                            @if (ViewData["RobotName"] != null)
                             {
                                 <img id="robotCamera"
-                                     src="@ViewData["RobotCameraUrl"]"
+                                     src="/Robots/GetRobotImage?name=@ViewData["RobotName"]"
                                      alt="Robot Camera"
                                      class="w-full h-auto"
                                      onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22640%22 height=%22240%22%3E%3Crect fill=%22%23334155%22 width=%22640%22 height=%22240%22/%3E%3Ctext fill=%22%239ca3af%22 font-family=%22Arial%22 font-size=%2216%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ECamera Offline%3C/text%3E%3C/svg%3E'">
@@ -299,7 +299,7 @@
                                 </div>
                             }
                         </div>
-                        @if (ViewData["RobotCameraUrl"] != null)
+                        @if (ViewData["RobotName"] != null)
                         {
                             <p class="text-xs text-slate-500 mt-2">
                                 Camera automatically fetched from connected robot
