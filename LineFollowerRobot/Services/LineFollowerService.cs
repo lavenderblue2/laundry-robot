@@ -165,14 +165,14 @@ public class LineFollowerService : BackgroundService
                         continue; // Skip line detection until verification completes
                     }
 
-                    // Check for obstacle
-                    if (_obstacleDetected)
-                    {
-                        _logger.LogWarning("⚡ OBSTACLE DETECTED - stopping motors");
-                        _motorService.Stop();
-                        await Task.Delay(100, stoppingToken);
-                        continue;
-                    }
+                    // Check for obstacle - TEMPORARILY DISABLED
+                    // if (_obstacleDetected)
+                    // {
+                    //     _logger.LogWarning("⚡ OBSTACLE DETECTED - stopping motors");
+                    //     _motorService.Stop();
+                    //     await Task.Delay(100, stoppingToken);
+                    //     continue;
+                    // }
 
                     var currentTime = DateTime.UtcNow;
 
