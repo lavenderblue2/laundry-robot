@@ -153,7 +153,7 @@ namespace AdministratorWeb.Controllers
             var robots = await _robotService.GetAllRobotsAsync();
             var firstRobot = robots.FirstOrDefault();
             ViewData["RobotCameraUrl"] = firstRobot != null
-                ? $"http://{firstRobot.IpAddress}:5000/camera/image"
+                ? $"http://{firstRobot.IpAddress}:8080/camera/image"
                 : null;
 
             return View(settings);
