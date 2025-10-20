@@ -27,6 +27,9 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
     // Public property to expose active beacons
     public List<BeaconConfigurationDto>? ActiveBeacons { get; private set; }
 
+    // Target beacon MAC address - the ONE beacon robot should navigate to
+    public string? TargetBeaconMac { get; private set; }
+
     // Weight limit settings from server
     private decimal? _maxWeightKg;
     private decimal? _minWeightKg;
@@ -438,6 +441,9 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
                 // Store active beacons
                 ActiveBeacons = serverResponse.ActiveBeacons;
 
+                // Store target beacon MAC (the ONE beacon to navigate to)
+                TargetBeaconMac = serverResponse.TargetBeaconMac;
+
                 var beaconConfigs =
                     new Dictionary<string, (string Name, string RoomName, int RssiThreshold, bool IsNavigationTarget,
                         int Priority)>();
@@ -454,12 +460,13 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
                 }
 
                 await _beaconService.UpdateBeaconConfigurations(beaconConfigs);
-                _logger.LogDebug("Updated beacon configurations from server: {BeaconCount} beacons",
-                    beaconConfigs.Count);
+                _logger.LogDebug("Updated beacon configurations from server: {BeaconCount} beacons, Target: {TargetMac}",
+                    beaconConfigs.Count, TargetBeaconMac ?? "NONE");
             }
             else
             {
                 ActiveBeacons = null;
+                TargetBeaconMac = null;
             }
 
             // Process any server messages

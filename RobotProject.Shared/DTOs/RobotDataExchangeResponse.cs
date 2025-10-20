@@ -66,7 +66,14 @@ namespace RobotProject.Shared.DTOs
         /// This is the only control needed - robot will line follow if true, stop if false
         /// </summary>
         public bool IsLineFollowing { get; set; } = false;
-        
+
+        /// <summary>
+        /// MAC address of the target beacon the robot should navigate to
+        /// Robot will perform 3-check verification on this beacon only
+        /// If null or empty, robot will not perform beacon verification
+        /// </summary>
+        public string? TargetBeaconMac { get; set; } = null;
+
         /// <summary>
         /// Current robot navigation status for mobile app
         /// </summary>

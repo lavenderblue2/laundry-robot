@@ -264,6 +264,10 @@ namespace AdministratorWeb.Controllers.Api
                 // Get laundry settings for weight limits
                 var laundrySettings = await _context.LaundrySettings.FirstOrDefaultAsync();
 
+                // Get target beacon MAC (the ONE beacon robot should navigate to)
+                var targetBeacon = activeBeacons.FirstOrDefault(b => b.IsNavigationTarget);
+                var targetBeaconMac = targetBeacon?.MacAddress;
+
                 // Create response with current server state
                 var response = new RobotDataExchangeResponse
                 {
@@ -271,6 +275,7 @@ namespace AdministratorWeb.Controllers.Api
                     ActiveBeacons = activeBeacons,
                     Configuration = serverConfig,
                     IsLineFollowing = isLineFollowing,
+                    TargetBeaconMac = targetBeaconMac, // Simple! Just one MAC address
                     RobotStatus = robotStatus,
                     AtUserRoom = atUserRoom,
                     FollowColor = followColor,
