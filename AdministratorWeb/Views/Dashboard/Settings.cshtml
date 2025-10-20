@@ -483,10 +483,13 @@
             // Auto-refresh robot camera feed
             const robotCamera = document.getElementById('robotCamera');
             if (robotCamera) {
-                setInterval(() => {
-                    const src = robotCamera.src.split('?')[0]; // Remove old timestamp
-                    robotCamera.src = src + '?t=' + new Date().getTime(); // Add new timestamp
-                }, 500); // Refresh every 500ms for ~2 FPS
+                const robotName = '@ViewData["RobotName"]';
+                if (robotName) {
+                    setInterval(() => {
+                        const timestamp = new Date().getTime();
+                        robotCamera.src = `/Robots/GetRobotImage?name=${robotName}&t=${timestamp}`;
+                    }, 500); // Refresh every 500ms for ~2 FPS
+                }
             }
         });
     </script>
