@@ -56,6 +56,7 @@ public class LineFollowerService : BackgroundService
     private DateTime _lastBeaconVerificationCheck = DateTime.MinValue;
     private const int VERIFICATION_CHECK_INTERVAL_MS = 500; // Check every 500ms
     private bool _arrivalConfirmed = false; // Flag to prevent further beacon processing after arrival
+    private bool _verifyingBeacon = false; // Flag to pause line following during beacon verification
 
     public LineFollowerService(
         ILogger<LineFollowerService> logger,
@@ -144,6 +145,7 @@ public class LineFollowerService : BackgroundService
                     _consecutiveBeaconDetections = 0;
                     _lastBeaconVerificationCheck = DateTime.MinValue;
                     _arrivalConfirmed = false; // Reset arrival flag when starting new navigation
+                    _verifyingBeacon = false; // Reset verification pause flag
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
@@ -155,6 +157,14 @@ public class LineFollowerService : BackgroundService
 
                 if (shouldFollowLine)
                 {
+                    // PAUSE line following if we're verifying a beacon
+                    if (_verifyingBeacon)
+                    {
+                        _motorService.Stop(); // Ensure motors stay stopped
+                        await Task.Delay(100, stoppingToken);
+                        continue; // Skip line detection until verification completes
+                    }
+
                     // Check for obstacle
                     if (_obstacleDetected)
                     {
@@ -436,42 +446,38 @@ public class LineFollowerService : BackgroundService
                 return;
             }
 
-            // Get target beacon MAC from server
+            // Get active beacons from server communication service
             var serverCommService = _serviceProvider.GetService<RobotServerCommunicationService>();
-            if (serverCommService == null)
+            if (serverCommService?.ActiveBeacons == null || !serverCommService.ActiveBeacons.Any())
             {
                 return;
             }
 
-            // Simple! Check if this beacon matches the target MAC from server
-            var targetMac = serverCommService.TargetBeaconMac;
-            if (string.IsNullOrWhiteSpace(targetMac))
-            {
-                return; // No target set, ignore all beacons
-            }
-
-            if (!string.Equals(beacon.MacAddress, targetMac, StringComparison.OrdinalIgnoreCase))
-            {
-                return; // This isn't the target beacon, ignore it
-            }
-
-            // Get RSSI threshold for this beacon
-            var targetBeaconConfig = serverCommService.ActiveBeacons?
-                .FirstOrDefault(b => string.Equals(b.MacAddress, targetMac, StringComparison.OrdinalIgnoreCase));
+            // Find if this beacon is an active target (navigation target OR base beacon)
+            // IMPORTANT: We need to verify ALL beacons, including the base for return trips
+            var targetBeaconConfig = serverCommService.ActiveBeacons
+                .FirstOrDefault(b => string.Equals(b.MacAddress, beacon.MacAddress,
+                                         StringComparison.OrdinalIgnoreCase));
 
             if (targetBeaconConfig == null)
             {
-                _logger.LogWarning("Target beacon {Mac} not found in active beacons list", targetMac);
-                return;
+                return; // Not in active beacons list, ignore
+            }
+
+            // Skip if this is neither a navigation target nor a base beacon
+            if (!targetBeaconConfig.IsNavigationTarget && !targetBeaconConfig.IsBase)
+            {
+                return; // Not a target we care about
             }
 
             // Only log every 20th detection to reduce spam
             _beaconDetectionCount++;
+            var beaconType = targetBeaconConfig.IsBase ? "BASE" : "TARGET";
             if (_beaconDetectionCount % 20 == 0)
             {
                 _logger.LogInformation(
-                    "TARGET BEACON DETECTED: {BeaconMac} ({Name}) RSSI: {Rssi} dBm (threshold: {Threshold} dBm)",
-                    beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
+                    "{Type} BEACON DETECTED: {BeaconMac} ({Name}) RSSI: {Rssi} dBm (threshold: {Threshold} dBm)",
+                    beaconType, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
             }
 
             // Check if we've reached the target (within RSSI threshold)
@@ -487,18 +493,19 @@ public class LineFollowerService : BackgroundService
                     _lastBeaconVerificationCheck = now;
 
                     _logger.LogWarning(
-                        "BEACON CHECK [{Check}/3]: Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING TO VERIFY",
-                        _consecutiveBeaconDetections, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
+                        "{Type} BEACON CHECK [{Check}/3]: Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING TO VERIFY",
+                        beaconType, _consecutiveBeaconDetections, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
 
-                    // Stop the robot for verification
+                    // PAUSE line following and stop the robot for verification
+                    _verifyingBeacon = true;
                     _motorService.Stop();
 
                     // If we've verified 3 times consecutively, we've arrived!
                     if (_consecutiveBeaconDetections >= REQUIRED_CONSECUTIVE_DETECTIONS)
                     {
                         _logger.LogWarning(
-                            "✓✓✓ BEACON CONFIRMED! 3 consecutive checks passed. Beacon {BeaconMac} ({Name}) - ARRIVAL CONFIRMED!",
-                            beacon.MacAddress, beacon.Name ?? "Unknown");
+                            "✓✓✓ {Type} BEACON CONFIRMED! 3 consecutive checks passed. Beacon {BeaconMac} ({Name}) - ARRIVAL CONFIRMED!",
+                            beaconType, beacon.MacAddress, beacon.Name ?? "Unknown");
 
                         _arrivalConfirmed = true; // Set flag to ignore all future beacon detections
                         await _motorService.StopLineFollowingAsync();
@@ -520,14 +527,14 @@ public class LineFollowerService : BackgroundService
                 if (_consecutiveBeaconDetections > 0)
                 {
                     _logger.LogWarning(
-                        "✗ VERIFICATION FAILED! RSSI dropped: {Rssi} < {Threshold}. Resetting counter and CONTINUING movement.",
+                        "✗ VERIFICATION FAILED! RSSI dropped: {Rssi} < {Threshold}. Resetting counter and RESUMING line following.",
                         beacon.Rssi, targetBeaconConfig.RssiThreshold);
 
                     _consecutiveBeaconDetections = 0;
                     _lastBeaconVerificationCheck = DateTime.MinValue;
+                    _verifyingBeacon = false; // Resume line following
 
-                    // Resume line following if it was stopped
-                    // (The main loop will handle movement based on line detection)
+                    _logger.LogInformation("▶ Line following resumed - verification failed");
                 }
             }
         }
