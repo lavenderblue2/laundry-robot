@@ -55,6 +55,7 @@ public class LineFollowerService : BackgroundService
     private const int REQUIRED_CONSECUTIVE_DETECTIONS = 3;
     private DateTime _lastBeaconVerificationCheck = DateTime.MinValue;
     private const int VERIFICATION_CHECK_INTERVAL_MS = 500; // Check every 500ms
+    private bool _arrivalConfirmed = false; // Flag to prevent further beacon processing after arrival
 
     public LineFollowerService(
         ILogger<LineFollowerService> logger,
@@ -142,6 +143,7 @@ public class LineFollowerService : BackgroundService
                     // Reset beacon verification
                     _consecutiveBeaconDetections = 0;
                     _lastBeaconVerificationCheck = DateTime.MinValue;
+                    _arrivalConfirmed = false; // Reset arrival flag when starting new navigation
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
@@ -419,6 +421,12 @@ public class LineFollowerService : BackgroundService
     {
         try
         {
+            // If arrival already confirmed, ignore all further beacon detections
+            if (_arrivalConfirmed)
+            {
+                return; // Stop processing beacons - we've already arrived!
+            }
+
             var isLineFollowing = _motorService.IsLineFollowingActive;
 
             // Only care about beacons if we're line following
@@ -488,8 +496,11 @@ public class LineFollowerService : BackgroundService
                             "✓✓✓ {Type} BEACON CONFIRMED! 3 consecutive checks passed. Beacon {BeaconMac} ({Name}) - ARRIVAL CONFIRMED!",
                             beaconType, beacon.MacAddress, beacon.Name ?? "Unknown");
 
+                        _arrivalConfirmed = true; // Set flag to ignore all future beacon detections
                         await _motorService.StopLineFollowingAsync();
                         _consecutiveBeaconDetections = 0; // Reset for next navigation
+
+                        _logger.LogInformation("🛑 Arrival confirmed - beacon processing disabled until next navigation starts");
                     }
                     else
                     {
