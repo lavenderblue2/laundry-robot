@@ -432,8 +432,7 @@ public class LineFollowerService : BackgroundService
     /// </summary>
     private async void OnBeaconDetected(object? sender, BeaconInfo beacon)
     {
-        // DISABLED: Beacon arrival detection is handled by RobotServerCommunicationService
-        // This was causing duplicate/conflicting arrival detection
+        // ARRIVAL DETECTION DISABLED: Using RobotServerCommunicationService instead
         return;
         try
         {
