@@ -504,10 +504,19 @@ namespace AdministratorWeb.Controllers.Api
             {
                 foreach (var beacon in beacons)
                 {
-                    // Set IsNavigationTarget to true for ALL beacons in the target room
-                    beacon.IsNavigationTarget = !string.IsNullOrEmpty(targetRoomName) &&
-                                                string.Equals(beacon.RoomName, targetRoomName,
-                                                    StringComparison.OrdinalIgnoreCase);
+                    // FIXED: If target is "Base", match beacons with IsBase=true
+                    // Otherwise, match beacons by RoomName
+                    if (targetRoomName == "Base")
+                    {
+                        beacon.IsNavigationTarget = beacon.IsBase;
+                    }
+                    else
+                    {
+                        // Set IsNavigationTarget to true for ALL beacons in the target room
+                        beacon.IsNavigationTarget = !string.IsNullOrEmpty(targetRoomName) &&
+                                                    string.Equals(beacon.RoomName, targetRoomName,
+                                                        StringComparison.OrdinalIgnoreCase);
+                    }
                 }
 
                 var targetBeaconCount = beacons.Count(b => b.IsNavigationTarget);
