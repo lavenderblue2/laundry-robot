@@ -57,6 +57,8 @@ public class LineFollowerService : BackgroundService
     private const int VERIFICATION_CHECK_INTERVAL_MS = 500; // Check every 500ms
     private bool _arrivalConfirmed = false; // Flag to prevent further beacon processing after arrival
     private bool _verifyingBeacon = false; // Flag to pause line following during beacon verification
+    private DateTime _navigationStartTime = DateTime.MinValue; // Track when navigation started
+    private const int BEACON_COOLDOWN_MS = 3000; // Wait 3 seconds after starting navigation before checking beacons
 
     public LineFollowerService(
         ILogger<LineFollowerService> logger,
@@ -146,6 +148,7 @@ public class LineFollowerService : BackgroundService
                     _lastBeaconVerificationCheck = DateTime.MinValue;
                     _arrivalConfirmed = false; // Reset arrival flag when starting new navigation
                     _verifyingBeacon = false; // Reset verification pause flag
+                    _navigationStartTime = DateTime.UtcNow; // Start cooldown timer
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
@@ -444,6 +447,14 @@ public class LineFollowerService : BackgroundService
             {
                 _consecutiveBeaconDetections = 0; // Reset if not following
                 return;
+            }
+            
+            // COOLDOWN: Wait 3 seconds after starting navigation before checking beacons
+            // This prevents false arrivals when already near the target beacon
+            var timeSinceNavigationStart = (DateTime.UtcNow - _navigationStartTime).TotalMilliseconds;
+            if (timeSinceNavigationStart < BEACON_COOLDOWN_MS)
+            {
+                return; // Still in cooldown period
             }
 
             // Get active beacons from server communication service
