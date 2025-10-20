@@ -523,18 +523,31 @@ public class LineFollowerService : BackgroundService
             }
             else
             {
-                // RSSI dropped below threshold - reset verification
-                if (_consecutiveBeaconDetections > 0)
+                // RSSI dropped below threshold during verification
+                if (_consecutiveBeaconDetections > 0 && _verifyingBeacon)
                 {
-                    _logger.LogWarning(
-                        "✗ VERIFICATION FAILED! RSSI dropped: {Rssi} < {Threshold}. Resetting counter and RESUMING line following.",
-                        beacon.Rssi, targetBeaconConfig.RssiThreshold);
+                    // Check if we should give up on verification (been trying for too long)
+                    var timeSinceFirstCheck = (DateTime.UtcNow - _lastBeaconVerificationCheck).TotalMilliseconds;
 
-                    _consecutiveBeaconDetections = 0;
-                    _lastBeaconVerificationCheck = DateTime.MinValue;
-                    _verifyingBeacon = false; // Resume line following
+                    // Only give up if we haven't gotten a good reading for 2 seconds
+                    if (timeSinceFirstCheck > 2000)
+                    {
+                        _logger.LogWarning(
+                            "✗ VERIFICATION TIMEOUT! RSSI: {Rssi} < {Threshold}. No good readings for 2s. Resetting counter and RESUMING line following.",
+                            beacon.Rssi, targetBeaconConfig.RssiThreshold);
 
-                    _logger.LogInformation("▶ Line following resumed - verification failed");
+                        _consecutiveBeaconDetections = 0;
+                        _lastBeaconVerificationCheck = DateTime.MinValue;
+                        _verifyingBeacon = false; // Resume line following
+
+                        _logger.LogInformation("▶ Line following resumed - verification timeout");
+                    }
+                    else
+                    {
+                        // Just a temporary dip - keep verifying
+                        _logger.LogDebug("Temporary RSSI dip: {Rssi} < {Threshold} - continuing verification",
+                            beacon.Rssi, targetBeaconConfig.RssiThreshold);
+                    }
                 }
             }
         }
