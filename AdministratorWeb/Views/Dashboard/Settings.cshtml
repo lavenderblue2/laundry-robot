@@ -271,6 +271,27 @@
                     Set the color of the line that the robot should follow. This setting persists across web restarts.
                 </p>
                 <div class="space-y-4">
+                    <!-- Camera Feed -->
+                    <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-600/30">
+                        <label class="block text-slate-300 font-medium mb-3">
+                            <i data-lucide="video" class="w-4 h-4 inline mr-2"></i>
+                            Robot Camera Feed
+                        </label>
+                        <div class="relative rounded-lg overflow-hidden bg-slate-900/50 border-2 border-slate-600/50">
+                            <img id="robotCamera"
+                                 src="http://192.168.1.100:5000/camera/image"
+                                 alt="Robot Camera"
+                                 class="w-full h-auto"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22640%22 height=%22240%22%3E%3Crect fill=%22%23334155%22 width=%22640%22 height=%22240%22/%3E%3Ctext fill=%22%239ca3af%22 font-family=%22Arial%22 font-size=%2216%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ECamera Offline%3C/text%3E%3C/svg%3E'">
+                            <div class="absolute top-2 right-2 bg-slate-900/80 text-white text-xs px-2 py-1 rounded">
+                                Live Feed
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-2">
+                            Note: Update the IP address (http://192.168.1.100:5000) to match your robot's address
+                        </p>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Color Picker -->
                         <div>
@@ -442,6 +463,15 @@
                 // Update text color for contrast
                 const brightness = (r * 299 + g * 587 + b * 114) / 1000;
                 colorPreview.style.color = brightness > 128 ? '#000' : '#fff';
+            }
+
+            // Auto-refresh robot camera feed
+            const robotCamera = document.getElementById('robotCamera');
+            if (robotCamera) {
+                setInterval(() => {
+                    const src = robotCamera.src.split('?')[0]; // Remove old timestamp
+                    robotCamera.src = src + '?t=' + new Date().getTime(); // Add new timestamp
+                }, 500); // Refresh every 500ms for ~2 FPS
             }
         });
     </script>
