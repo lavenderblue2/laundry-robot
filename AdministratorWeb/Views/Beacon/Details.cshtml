@@ -1,0 +1,317 @@
+@model AdministratorWeb.Models.BluetoothBeacon
+@{
+    ViewData["Title"] = "Beacon Details";
+    var recentlyDetected = Model.LastSeenAt.HasValue && (DateTime.UtcNow - Model.LastSeenAt.Value).TotalHours <= 1;
+}
+
+<!-- Dashboard Header -->
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">@Model.Name</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="radio" class="w-4 h-4 mr-2"></i>
+                Bluetooth beacon in @Model.RoomName
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-4 py-2 bg-brand-600/20 text-brand-400 hover:bg-brand-600/30 text-sm font-medium rounded-xl transition-all duration-200 border border-brand-600/30">
+                <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+                Edit Beacon
+            </a>
+            <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-white text-sm font-medium rounded-xl transition-all duration-200">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                Back to Beacons
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Status Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+    <!-- Active Status -->
+    <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
+        <div class="flex items-center">
+            <div class="p-3 @(Model.IsActive ? "bg-emerald-500/20" : "bg-red-500/20") rounded-xl mr-4">
+                <i data-lucide="@(Model.IsActive ? "check-circle" : "x-circle")" class="h-6 w-6 @(Model.IsActive ? "text-emerald-400" : "text-red-400")"></i>
+            </div>
+            <div>
+                <div class="text-lg font-bold text-white">@(Model.IsActive ? "Active" : "Inactive")</div>
+                <div class="text-xs text-slate-400">Beacon Status</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detection Status -->
+    <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
+        <div class="flex items-center">
+            <div class="p-3 @(recentlyDetected ? "bg-green-500/20" : "bg-orange-500/20") rounded-xl mr-4">
+                <i data-lucide="@(recentlyDetected ? "activity" : "clock")" class="h-6 w-6 @(recentlyDetected ? "text-green-400" : "text-orange-400")"></i>
+            </div>
+            <div>
+                <div class="text-lg font-bold text-white">@(recentlyDetected ? "Live" : "Offline")</div>
+                <div class="text-xs text-slate-400">Detection Status</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Target -->
+    <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
+        <div class="flex items-center">
+            <div class="p-3 @(Model.IsNavigationTarget ? "bg-purple-500/20" : "bg-slate-500/20") rounded-xl mr-4">
+                <i data-lucide="navigation" class="h-6 w-6 @(Model.IsNavigationTarget ? "text-purple-400" : "text-slate-400")"></i>
+            </div>
+            <div>
+                <div class="text-lg font-bold text-white">@(Model.IsNavigationTarget ? $"Priority {Model.Priority}" : "No")</div>
+                <div class="text-xs text-slate-400">Navigation Target</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RSSI Threshold -->
+    <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
+        <div class="flex items-center">
+            <div class="p-3 bg-blue-500/20 rounded-xl mr-4">
+                <i data-lucide="signal" class="h-6 w-6 text-blue-400"></i>
+            </div>
+            <div>
+                <div class="text-lg font-bold text-white">@Model.RssiThreshold dBm</div>
+                <div class="text-xs text-slate-400">RSSI Threshold</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Beacon Information -->
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.2s;">
+        <div class="px-6 py-6 border-b border-slate-700/50">
+            <div class="flex items-center">
+                <div class="p-2 bg-brand-500/20 rounded-xl mr-3">
+                    <i data-lucide="info" class="h-5 w-5 text-brand-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Beacon Information</h3>
+            </div>
+        </div>
+        <div class="p-6 space-y-6">
+            <div class="grid grid-cols-1 gap-4">
+                <div class="bg-slate-700/30 rounded-xl p-4">
+                    <div class="text-sm text-slate-400 mb-2 flex items-center">
+                        <i data-lucide="wifi" class="w-4 h-4 mr-2"></i>
+                        MAC Address
+                    </div>
+                    <div class="text-white font-mono text-lg">@Model.MacAddress</div>
+                </div>
+                
+                <div class="bg-slate-700/30 rounded-xl p-4">
+                    <div class="text-sm text-slate-400 mb-2 flex items-center">
+                        <i data-lucide="home" class="w-4 h-4 mr-2"></i>
+                        Room Name
+                    </div>
+                    <div class="text-white text-lg">@Model.RoomName</div>
+                </div>
+                
+                <div class="bg-slate-700/30 rounded-xl p-4">
+                    <div class="text-sm text-slate-400 mb-2 flex items-center">
+                        <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
+                        Created
+                    </div>
+                    <div class="text-white">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+                    @if (!string.IsNullOrEmpty(Model.CreatedBy))
+                    {
+                        <div class="text-xs text-slate-500 mt-1">by @Model.CreatedBy</div>
+                    }
+                </div>
+                
+                @if (Model.UpdatedAt > Model.CreatedAt)
+                {
+                    <div class="bg-slate-700/30 rounded-xl p-4">
+                        <div class="text-sm text-slate-400 mb-2 flex items-center">
+                            <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+                            Last Updated
+                        </div>
+                        <div class="text-white">@Model.UpdatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+                        @if (!string.IsNullOrEmpty(Model.UpdatedBy))
+                        {
+                            <div class="text-xs text-slate-500 mt-1">by @Model.UpdatedBy</div>
+                        }
+                    </div>
+                }
+            </div>
+            
+            @if (!string.IsNullOrEmpty(Model.Description))
+            {
+                <div class="bg-slate-700/30 rounded-xl p-4">
+                    <div class="text-sm text-slate-400 mb-2 flex items-center">
+                        <i data-lucide="message-square" class="w-4 h-4 mr-2"></i>
+                        Description
+                    </div>
+                    <div class="text-white">@Model.Description</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Detection History -->
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.3s;">
+        <div class="px-6 py-6 border-b border-slate-700/50">
+            <div class="flex items-center">
+                <div class="p-2 bg-green-500/20 rounded-xl mr-3">
+                    <i data-lucide="activity" class="h-5 w-5 text-green-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Detection History</h3>
+            </div>
+        </div>
+        <div class="p-6">
+            @if (Model.LastSeenAt.HasValue)
+            {
+                <div class="space-y-4">
+                    <div class="bg-slate-700/30 rounded-xl p-4">
+                        <div class="text-sm text-slate-400 mb-2 flex items-center">
+                            <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
+                            Last Detection
+                        </div>
+                        <div class="text-white text-lg">@Model.LastSeenAt.Value.ToString("MMM dd, yyyy HH:mm:ss")</div>
+                        <div class="text-xs text-slate-500 mt-1">
+                            @{
+                                var timeSince = DateTime.UtcNow - Model.LastSeenAt.Value;
+                                if (timeSince.TotalMinutes < 1)
+                                {
+                                    <text>Just now</text>
+                                }
+                                else if (timeSince.TotalHours < 1)
+                                {
+                                    <text>@((int)timeSince.TotalMinutes) minutes ago</text>
+                                }
+                                else if (timeSince.TotalDays < 1)
+                                {
+                                    <text>@((int)timeSince.TotalHours) hours ago</text>
+                                }
+                                else
+                                {
+                                    <text>@((int)timeSince.TotalDays) days ago</text>
+                                }
+                            }
+                        </div>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(Model.LastSeenByRobot))
+                    {
+                        <div class="bg-slate-700/30 rounded-xl p-4">
+                            <div class="text-sm text-slate-400 mb-2 flex items-center">
+                                <i data-lucide="bot" class="w-4 h-4 mr-2"></i>
+                                Detected By Robot
+                            </div>
+                            <div class="text-white text-lg">@Model.LastSeenByRobot</div>
+                        </div>
+                    }
+                    
+                    @if (Model.LastRecordedRssi.HasValue)
+                    {
+                        <div class="bg-slate-700/30 rounded-xl p-4">
+                            <div class="text-sm text-slate-400 mb-2 flex items-center">
+                                <i data-lucide="signal" class="w-4 h-4 mr-2"></i>
+                                Last Recorded RSSI
+                            </div>
+                            <div class="flex items-center">
+                                <div class="text-white text-lg mr-3">@Model.LastRecordedRssi.Value dBm</div>
+                                @{
+                                    var signalStrength = "";
+                                    var signalClass = "";
+                                    if (Model.LastRecordedRssi.Value >= -30)
+                                    {
+                                        signalStrength = "Excellent";
+                                        signalClass = "text-green-400 bg-green-900/50 border-green-700/50";
+                                    }
+                                    else if (Model.LastRecordedRssi.Value >= -50)
+                                    {
+                                        signalStrength = "Good";
+                                        signalClass = "text-blue-400 bg-blue-900/50 border-blue-700/50";
+                                    }
+                                    else if (Model.LastRecordedRssi.Value >= -70)
+                                    {
+                                        signalStrength = "Fair";
+                                        signalClass = "text-yellow-400 bg-yellow-900/50 border-yellow-700/50";
+                                    }
+                                    else
+                                    {
+                                        signalStrength = "Poor";
+                                        signalClass = "text-red-400 bg-red-900/50 border-red-700/50";
+                                    }
+                                }
+                                <span class="px-2 py-1 inline-flex items-center text-xs font-semibold rounded-lg @signalClass border">
+                                    @signalStrength
+                                </span>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-2">
+                                Threshold: @Model.RssiThreshold dBm (@(Model.LastRecordedRssi >= Model.RssiThreshold ? "In Range" : "Out of Range"))
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 bg-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="search" class="h-8 w-8 text-slate-500"></i>
+                    </div>
+                    <h4 class="text-lg font-medium text-white mb-2">No Detection History</h4>
+                    <p class="text-sm text-slate-400">This beacon has not been detected by any robots yet.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="mt-8 flex items-center justify-center space-x-4 animate-slide-up" style="animation-delay: 0.4s;">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+        <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+        Edit Beacon
+    </a>
+    <button onclick="toggleBeaconStatus(@Model.Id, @Model.IsActive.ToString().ToLower())" 
+            class="inline-flex items-center px-6 py-3 @(Model.IsActive ? "bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 border border-orange-600/30" : "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-600/30") font-semibold rounded-xl transition-all duration-200">
+        <i data-lucide="@(Model.IsActive ? "pause" : "play")" class="w-4 h-4 mr-2"></i>
+        @(Model.IsActive ? "Disable Beacon" : "Enable Beacon")
+    </button>
+    <a asp-action="Delete" asp-route-id="@Model.Id" class="inline-flex items-center px-6 py-3 bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-600/30 font-semibold rounded-xl transition-all duration-200">
+        <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+        Delete Beacon
+    </a>
+</div>
+
+<script>
+    // Toggle beacon status
+    async function toggleBeaconStatus(beaconId, currentStatus) {
+        try {
+            const response = await fetch('@Url.Action("ToggleStatus")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': document.querySelector('[name="__RequestVerificationToken"]').value
+                },
+                body: `id=${beaconId}`
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                // Reload the page to show updated status
+                window.location.reload();
+            } else {
+                alert(result.message || 'Failed to toggle beacon status');
+            }
+        } catch (error) {
+            console.error('Error toggling beacon status:', error);
+            alert('Failed to toggle beacon status');
+        }
+    }
+    
+    // Initialize lucide icons when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        lucide.createIcons();
+    });
+</script>
+
+@Html.AntiForgeryToken()

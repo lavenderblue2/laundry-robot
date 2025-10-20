@@ -1,0 +1,136 @@
+@model IEnumerable<AdministratorWeb.Models.LaundryRequest>
+@{
+    ViewData["Title"] = "Outstanding Payments";
+}
+
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-white">Outstanding Payments</h1>
+    <p class="text-gray-400">Completed requests awaiting payment</p>
+</div>
+
+<div class="bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-700">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-700">
+            <thead class="bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Customer</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Request Details</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Amount Due</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Completed Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Days Overdue</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-gray-800 divide-y divide-gray-700">
+                @foreach (var request in Model)
+                {
+                    var daysOverdue = request.CompletedAt.HasValue ? (DateTime.Now - request.CompletedAt.Value).Days : 0;
+                    
+                    <tr class="hover:bg-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-white">@request.CustomerName</div>
+                            <div class="text-sm text-gray-400">@request.CustomerPhone</div>
+                            <div class="text-xs text-gray-500">ID: @request.CustomerId</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-white">Request #@request.Id</div>
+                            <div class="text-sm text-gray-400">@request.Type</div>
+                            <div class="text-sm text-gray-400">@request.Weight?.ToString("N1") kg</div>
+                            @if (!string.IsNullOrEmpty(request.AssignedRobotName))
+                            {
+                                <div class="text-xs text-gray-500">Robot: @request.AssignedRobotName</div>
+                            }
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-lg font-semibold text-white">$@request.TotalCost?.ToString("N2")</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                            @request.CompletedAt?.ToString("MMM dd, yyyy")
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                @(daysOverdue <= 7 ? "bg-yellow-900 text-yellow-200 border border-yellow-700" :
+                                  daysOverdue <= 30 ? "bg-orange-900 text-orange-200 border border-orange-700" :
+                                  "bg-red-900 text-red-200 border border-red-700")">
+                                @daysOverdue days
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="openMarkPaidModal(@request.Id, '@request.CustomerName', @request.TotalCost)" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs mr-2">
+                                Mark as Paid
+                            </button>
+                            <a asp-action="CustomerProfile" asp-route-customerId="@request.CustomerId" class="text-blue-400 hover:text-blue-300">
+                                View Profile
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-12">
+        <i data-lucide="check-circle" class="mx-auto h-12 w-12 text-green-400"></i>
+        <h3 class="mt-2 text-sm font-medium text-white">No outstanding payments</h3>
+        <p class="mt-1 text-sm text-gray-400">All completed requests have been paid.</p>
+    </div>
+}
+
+<!-- Mark as Paid Modal -->
+<div id="markPaidModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border border-gray-600 w-96 shadow-lg rounded-md bg-gray-800">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-white mb-4">Mark Payment as Received</h3>
+            <form id="markPaidForm" asp-action="MarkAsPaid" method="post">
+                <input type="hidden" id="requestId" name="requestId" />
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-bold mb-2">Customer:</label>
+                    <div id="customerName" class="text-white bg-gray-700 px-3 py-2 rounded"></div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-bold mb-2">Amount:</label>
+                    <div id="paymentAmount" class="text-white bg-gray-700 px-3 py-2 rounded font-semibold"></div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-bold mb-2">Payment Method:</label>
+                    <select name="paymentMethod" required class="bg-gray-700 border border-gray-600 rounded w-full py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Cash">Cash</option>
+                        <option value="CreditCard">Credit Card</option>
+                        <option value="DebitCard">Debit Card</option>
+                        <option value="BankTransfer">Bank Transfer</option>
+                        <option value="PayPal">PayPal</option>
+                        <option value="DigitalWallet">Digital Wallet</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-300 text-sm font-bold mb-2">Notes (Optional):</label>
+                    <textarea name="notes" rows="2" class="bg-gray-700 border border-gray-600 rounded w-full py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Payment reference, receipt number, etc."></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeMarkPaidModal()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Mark as Paid
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openMarkPaidModal(requestId, customerName, amount) {
+        document.getElementById('requestId').value = requestId;
+        document.getElementById('customerName').textContent = customerName;
+        document.getElementById('paymentAmount').textContent = '$' + parseFloat(amount).toFixed(2);
+        document.getElementById('markPaidModal').classList.remove('hidden');
+    }
+    
+    function closeMarkPaidModal() {
+        document.getElementById('markPaidModal').classList.add('hidden');
+    }
+</script>

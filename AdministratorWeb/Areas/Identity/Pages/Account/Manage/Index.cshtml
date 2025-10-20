@@ -1,0 +1,129 @@
+@page
+@using AdministratorWeb.Areas.Identity.Pages.Account.Manage
+@model IndexModel
+@{
+    ViewData["Title"] = "Profile Settings";
+}
+
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Profile Settings</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="user" class="w-4 h-4 mr-2"></i>
+                Manage your account information and preferences
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<partial name="_ManageNav" />
+
+<!-- Profile Form -->
+<div class="max-w-4xl mx-auto bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.1s;">
+    <div class="px-8 py-8">
+        <!-- Success/Error Messages -->
+        @if (Model.StatusMessage != null)
+        {
+            <div class="mb-6 animate-slide-down">
+                <div class="bg-emerald-900/50 border border-emerald-700/50 text-emerald-200 px-4 py-3 rounded-xl backdrop-blur-sm" role="alert">
+                    <div class="flex items-center">
+                        <i data-lucide="check-circle" class="w-5 h-5 mr-2 text-emerald-400"></i>
+                        <span>@Model.StatusMessage</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <form id="profile-form" method="post" class="space-y-8">
+            <div asp-validation-summary="ModelOnly" class="mb-6 p-4 bg-red-900/50 border border-red-700/50 rounded-xl text-red-200 text-sm" role="alert"></div>
+
+            <!-- Account Information -->
+            <div class="bg-slate-700/30 rounded-2xl p-6 border border-slate-600/50">
+                <div class="flex items-center mb-6">
+                    <div class="p-2 bg-brand-500/20 rounded-xl mr-3">
+                        <i data-lucide="user-circle" class="h-5 w-5 text-brand-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Account Information</h3>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <!-- Username (read-only) -->
+                    <div>
+                        <label asp-for="Username" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="at-sign" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Username
+                        </label>
+                        <input asp-for="Username" disabled class="w-full px-4 py-3 bg-slate-600/30 border border-slate-500/50 rounded-xl text-slate-400 cursor-not-allowed transition-all duration-200" />
+                        <p class="mt-1 text-xs text-slate-500">Your username cannot be changed</p>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div>
+                        <label asp-for="Input.PhoneNumber" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="phone" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Phone Number
+                        </label>
+                        <input asp-for="Input.PhoneNumber" type="tel" placeholder="+1 (555) 123-4567" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="Input.PhoneNumber" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="flex items-center justify-between pt-6 border-t border-slate-700/50">
+                <div class="text-sm text-slate-400 flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+                    Changes will be saved to your profile
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button type="submit" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i data-lucide="save" class="w-4 h-4 mr-2"></i>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Additional Options -->
+        <div class="mt-8 pt-8 border-t border-slate-700/50">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                <i data-lucide="shield" class="w-5 h-5 mr-2 text-brand-400"></i>
+                Account Security
+            </h3>
+            <div class="space-y-3">
+                <a asp-page="./Email" class="flex items-center justify-between px-4 py-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-xl transition-all duration-200 group">
+                    <div class="flex items-center">
+                        <i data-lucide="mail" class="w-5 h-5 mr-3 text-slate-400 group-hover:text-brand-400 transition-colors"></i>
+                        <div>
+                            <div class="text-sm font-semibold text-white">Email Address</div>
+                            <div class="text-xs text-slate-400">Manage your email settings</div>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition-colors"></i>
+                </a>
+
+                <a asp-page="./ChangePassword" class="flex items-center justify-between px-4 py-3 bg-slate-700/30 hover:bg-slate-700/50 rounded-xl transition-all duration-200 group">
+                    <div class="flex items-center">
+                        <i data-lucide="lock" class="w-5 h-5 mr-3 text-slate-400 group-hover:text-brand-400 transition-colors"></i>
+                        <div>
+                            <div class="text-sm font-semibold text-white">Change Password</div>
+                            <div class="text-xs text-slate-400">Update your password</div>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition-colors"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+    </script>
+}

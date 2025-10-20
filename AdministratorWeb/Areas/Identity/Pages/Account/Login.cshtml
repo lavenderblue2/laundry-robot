@@ -1,0 +1,171 @@
+@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Admin Login";
+}
+
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style="background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1923 100%);">
+    <div class="max-w-md w-full space-y-8">
+        <!-- Logo and Title -->
+        <div class="text-center">
+            <div class="flex justify-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-brand-500 via-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                    <i data-lucide="washing-machine" class="w-8 h-8 text-white"></i>
+                </div>
+            </div>
+            <h2 class="text-3xl font-bold text-white mb-2">Welcome Back</h2>
+            <p class="text-slate-400">Sign in to access the admin dashboard</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-8">
+            <form id="account" method="post">
+                <div asp-validation-summary="ModelOnly" class="mb-6 p-4 bg-red-900/50 border border-red-700/50 rounded-xl text-red-200 text-sm" role="alert"></div>
+
+                <!-- Email Input -->
+                <div class="mb-5">
+                    <label asp-for="Input.Email" class="block text-slate-300 text-sm font-medium mb-2">
+                        Email Address
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="mail" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <input asp-for="Input.Email"
+                               class="block w-full pl-12 pr-4 py-3.5 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200"
+                               placeholder="admin@jopart.com"
+                               autocomplete="username"
+                               aria-required="true" />
+                        <span asp-validation-for="Input.Email" class="text-red-400 text-sm mt-1 block"></span>
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="mb-5">
+                    <label asp-for="Input.Password" class="block text-slate-300 text-sm font-medium mb-2">
+                        Password
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="lock" class="w-5 h-5 text-slate-400"></i>
+                        </div>
+                        <input asp-for="Input.Password"
+                               type="password"
+                               class="block w-full pl-12 pr-4 py-3.5 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200"
+                               placeholder="Enter your password"
+                               autocomplete="current-password"
+                               aria-required="true" />
+                        <span asp-validation-for="Input.Password" class="text-red-400 text-sm mt-1 block"></span>
+                    </div>
+                </div>
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center">
+                        <input asp-for="Input.RememberMe"
+                               type="checkbox"
+                               class="w-4 h-4 text-brand-600 bg-slate-700 border-slate-600 rounded focus:ring-brand-500 focus:ring-2 cursor-pointer" />
+                        <label asp-for="Input.RememberMe" class="ml-2 text-sm text-slate-300 cursor-pointer">
+                            Remember me
+                        </label>
+                    </div>
+                    <a id="forgot-password" asp-page="./ForgotPassword" class="text-sm text-brand-400 hover:text-brand-300 transition-colors">
+                        Forgot password?
+                    </a>
+                </div>
+
+                <!-- Submit Button -->
+                <button id="login-submit" type="submit"
+                        class="w-full flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50 transform hover:scale-[1.02]">
+                    <i data-lucide="log-in" class="w-5 h-5 mr-2"></i>
+                    Sign In to Dashboard
+                </button>
+
+                <!-- Register Link -->
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-slate-400">
+                        Don't have an account?
+                        <a id="register-link" asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+                            Create account
+                        </a>
+                    </p>
+                </div>
+
+                <!-- Resend Confirmation -->
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-slate-500">
+                        <a id="resend-confirmation" asp-page="./ResendEmailConfirmation" class="hover:text-slate-400 transition-colors">
+                            Resend email confirmation
+                        </a>
+                    </p>
+                </div>
+            </form>
+        </div>
+
+        <!-- External Logins (if configured) -->
+        @if ((Model.ExternalLogins?.Count ?? 0) > 0)
+        {
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-6">
+                <div class="relative mb-4">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-slate-700"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-slate-800 text-slate-400">Or continue with</span>
+                    </div>
+                </div>
+                <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                    <div class="space-y-3">
+                        @foreach (var provider in Model.ExternalLogins!)
+                        {
+                            <button type="submit"
+                                    name="provider"
+                                    value="@provider.Name"
+                                    title="Log in using your @provider.DisplayName account"
+                                    class="w-full flex items-center justify-center px-4 py-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 rounded-xl text-white text-sm font-medium transition-all duration-200">
+                                <i data-lucide="@provider.Name.ToLower()" class="w-5 h-5 mr-2"></i>
+                                @provider.DisplayName
+                            </button>
+                        }
+                    </div>
+                </form>
+            </div>
+        }
+
+        <!-- Security Notice -->
+        <div class="text-center">
+            <p class="text-xs text-slate-500 flex items-center justify-center">
+                <i data-lucide="shield-check" class="w-4 h-4 mr-1"></i>
+                Secured by Jopart Authentication System
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Auto-focus email field
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.querySelector('input[type="email"]');
+            if (emailInput) {
+                emailInput.focus();
+            }
+
+            // Re-initialize icons after a short delay for dynamic content
+            setTimeout(() => lucide.createIcons(), 100);
+        });
+
+        // Add loading state to submit button
+        document.getElementById('account').addEventListener('submit', function(e) {
+            const submitButton = document.getElementById('login-submit');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 mr-2 animate-spin"></i>Signing in...';
+            lucide.createIcons();
+        });
+    </script>
+}

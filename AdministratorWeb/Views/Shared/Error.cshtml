@@ -1,0 +1,65 @@
+﻿@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<!-- Error Page -->
+<div class="min-h-screen flex items-center justify-center px-4 py-16">
+    <div class="max-w-2xl mx-auto text-center">
+        <!-- Error Icon -->
+        <div class="w-24 h-24 bg-red-500/20 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-slide-up">
+            <i data-lucide="alert-triangle" class="h-12 w-12 text-red-400"></i>
+        </div>
+        
+        <!-- Error Message -->
+        <div class="animate-slide-up" style="animation-delay: 0.1s;">
+            <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">Oops! Something went wrong</h1>
+            <h2 class="text-xl text-slate-400 mb-8">An error occurred while processing your request.</h2>
+        </div>
+
+        @if (Model.ShowRequestId)
+        {
+            <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 mb-8 animate-slide-up" style="animation-delay: 0.2s;">
+                <div class="flex items-center justify-center space-x-3">
+                    <i data-lucide="hash" class="w-4 h-4 text-slate-400"></i>
+                    <span class="text-slate-300 font-medium">Request ID:</span>
+                    <code class="px-3 py-1 bg-slate-700/50 rounded-lg text-brand-400 font-mono text-sm">@Model.RequestId</code>
+                </div>
+            </div>
+        }
+
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up" style="animation-delay: 0.3s;">
+            <a href="javascript:history.back()" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                Go Back
+            </a>
+            <a asp-controller="Home" asp-action="Index" class="inline-flex items-center px-6 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200">
+                <i data-lucide="home" class="w-4 h-4 mr-2"></i>
+                Home Page
+            </a>
+        </div>
+
+        <!-- Development Info -->
+        @if (ViewContext.HttpContext.Request.Headers["Host"].ToString().Contains("localhost") || ViewContext.HttpContext.Request.Headers["Host"].ToString().Contains("127.0.0.1"))
+        {
+            <div class="mt-12 bg-slate-800/30 rounded-2xl p-6 border border-slate-700/30 text-left animate-slide-up" style="animation-delay: 0.4s;">
+                <div class="flex items-center mb-4">
+                    <i data-lucide="code" class="w-5 h-5 text-yellow-400 mr-2"></i>
+                    <h3 class="text-lg font-semibold text-white">Development Mode</h3>
+                </div>
+                <div class="space-y-3 text-sm text-slate-400">
+                    <p>Swapping to <span class="text-yellow-400 font-medium">Development</span> environment will display more detailed information about the error that occurred.</p>
+                    <div class="bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4">
+                        <p class="text-yellow-300">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 inline mr-2"></i>
+                            <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
+                            It can result in displaying sensitive information from exceptions to end users.
+                        </p>
+                    </div>
+                    <p>For local debugging, enable the <span class="text-brand-400 font-medium">Development</span> environment by setting the <code class="px-2 py-1 bg-slate-700/50 rounded text-brand-300">ASPNETCORE_ENVIRONMENT</code> environment variable to <code class="px-2 py-1 bg-slate-700/50 rounded text-brand-300">Development</code> and restarting the app.</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Follower Camera Debug - Python Algorithm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'monospace']
+                    },
+                    colors: {
+                        'terminal': {
+                            'bg': '#0f172a',
+                            'surface': '#1e293b',
+                            'accent': '#10b981',
+                            'warning': '#f59e0b',
+                            'error': '#ef4444',
+                            'text': '#e2e8f0',
+                            'muted': '#94a3b8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-terminal-bg text-terminal-text font-sans">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-terminal-surface to-slate-700 border-b border-terminal-accent/20">
+            <div class="max-w-7xl mx-auto px-6 py-8">
+                <div class="text-center">
+                    <h1 class="text-4xl font-bold text-terminal-accent mb-2 font-mono">
+                        🎯 Line Follower Camera Debug
+                    </h1>
+                    <p class="text-terminal-muted text-lg">Python Algorithm Implementation - Real-time Line Detection</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Camera Feed - Takes 2 columns -->
+                <div class="lg:col-span-2">
+                    <div class="bg-terminal-surface rounded-xl border border-terminal-accent/20 overflow-hidden">
+                        <div class="p-6 border-b border-gray-700">
+                            <h2 class="text-xl font-semibold text-terminal-accent flex items-center gap-2">
+                                📹 Live Camera Feed
+                            </h2>
+                        </div>
+                        
+                        <div class="p-6">
+                            <!-- Camera Container - Fixed single image display -->
+                            <div id="cameraContainer" class="relative bg-black rounded-lg overflow-hidden">
+                                <img
+                                    id="cameraFeed"
+                                    class="w-full h-auto object-contain"
+                                    src="/Camera/image"
+                                    alt="Camera Feed"
+                                    style="max-height: 480px;"
+                                >
+                                <div id="fpsCounter"
+                                     class="absolute top-4 right-4 bg-black/70 text-terminal-accent px-3 py-1 rounded-lg font-mono text-sm">
+                                    FPS: --
+                                </div>
+                            </div>
+                            
+                            <!-- Control Buttons -->
+                            <div class="flex flex-wrap gap-3 mt-6">
+                                <button id="toggleCameraBtn" onclick="toggleCameraFeed()"
+                                        class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                                    📹 Hide Camera
+                                </button>
+                                <button onclick="resetLineMemory()"
+                                        class="bg-terminal-accent/10 hover:bg-terminal-accent/20 text-terminal-accent border border-terminal-accent/30 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                                    🧠 Reset Memory
+                                </button>
+                                <button onclick="togglePause()"
+                                        class="bg-terminal-warning/10 hover:bg-terminal-warning/20 text-terminal-warning border border-terminal-warning/30 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                                    ⏸️ Pause/Resume
+                                </button>
+                                <button onclick="refreshFeed()"
+                                        class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                                    🔄 Refresh
+                                </button>
+                                <button onclick="turnAround()"
+                                        class="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                                    ↻ Turn 180°
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manual Control Panel -->
+                    <div class="bg-terminal-surface rounded-xl border border-terminal-accent/20 overflow-hidden mt-8">
+                        <div class="p-6 border-b border-gray-700">
+                            <h2 class="text-xl font-semibold text-terminal-accent flex items-center gap-2">
+                                🎮 Manual Control
+                            </h2>
+                        </div>
+
+                        <div class="p-6">
+                            <!-- D-Pad Style Control -->
+                            <div class="flex flex-col items-center gap-3">
+                                <!-- Forward Button -->
+                                <button onclick="sendMotorCommand('forward', '⬆️')"
+                                        class="w-20 h-20 bg-terminal-accent/10 hover:bg-terminal-accent/20 active:bg-terminal-accent/30 text-terminal-accent border-2 border-terminal-accent/30 rounded-lg font-bold text-2xl transition-all duration-150 shadow-lg hover:shadow-terminal-accent/20">
+                                    ⬆️
+                                </button>
+
+                                <!-- Left, Stop, Right Row -->
+                                <div class="flex items-center gap-3">
+                                    <button onclick="sendMotorCommand('turn-left', '⬅️')"
+                                            class="w-20 h-20 bg-terminal-accent/10 hover:bg-terminal-accent/20 active:bg-terminal-accent/30 text-terminal-accent border-2 border-terminal-accent/30 rounded-lg font-bold text-2xl transition-all duration-150 shadow-lg hover:shadow-terminal-accent/20">
+                                        ⬅️
+                                    </button>
+                                    <button onclick="sendMotorCommand('stop', '🛑')"
+                                            class="w-20 h-20 bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-400 border-2 border-red-500/30 rounded-lg font-bold text-2xl transition-all duration-150 shadow-lg hover:shadow-red-500/20">
+                                        🛑
+                                    </button>
+                                    <button onclick="sendMotorCommand('turn-right', '➡️')"
+                                            class="w-20 h-20 bg-terminal-accent/10 hover:bg-terminal-accent/20 active:bg-terminal-accent/30 text-terminal-accent border-2 border-terminal-accent/30 rounded-lg font-bold text-2xl transition-all duration-150 shadow-lg hover:shadow-terminal-accent/20">
+                                        ➡️
+                                    </button>
+                                </div>
+
+                                <!-- Backward Button -->
+                                <button onclick="sendMotorCommand('backward', '⬇️')"
+                                        class="w-20 h-20 bg-terminal-accent/10 hover:bg-terminal-accent/20 active:bg-terminal-accent/30 text-terminal-accent border-2 border-terminal-accent/30 rounded-lg font-bold text-2xl transition-all duration-150 shadow-lg hover:shadow-terminal-accent/20">
+                                    ⬇️
+                                </button>
+                            </div>
+
+                            <!-- Status Display -->
+                            <div id="motorStatus" class="mt-4 text-center text-sm text-terminal-muted">
+                                Ready
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Panel - Takes 1 column -->
+                <div class="space-y-6">
+                    <!-- Line Detection Status -->
+                    <div class="bg-terminal-surface rounded-xl border border-terminal-accent/20">
+                        <div class="p-4 border-b border-gray-700">
+                            <h3 class="font-semibold text-terminal-accent">📊 Line Detection Status</h3>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Line Detected:</span>
+                                <span id="lineDetected" class="font-mono font-medium">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Position:</span>
+                                <span id="linePosition" class="font-mono font-medium">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Error:</span>
+                                <span id="lineError" class="font-mono font-medium">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Method:</span>
+                                <span id="detectionMethod" class="font-mono font-medium">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Action:</span>
+                                <span id="recommendedAction" class="font-mono font-medium">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Visualization -->
+                    <div class="bg-terminal-surface rounded-xl border border-terminal-accent/20">
+                        <div class="p-4 border-b border-gray-700">
+                            <h3 class="font-semibold text-terminal-accent">🎯 Error Visualization</h3>
+                        </div>
+                        <div class="p-4">
+                            <div class="relative h-6 rounded-full overflow-hidden mb-4" 
+                                 style="background: linear-gradient(to right, #ef4444 0%, #ef4444 20%, #f59e0b 20%, #f59e0b 35%, #eab308 35%, #eab308 45%, #10b981 45%, #10b981 55%, #eab308 55%, #eab308 65%, #f59e0b 65%, #f59e0b 80%, #ef4444 80%, #ef4444 100%);">
+                                <div id="errorPointer" 
+                                     class="absolute top-0 w-1 h-full bg-white border border-black transition-all duration-200"
+                                     style="display: none;"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div class="bg-red-500 text-white px-2 py-1 rounded text-center">Extreme &gt;150px</div>
+                                <div class="bg-orange-500 text-white px-2 py-1 rounded text-center">Large 80-150px</div>
+                                <div class="bg-yellow-500 text-black px-2 py-1 rounded text-center">Medium 30-80px</div>
+                                <div class="bg-green-500 text-black px-2 py-1 rounded text-center">Small &lt;30px</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Memory & Confidence -->
+                    <div class="bg-terminal-surface rounded-xl border border-terminal-accent/20">
+                        <div class="p-4 border-b border-gray-700">
+                            <h3 class="font-semibold text-terminal-accent">🧠 Memory & Confidence</h3>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Using Memory:</span>
+                                <span id="usingMemory" class="font-mono font-medium">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Time Since Line:</span>
+                                <span id="timeSinceLine" class="font-mono font-medium">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Confidence:</span>
+                                <span id="confidence" class="font-mono font-medium">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Algorithm Parameters -->
+                    <div class="bg-terminal-surface rounded-xl border border-terminal-accent/20">
+                        <div class="p-4 border-b border-gray-700">
+                            <h3 class="font-semibold text-terminal-accent">⚙️ Algorithm Parameters</h3>
+                        </div>
+                        <div class="p-4 space-y-3 text-sm">
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">PID:</span>
+                                <span class="font-mono">Kp=0.2, Ki=0.0, Kd=0.05</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">ROI:</span>
+                                <span class="font-mono">70% from 30% down</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Binary Thresh:</span>
+                                <span class="font-mono">60</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-terminal-muted">Adaptive:</span>
+                                <span class="font-mono">Block=11, C=7</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Algorithm Info -->
+                    <div class="bg-gradient-to-br from-terminal-accent/5 to-green-500/5 rounded-xl border border-terminal-accent/30">
+                        <div class="p-4 border-b border-terminal-accent/20">
+                            <h4 class="font-semibold text-terminal-accent">🐍 Python Algorithm Match</h4>
+                        </div>
+                        <div class="p-4 text-sm space-y-1">
+                            <div class="text-terminal-accent">✅ Image processing: Exact match</div>
+                            <div class="text-terminal-accent">✅ Thresholds: 30/80/150px</div>
+                            <div class="text-terminal-accent">✅ PID parameters: 0.2/0.0/0.05</div>
+                            <div class="text-terminal-accent">✅ Line memory: 3.0s timeout</div>
+                            <div class="text-terminal-accent">✅ Motor control: Exact pin mapping</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let isPaused = false;
+    let frameCount = 0;
+    let lastFpsTime = Date.now();
+    let refreshInterval;
+
+    function initializeApp() {
+        refreshFeed();
+        startStatusUpdates();
+        console.log("🎯 Line Follower Camera Debug initialized");
+    }
+
+    function refreshFeed() {
+        if (isPaused) return;
+
+        const cameraFeed = document.getElementById('cameraFeed');
+        const timestamp = new Date().getTime();
+        
+        // Fix potential caching/grid issues by ensuring unique URL and proper loading
+        cameraFeed.onload = function() {
+            frameCount++;
+            updateFPS();
+        };
+        
+        cameraFeed.onerror = function() {
+            console.warn('📹 Camera feed error, retrying in 1 second...');
+            setTimeout(refreshFeed, 1000);
+        };
+        
+        cameraFeed.src = `/Camera/image?t=${timestamp}&_=${Math.random()}`;
+    }
+
+    function updateFPS() {
+        const now = Date.now();
+        if (now - lastFpsTime >= 1000) {
+            const fps = frameCount;
+            document.getElementById('fpsCounter').textContent = `FPS: ${fps}`;
+            frameCount = 0;
+            lastFpsTime = now;
+        }
+    }
+
+    function startStatusUpdates() {
+        updateStatus();
+        setInterval(updateStatus, 500); // Update status 2 times per second (optimized)
+
+        // Refresh camera feed at 10 FPS (100ms intervals)
+        refreshInterval = setInterval(refreshFeed, 100); // 10 FPS
+    }
+
+    async function updateStatus() {
+        try {
+            const response = await fetch('/Camera/detection');
+            const data = await response.json();
+
+            // Update basic status
+            document.getElementById('lineDetected').textContent = data.detected ? '✅ YES' : '❌ NO';
+            document.getElementById('lineDetected').className = data.detected ? 'status-data' : 'status-data pulsing';
+
+            document.getElementById('linePosition').textContent = data.position || '--';
+            document.getElementById('lineError').textContent = data.error ? `${data.error}px` : '--';
+            document.getElementById('detectionMethod').textContent = data.method || '--';
+            document.getElementById('recommendedAction').textContent = data.analysis.recommendedAction || '--';
+
+            // Update memory status
+            document.getElementById('usingMemory').textContent = data.usingMemory ? '🧠 YES' : '📷 NO';
+            document.getElementById('timeSinceLine').textContent = data.timeSinceLastLine ?
+                `${data.timeSinceLastLine.toFixed(1)}s` : '--';
+            document.getElementById('confidence').textContent = data.analysis.confidence ?
+                `${(data.analysis.confidence * 100).toFixed(0)}%` : '--';
+
+            // Update error visualization
+            updateErrorVisualization(data.error, data.frameWidth);
+
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    }
+
+    function updateErrorVisualization(error, frameWidth) {
+        const pointer = document.getElementById('errorPointer');
+        if (error !== null && frameWidth) {
+            const frameCenter = frameWidth / 2;
+            const maxError = frameCenter; // Maximum possible error
+            const normalizedError = error / maxError; // -1 to 1
+            const position = 50 + (normalizedError * 50); // Convert to 0-100%
+            pointer.style.left = `${Math.max(0, Math.min(100, position))}%`;
+            pointer.style.display = 'block';
+        } else {
+            pointer.style.display = 'none';
+        }
+    }
+
+    async function resetLineMemory() {
+        try {
+            const response = await fetch('/Camera/reset-memory', { method: 'POST' });
+            const data = await response.json();
+
+            if (data.success) {
+                console.log('✅ Line memory reset successfully');
+                // Visual feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Reset!';
+                button.style.backgroundColor = '#004400';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '';
+                }, 1000);
+            }
+        } catch (error) {
+            console.error('❌ Error resetting line memory:', error);
+        }
+    }
+
+    function toggleCameraFeed() {
+        const container = document.getElementById('cameraContainer');
+        const button = document.getElementById('toggleCameraBtn');
+
+        if (container.style.display === 'none') {
+            // Show camera
+            container.style.display = 'block';
+            if (!isPaused) {
+                refreshInterval = setInterval(refreshFeed, 100); // Resume 10 FPS
+            }
+            button.textContent = '📹 Hide Camera';
+            button.className = 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2';
+            console.log('📹 Camera feed shown');
+        } else {
+            // Hide camera
+            container.style.display = 'none';
+            clearInterval(refreshInterval);
+            button.textContent = '📹 Show Camera';
+            button.className = 'bg-slate-500/10 hover:bg-slate-500/20 text-slate-400 border border-slate-500/30 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2';
+            console.log('📹 Camera feed hidden - 100% CPU for manual control');
+        }
+    }
+
+    function togglePause() {
+        isPaused = !isPaused;
+        const button = event.target;
+
+        if (isPaused) {
+            clearInterval(refreshInterval);
+            button.textContent = '▶️ Resume';
+            console.log('⏸️ Camera feed paused');
+        } else {
+            refreshInterval = setInterval(refreshFeed, 100); // 10 FPS
+            button.textContent = '⏸️ Pause';
+            console.log('▶️ Camera feed resumed');
+        }
+    }
+
+    async function turnAround() {
+        try {
+            const button = event.target;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = '↻ Turning...';
+            button.style.backgroundColor = '#6b21a8';
+
+            const response = await fetch('/Motor/turn-around', { method: 'POST' });
+            const data = await response.json();
+
+            if (data.success) {
+                console.log('✅ 180-degree turn completed');
+                button.textContent = '✅ Completed!';
+                button.style.backgroundColor = '#059669';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '';
+                    button.disabled = false;
+                }, 1500);
+            } else {
+                throw new Error(data.message || 'Turn failed');
+            }
+        } catch (error) {
+            console.error('❌ Error turning around:', error);
+            const button = event.target;
+            button.textContent = '❌ Error';
+            button.style.backgroundColor = '#dc2626';
+            setTimeout(() => {
+                button.textContent = '↻ Turn 180°';
+                button.style.backgroundColor = '';
+                button.disabled = false;
+            }, 2000);
+        }
+    }
+
+    async function sendMotorCommand(command, icon) {
+        try {
+            const statusDiv = document.getElementById('motorStatus');
+            statusDiv.textContent = `Sending ${command}...`;
+            statusDiv.className = 'mt-4 text-center text-sm text-terminal-warning';
+
+            const response = await fetch(`/Motor/${command}`, { method: 'POST' });
+            const data = await response.json();
+
+            if (data.success) {
+                console.log(`✅ ${command} command successful`);
+                statusDiv.textContent = `${icon} ${data.message}`;
+                statusDiv.className = 'mt-4 text-center text-sm text-terminal-accent';
+            } else {
+                throw new Error(data.message || `${command} failed`);
+            }
+        } catch (error) {
+            console.error(`❌ Error sending ${command} command:`, error);
+            const statusDiv = document.getElementById('motorStatus');
+            statusDiv.textContent = `❌ Error: ${error.message}`;
+            statusDiv.className = 'mt-4 text-center text-sm text-red-400';
+        }
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', initializeApp);
+</script>
+</body>
+</html>

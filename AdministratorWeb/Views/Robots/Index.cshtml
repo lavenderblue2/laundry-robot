@@ -1,0 +1,275 @@
+@model IEnumerable<AdministratorWeb.Models.ConnectedRobot>
+@{
+ViewData["Title"] = "Connected Robots";
+}
+
+<!-- Dashboard Header -->
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Connected Robots</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="bot" class="w-4 h-4 mr-2"></i>
+                Monitor robots that are currently connected to the system
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div class="bg-slate-800/50 backdrop-blur-xl px-4 py-2 rounded-xl border border-slate-700/50 shadow-lg">
+                <span class="text-sm text-slate-400 flex items-center">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 mr-2 animate-spin"></i>
+                    Auto-refresh every 3s
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up" style="animation-delay: 0.1s;" id="robotsGrid">
+    <!-- Robots will be loaded via JavaScript -->
+</div>
+
+<div id="noRobotsMessage" class="text-center py-16" style="display: none;">
+    <div class="w-20 h-20 bg-slate-700/50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+        <i data-lucide="bot" class="h-10 w-10 text-slate-500"></i>
+    </div>
+    <h3 class="text-xl font-medium text-white mb-3">No Robots Connected</h3>
+    <p class="text-slate-400 mb-8 max-w-md mx-auto">Robots will appear here automatically when they connect to the system.</p>
+
+    <div class="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 max-w-lg mx-auto shadow-xl">
+        <div class="flex items-center mb-4">
+            <i data-lucide="info" class="w-5 h-5 text-brand-400 mr-2"></i>
+            <h4 class="text-white font-semibold">Connection Instructions</h4>
+        </div>
+        <ol class="text-sm text-slate-400 text-left space-y-2">
+            <li class="flex items-start">
+                <span class="inline-block w-6 h-6 bg-brand-600 text-white text-xs font-bold rounded-full flex items-center justify-center mr-3 mt-0.5">1</span>
+                <span>Start the LineFollowerRobot application</span>
+            </li>
+            <li class="flex items-start">
+                <span class="inline-block w-6 h-6 bg-brand-600 text-white text-xs font-bold rounded-full flex items-center justify-center mr-3 mt-0.5">2</span>
+                <span>Ensure it has network access to this server</span>
+            </li>
+            <li class="flex items-start">
+                <span class="inline-block w-6 h-6 bg-brand-600 text-white text-xs font-bold rounded-full flex items-center justify-center mr-3 mt-0.5">3</span>
+                <span>Robot will automatically appear here once connected</span>
+            </li>
+        </ol>
+    </div>
+</div>
+
+<script>
+    let refreshInterval;
+
+    function refreshRobots() {
+        fetch('/api/robots')
+            .then(response => response.json())
+            .then(robots => {
+                updateRobotsGrid(robots);
+            })
+            .catch(error => console.error('Error refreshing robots:', error));
+    }
+
+    function updateRobotsGrid(robots) {
+        const grid = document.getElementById('robotsGrid');
+        const noRobotsMessage = document.getElementById('noRobotsMessage');
+
+        if (!grid) return;
+
+        if (robots.length === 0) {
+            grid.style.display = 'none';
+            noRobotsMessage.style.display = 'block';
+        } else {
+            grid.style.display = 'grid';
+            noRobotsMessage.style.display = 'none';
+            grid.innerHTML = robots.map(robot => createRobotCard(robot)).join('');
+        }
+
+        // Re-initialize lucide icons
+        lucide.createIcons();
+    }
+
+    function createRobotCard(robot) {
+        const statusColor = robot.isOffline ? 'red' : (robot.isActive ? 'emerald' : 'yellow');
+        const statusText = robot.isOffline ? 'Offline' : (robot.isActive ? 'Online' : 'Inactive');
+        const lastPing = robot.lastPing ? new Date(robot.lastPing).toLocaleTimeString() : 'Never';
+        const connectedTime = robot.connectedAt ? new Date(robot.connectedAt).toLocaleString() : 'Unknown';
+
+        return `
+            <div class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-brand-500/50 transition-all duration-300 hover:scale-105 transform">
+                <div class="absolute inset-0 bg-gradient-to-br from-brand-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div class="relative p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-brand-500/20 rounded-xl">
+                                <i data-lucide="bot" class="h-6 w-6 text-brand-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white">${robot.name}</h3>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="h-3 w-3 rounded-full bg-${statusColor}-400 ${robot.isActive && !robot.isOffline ? 'animate-pulse' : ''} shadow-lg"></div>
+                            <span class="text-sm font-medium text-${statusColor}-400">
+                                ${statusText}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center text-sm text-slate-400">
+                            <i data-lucide="globe" class="w-4 h-4 mr-3 text-slate-500"></i>
+                            <span>${robot.ipAddress}</span>
+                        </div>
+                        ${robot.currentLocation ? `
+                        <div class="flex items-center text-sm text-slate-400">
+                            <i data-lucide="map-pin" class="w-4 h-4 mr-3 text-slate-500"></i>
+                            <span>${robot.currentLocation}</span>
+                        </div>
+                        ` : ''}
+                        ${robot.currentTask ? `
+                        <div class="flex items-center text-sm">
+                            <i data-lucide="activity" class="w-4 h-4 mr-3 text-brand-400"></i>
+                            <span class="text-brand-400 font-medium">${robot.currentTask}</span>
+                        </div>
+                        ` : ''}
+                        <div class="flex items-center text-sm text-slate-400">
+                            <i data-lucide="clock" class="w-4 h-4 mr-3 text-slate-500"></i>
+                            <span>Last ping: ${lastPing}</span>
+                        </div>
+                        <div class="flex items-center text-sm text-slate-400">
+                            <i data-lucide="wifi" class="w-4 h-4 mr-3 text-slate-500"></i>
+                            <span>Connected: ${new Date(robot.connectedAt).toLocaleDateString()} ${new Date(robot.connectedAt).toLocaleTimeString()}</span>
+                        </div>
+                        
+                        ${robot.activeRequest ? `
+                        <div class="flex items-center text-sm mt-3 p-3 bg-brand-500/10 border border-brand-500/30 rounded-lg">
+                            <i data-lucide="user" class="w-4 h-4 mr-3 text-brand-400"></i>
+                            <div class="flex-1">
+                                <span class="text-brand-400 font-medium">Active Request #${robot.activeRequest.id}</span>
+                                <div class="text-xs text-slate-400 mt-1">
+                                    Customer: ${robot.activeRequest.customerName} (${robot.activeRequest.customerId})
+                                </div>
+                                <div class="text-xs text-brand-400 font-medium">
+                                    Status: ${robot.activeRequest.status}
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-3">
+                            <span class="px-3 py-1 text-xs font-semibold rounded-lg ${getStatusBadgeClass(robot.status)}">
+                                ${robot.status}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="toggleStatus('${robot.name}')" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${robot.isActive ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-600/30' : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-600/30'} whitespace-nowrap" ${robot.isOffline ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}>
+                            <i data-lucide="${robot.isActive ? 'pause' : 'play'}" class="w-3 h-3 mr-2 flex-shrink-0"></i>
+                            <span>${robot.isActive ? 'Deactivate' : 'Activate'}</span>
+                        </button>
+                        <button onclick="toggleAcceptRequests('${robot.name}')" 
+                                class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200 ${robot.canAcceptRequests ? 'bg-orange-600/20 text-orange-400 hover:bg-orange-600/30 border border-orange-600/30' : 'bg-brand-600/20 text-brand-400 hover:bg-brand-600/30 border border-brand-600/30'} whitespace-nowrap" ${robot.isOffline ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}>
+                            <i data-lucide="${robot.canAcceptRequests ? 'minus' : 'plus'}" class="w-3 h-3 mr-2 flex-shrink-0"></i>
+                            <span>${robot.canAcceptRequests ? 'Disable' : 'Enable'}</span>
+                        </button>
+                    </div>
+                    <div class="mt-4 flex items-center justify-between pt-4 border-t border-slate-700/50">
+                        <a href="/Robots/Details?name=${encodeURIComponent(robot.name)}" class="inline-flex items-center text-sm text-brand-400 hover:text-brand-300 transition-colors font-medium whitespace-nowrap">
+                            <i data-lucide="external-link" class="w-3 h-3 mr-2 flex-shrink-0"></i>
+                            <span>View Details</span>
+                        </a>
+                        <button onclick="disconnect('${robot.name}')" class="inline-flex items-center text-sm text-red-400 hover:text-red-300 transition-colors font-medium whitespace-nowrap">
+                            <i data-lucide="x" class="w-3 h-3 mr-2 flex-shrink-0"></i>
+                            <span>Disconnect</span>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function getStatusBadgeClass(status) {
+        switch (status) {
+            case 'Available': return 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/50';
+            case 'Busy': return 'bg-brand-900/50 text-brand-300 border border-brand-700/50';
+            case 'Maintenance': return 'bg-yellow-900/50 text-yellow-300 border border-yellow-700/50';
+            default: return 'bg-slate-700 text-slate-300 border border-slate-600';
+        }
+    }
+
+    async function toggleStatus(name) {
+        const formData = new FormData();
+        formData.append('name', name);
+
+        try {
+            const response = await fetch('/Robots/ToggleStatus', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                setTimeout(refreshRobots, 500);
+            }
+        } catch (error) {
+            console.error('Error toggling robot status:', error);
+        }
+    }
+
+    async function toggleAcceptRequests(name) {
+        const formData = new FormData();
+        formData.append('name', name);
+
+        try {
+            const response = await fetch('/Robots/ToggleAcceptRequests', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                setTimeout(refreshRobots, 500);
+            }
+        } catch (error) {
+            console.error('Error toggling robot requests:', error);
+        }
+    }
+
+    async function disconnect(name) {
+        if (!confirm(`Are you sure you want to disconnect robot "${name}"?`)) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', name);
+
+        try {
+            const response = await fetch('/Robots/Disconnect', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                setTimeout(refreshRobots, 500);
+            }
+        } catch (error) {
+            console.error('Error disconnecting robot:', error);
+        }
+    }
+
+    // Start auto-refresh immediately and then every 3 seconds
+    document.addEventListener('DOMContentLoaded', function () {
+        refreshRobots(); // Initial load
+        refreshInterval = setInterval(refreshRobots, 3000); // Then every 3 seconds
+        lucide.createIcons(); // Initialize icons
+    });
+
+    // Stop auto-refresh when page is hidden/closed
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') {
+            clearInterval(refreshInterval);
+        } else if (!refreshInterval) {
+            refreshRobots();
+            refreshInterval = setInterval(refreshRobots, 3000);
+        }
+    });
+</script>

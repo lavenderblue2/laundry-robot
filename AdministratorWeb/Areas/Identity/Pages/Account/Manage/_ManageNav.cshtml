@@ -1,0 +1,49 @@
+@inject SignInManager<ApplicationUser> SignInManager
+@{
+    var hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
+}
+
+<!-- Management Navigation -->
+<div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-4 mb-6">
+    <nav class="flex flex-wrap gap-2">
+        <a asp-page="./Index" class="@(ViewContext.RouteData.Values["page"]?.ToString() == "/Account/Manage/Index" ? "bg-brand-600 text-white" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white") inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+            <i data-lucide="user" class="w-4 h-4 mr-2"></i>
+            Profile
+        </a>
+
+        <a asp-page="./Email" class="@(ViewContext.RouteData.Values["page"]?.ToString() == "/Account/Manage/Email" ? "bg-brand-600 text-white" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white") inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+            <i data-lucide="mail" class="w-4 h-4 mr-2"></i>
+            Email
+        </a>
+
+        <a asp-page="./ChangePassword" class="@(ViewContext.RouteData.Values["page"]?.ToString() == "/Account/Manage/ChangePassword" ? "bg-brand-600 text-white" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white") inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+            <i data-lucide="lock" class="w-4 h-4 mr-2"></i>
+            Password
+        </a>
+
+        @if (hasExternalLogins)
+        {
+            <a asp-page="./ExternalLogins" class="@(ViewContext.RouteData.Values["page"]?.ToString() == "/Account/Manage/ExternalLogins" ? "bg-brand-600 text-white" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white") inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                <i data-lucide="link" class="w-4 h-4 mr-2"></i>
+                External logins
+            </a>
+        }
+
+        <a asp-page="./TwoFactorAuthentication" class="@(ViewContext.RouteData.Values["page"]?.ToString() == "/Account/Manage/TwoFactorAuthentication" ? "bg-brand-600 text-white" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white") inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+            <i data-lucide="shield-check" class="w-4 h-4 mr-2"></i>
+            Two-factor
+        </a>
+
+        <a asp-page="./PersonalData" class="@(ViewContext.RouteData.Values["page"]?.ToString() == "/Account/Manage/PersonalData" ? "bg-brand-600 text-white" : "bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white") inline-flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+            <i data-lucide="database" class="w-4 h-4 mr-2"></i>
+            Personal data
+        </a>
+    </nav>
+</div>
+
+<script>
+    // Initialize Lucide icons after the page loads
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>

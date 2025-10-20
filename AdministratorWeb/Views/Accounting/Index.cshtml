@@ -1,0 +1,269 @@
+@model IEnumerable<AdministratorWeb.Models.Payment>
+@using AdministratorWeb.Models.DTOs
+@{
+    ViewData["Title"] = "Accounting Dashboard";
+    var accountingData = (AccountingIndexDto)ViewData["AccountingData"]!;
+}
+
+<!-- Dashboard Header -->
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Accounting Dashboard</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="credit-card" class="w-4 h-4 mr-2"></i>
+                Financial overview and payment management
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a asp-action="Adjustments" class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="edit-3" class="w-4 h-4 mr-2"></i>
+                Adjustments
+            </a>
+            <a asp-action="Payments" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="search" class="w-4 h-4 mr-2"></i>
+                View All Payments
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Overview Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+    <!-- Total Revenue Card -->
+    <div class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-emerald-500/50 transition-all duration-300 hover:scale-105 transform">
+        <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <div class="p-2 bg-emerald-500/20 rounded-xl">
+                            <i data-lucide="dollar-sign" class="h-6 w-6 text-emerald-400"></i>
+                        </div>
+                        <span class="ml-2 text-xs font-medium text-emerald-400 uppercase tracking-wider">Total</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-1">₱@accountingData.TotalRevenue.ToString("N0")</div>
+                    <div class="text-sm text-slate-400">Total Revenue</div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-green-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+    </div>
+
+    <!-- Today's Revenue Card -->
+    <div class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-brand-500/50 transition-all duration-300 hover:scale-105 transform">
+        <div class="absolute inset-0 bg-gradient-to-br from-brand-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <div class="p-2 bg-brand-500/20 rounded-xl">
+                            <i data-lucide="calendar-days" class="h-6 w-6 text-brand-400"></i>
+                        </div>
+                        <span class="ml-2 text-xs font-medium text-brand-400 uppercase tracking-wider">Today</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-1">₱@accountingData.TodayRevenue.ToString("N0")</div>
+                    <div class="text-sm text-slate-400">Today's Revenue</div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+    </div>
+
+    <!-- Monthly Revenue Card -->
+    <div class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-purple-500/50 transition-all duration-300 hover:scale-105 transform">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <div class="p-2 bg-purple-500/20 rounded-xl">
+                            <i data-lucide="trending-up" class="h-6 w-6 text-purple-400"></i>
+                        </div>
+                        <span class="ml-2 text-xs font-medium text-purple-400 uppercase tracking-wider">Month</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-1">₱@accountingData.MonthRevenue.ToString("N0")</div>
+                    <div class="text-sm text-slate-400">This Month</div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+    </div>
+
+    <!-- Outstanding Card -->
+    <div class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-yellow-500/50 transition-all duration-300 hover:scale-105 transform">
+        <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <div class="p-2 bg-yellow-500/20 rounded-xl">
+                            <i data-lucide="alert-circle" class="h-6 w-6 text-yellow-400"></i>
+                        </div>
+                        <span class="ml-2 text-xs font-medium text-yellow-400 uppercase tracking-wider">Alert</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white mb-1">₱@accountingData.OutstandingAmount.ToString("N0")</div>
+                    <div class="text-sm text-slate-400">Outstanding</div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-orange-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+    </div>
+</div>
+
+<!-- Payment Statistics & Quick Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.2s;">
+    <!-- Payment Statistics -->
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50">
+        <div class="px-6 py-6 border-b border-slate-700/50">
+            <h3 class="text-xl font-bold text-white flex items-center">
+                <i data-lucide="bar-chart-3" class="w-5 h-5 mr-2 text-brand-400"></i>
+                Payment Statistics
+            </h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-2 gap-6">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-white mb-1">@accountingData.TotalPayments</div>
+                    <div class="text-sm text-slate-400">Total Payments</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-emerald-400 mb-1">@accountingData.CompletedPayments</div>
+                    <div class="text-sm text-slate-400">Completed</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-yellow-400 mb-1">@accountingData.PendingPayments</div>
+                    <div class="text-sm text-slate-400">Pending</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-red-400 mb-1">@accountingData.FailedPayments</div>
+                    <div class="text-sm text-slate-400">Failed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50">
+        <div class="px-6 py-6 border-b border-slate-700/50">
+            <h3 class="text-xl font-bold text-white flex items-center">
+                <i data-lucide="zap" class="w-5 h-5 mr-2 text-indigo-400"></i>
+                Quick Actions
+            </h3>
+        </div>
+        <div class="p-6 space-y-4">
+            <a asp-action="Payments" class="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="credit-card" class="w-4 h-4 mr-2"></i>
+                View All Payments
+            </a>
+            <a asp-action="Outstanding" class="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="alert-triangle" class="w-4 h-4 mr-2"></i>
+                Outstanding Payments (@accountingData.OutstandingCount)
+            </a>
+            <a asp-action="Adjustments" class="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="edit-3" class="w-4 h-4 mr-2"></i>
+                Manage Adjustments
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Payments -->
+<div class="bg-slate-800/50 backdrop-blur-xl shadow-xl overflow-hidden rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.3s;">
+    <div class="px-6 py-6 border-b border-slate-700/50">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-xl font-bold text-white">Recent Payments</h3>
+                <p class="mt-1 text-sm text-slate-400 flex items-center">
+                    <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
+                    Latest payment transactions
+                </p>
+            </div>
+            <button class="inline-flex items-center px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-white text-sm font-medium rounded-lg transition-all duration-200">
+                <i data-lucide="filter" class="w-4 h-4 mr-2"></i>
+                Filter
+            </button>
+        </div>
+    </div>
+    
+    <div class="divide-y divide-slate-700/30">
+        @if (Model.Any())
+        {
+            @foreach (var payment in Model)
+            {
+                <div class="px-6 py-4 hover:bg-slate-700/20 transition-colors duration-200 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-shrink-0">
+                                <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-brand-500/20 to-indigo-500/20 flex items-center justify-center group-hover:from-brand-500/30 group-hover:to-indigo-500/30 transition-all duration-200">
+                                    <i data-lucide="credit-card" class="h-5 w-5 text-brand-400"></i>
+                                </div>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center space-x-3">
+                                    <div class="text-sm font-semibold text-white">@payment.CustomerName</div>
+                                    <div class="text-sm font-medium text-emerald-400">₱@payment.Amount.ToString("N2")</div>
+                                </div>
+                                <div class="flex items-center mt-1 space-x-4">
+                                    <div class="text-sm text-slate-400">@payment.TransactionId</div>
+                                    <div class="text-sm text-slate-500">Request #@payment.LaundryRequestId</div>
+                                    <div class="text-sm text-slate-500">@payment.CreatedAt.ToString("MMM dd, HH:mm")</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="text-xs text-slate-400">@payment.Method</div>
+                            <span class="px-3 py-1 inline-flex items-center text-xs font-semibold rounded-lg 
+                                @(payment.Status == AdministratorWeb.Models.PaymentStatus.Completed ? "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50" :
+                                  payment.Status == AdministratorWeb.Models.PaymentStatus.Pending ? "bg-yellow-900/50 text-yellow-300 border border-yellow-700/50" :
+                                  payment.Status == AdministratorWeb.Models.PaymentStatus.Failed ? "bg-red-900/50 text-red-300 border border-red-700/50" :
+                                  "bg-slate-700 text-slate-300 border border-slate-600")">
+                                @switch (payment.Status)
+                                {
+                                    case AdministratorWeb.Models.PaymentStatus.Completed:
+                                        <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i>
+                                        break;
+                                    case AdministratorWeb.Models.PaymentStatus.Pending:
+                                        <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                                        break;
+                                    case AdministratorWeb.Models.PaymentStatus.Failed:
+                                        <i data-lucide="x-circle" class="w-3 h-3 mr-1"></i>
+                                        break;
+                                    default:
+                                        <i data-lucide="circle" class="w-3 h-3 mr-1"></i>
+                                        break;
+                                }
+                                @payment.Status
+                            </span>
+                            <a asp-action="CustomerProfile" asp-route-customerId="@payment.CustomerId" class="text-brand-400 hover:text-brand-300 text-sm font-medium transition-colors opacity-0 group-hover:opacity-100">
+                                View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="px-6 py-12 text-center">
+                <div class="w-16 h-16 bg-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="credit-card" class="h-8 w-8 text-slate-500"></i>
+                </div>
+                <h3 class="text-lg font-medium text-white mb-2">No Payments Yet</h3>
+                <p class="text-sm text-slate-400 mb-6">Payment transactions will appear here once customers start paying.</p>
+            </div>
+        }
+    </div>
+    
+    <div class="px-6 py-4 bg-slate-700/30 border-t border-slate-700/50">
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-slate-400">
+                Showing @(Model.Count()) recent payments
+            </div>
+            <a asp-action="Payments" class="inline-flex items-center text-sm font-medium text-brand-400 hover:text-brand-300 transition-colors">
+                View all payments
+                <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+            </a>
+        </div>
+    </div>
+</div>

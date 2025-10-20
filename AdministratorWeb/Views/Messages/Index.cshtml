@@ -1,0 +1,146 @@
+@model IEnumerable<dynamic>
+@{
+    ViewData["Title"] = "Customer Messages";
+}
+
+<div class="animate-fade-in">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                <i data-lucide="messages-square" class="w-8 h-8 text-brand-400"></i>
+                Customer Messages
+            </h1>
+            <p class="text-slate-400 mt-1">View and manage customer conversations</p>
+        </div>
+        <a href="@Url.Action("SelectUser")" class="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            New Message
+        </a>
+    </div>
+
+    <!-- Conversations Card -->
+    <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+        <!-- Card Header -->
+        <div class="bg-gradient-to-r from-brand-600 to-indigo-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="inbox" class="w-5 h-5 text-white"></i>
+                    <h2 class="text-lg font-semibold text-white">Conversations</h2>
+                </div>
+                <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium" id="totalConversations">
+                    @Model.Count() @(Model.Count() == 1 ? "conversation" : "conversations")
+                </span>
+            </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="p-0">
+            @if (!Model.Any())
+            {
+                <div class="flex flex-col items-center justify-center py-16 px-6">
+                    <div class="w-20 h-20 bg-slate-700/30 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="inbox" class="w-10 h-10 text-slate-500"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-slate-300 mb-2">No messages yet</h3>
+                    <p class="text-slate-400 text-center max-w-md">
+                        When customers send messages, they'll appear here. Start a conversation by clicking "New Message" above.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="divide-y divide-slate-700/50">
+                    @foreach (var conversation in Model)
+                    {
+                        <a href="@Url.Action("Conversation", new { customerId = conversation.CustomerId })"
+                           class="block px-6 py-4 hover:bg-slate-700/30 transition-all duration-200 group">
+                            <div class="flex items-center gap-4">
+                                <!-- Avatar -->
+                                <div class="relative flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-brand-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-brand-500/50 transition-shadow duration-200">
+                                        <span class="text-white font-bold text-lg">
+                                            @conversation.CustomerName.Substring(0, 1).ToUpper()
+                                        </span>
+                                    </div>
+                                    @if (conversation.UnreadCount > 0)
+                                    {
+                                        <div class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center border-2 border-slate-800 animate-pulse">
+                                            <span class="text-white text-xs font-bold">@conversation.UnreadCount</span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Content -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h3 class="font-semibold text-white group-hover:text-brand-400 transition-colors duration-200 truncate">
+                                            @conversation.CustomerName
+                                        </h3>
+                                        @if (conversation.UnreadCount > 0)
+                                        {
+                                            <span class="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-medium rounded-full border border-red-500/30">
+                                                @conversation.UnreadCount new
+                                            </span>
+                                        }
+                                    </div>
+                                    <div class="flex items-center gap-2 text-sm text-slate-400">
+                                        <i data-lucide="@(conversation.LastSenderType == "Customer" ? "user" : "shield")" class="w-4 h-4 flex-shrink-0"></i>
+                                        <p class="truncate">
+                                            @if (conversation.LastMessage.Length > 60)
+                                            {
+                                                @conversation.LastMessage.Substring(0, 60)<text>...</text>
+                                            }
+                                            else
+                                            {
+                                                @conversation.LastMessage
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Time & Stats -->
+                                <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                                    <span class="text-xs text-slate-400 whitespace-nowrap">
+                                        @conversation.LastMessageTime.ToString("MMM dd, hh:mm tt")
+                                    </span>
+                                    <div class="flex items-center gap-1 text-xs text-slate-500">
+                                        <i data-lucide="message-circle" class="w-3 h-3"></i>
+                                        <span>@conversation.TotalMessages</span>
+                                    </div>
+                                </div>
+
+                                <!-- Arrow -->
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-slate-600 group-hover:text-brand-400 group-hover:translate-x-1 transition-all duration-200"></i>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh unread count every 10 seconds
+        setInterval(function() {
+            fetch('@Url.Action("GetUnreadCount")')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.unreadCount > 0) {
+                        const badge = document.getElementById('totalConversations');
+                        badge.textContent = data.unreadCount + ' unread';
+                        badge.classList.remove('bg-white/20');
+                        badge.classList.add('bg-red-500', 'animate-pulse');
+                    }
+                })
+                .catch(error => console.error('Error fetching unread count:', error));
+        }, 10000);
+
+        // Initialize Lucide icons after DOM loads
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+    </script>
+}

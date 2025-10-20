@@ -1,0 +1,36 @@
+@page
+@model LogoutModel
+@{
+    ViewData["Title"] = "Log out";
+}
+
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style="background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1923 100%);">
+    <div class="max-w-md w-full space-y-8">
+        <!-- Logo and Title -->
+        <div class="text-center">
+            <div class="flex justify-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-brand-500 via-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl">
+                    <i data-lucide="log-out" class="w-8 h-8 text-white"></i>
+                </div>
+            </div>
+            <h2 class="text-3xl font-bold text-white mb-2">Logging Out</h2>
+            <p class="text-slate-400">You are being logged out...</p>
+        </div>
+
+        <!-- Logout Card -->
+        <div class="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-8">
+            <form method="post">
+                <button type="submit" class="w-full flex items-center justify-center px-4 py-3.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 transform hover:scale-[1.02]">
+                    <i data-lucide="log-out" class="w-5 h-5 mr-2"></i>
+                    Click here to Logout
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        lucide.createIcons();
+    </script>
+}

@@ -1,0 +1,264 @@
+@model AdministratorWeb.Models.Room
+@{
+    ViewData["Title"] = "Delete Room";
+    var usersCount = ViewBag.UsersCount ?? 0;
+    var beaconsCount = ViewBag.BeaconsCount ?? 0;
+    var isInUse = ViewBag.IsInUse ?? false;
+}
+
+<!-- Dashboard Header -->
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Delete Room</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                Confirm deletion of: @Model.Name
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="inline-flex items-center px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-white text-sm font-medium rounded-xl transition-all duration-200">
+                <i data-lucide="eye" class="w-4 h-4 mr-2"></i>
+                View Details
+            </a>
+            <a asp-action="Index" class="inline-flex items-center px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-white text-sm font-medium rounded-xl transition-all duration-200">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                Back to Rooms
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Warning Banner -->
+@if (isInUse)
+{
+    <div class="mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+        <div class="bg-red-500/10 border border-red-500/30 rounded-2xl p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-red-500/20 rounded-xl mr-3">
+                    <i data-lucide="alert-triangle" class="h-6 w-6 text-red-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-red-400 mb-1">Cannot Delete Room</h3>
+                    <p class="text-sm text-red-300">This room is currently being used by @usersCount user(s) and @beaconsCount beacon(s). You must reassign them before deletion.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+        <div class="bg-orange-500/10 border border-orange-500/30 rounded-2xl p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-orange-500/20 rounded-xl mr-3">
+                    <i data-lucide="alert-triangle" class="h-6 w-6 text-orange-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-orange-400 mb-1">Permanent Action</h3>
+                    <p class="text-sm text-orange-300">This action cannot be undone. The room template will be permanently removed from the system.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Room Information -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+    <!-- Room Details -->
+    <div class="lg:col-span-2">
+        <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.2s;">
+            <div class="px-8 py-6 border-b border-slate-700/50">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i data-lucide="info" class="w-5 h-5 mr-2 text-slate-400"></i>
+                    Room Information
+                </h3>
+            </div>
+            <div class="px-8 py-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Room Name</label>
+                        <div class="text-lg font-semibold text-white">@Model.Name</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Room ID</label>
+                        <div class="text-lg font-semibold text-white">#@Model.Id</div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Status</label>
+                        @if (Model.IsActive)
+                        {
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                <i data-lucide="check-circle" class="w-3 h-3 mr-1"></i>
+                                Active
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
+                                <i data-lucide="pause-circle" class="w-3 h-3 mr-1"></i>
+                                Inactive
+                            </span>
+                        }
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Created</label>
+                        <div class="text-white">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</div>
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">Description</label>
+                        <div class="text-white bg-slate-700/30 rounded-xl p-4">@Model.Description</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <!-- Current Usage -->
+    <div>
+        <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.3s;">
+            <div class="px-8 py-6 border-b border-slate-700/50">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i data-lucide="users" class="w-5 h-5 mr-2 text-slate-400"></i>
+                    Current Usage
+                </h3>
+            </div>
+            <div class="px-8 py-6 space-y-4">
+                <div class="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-500/20 rounded-lg mr-3">
+                            <i data-lucide="users" class="w-4 h-4 text-blue-400"></i>
+                        </div>
+                        <span class="text-slate-300">Users</span>
+                    </div>
+                    <span class="text-xl font-bold text-white">@usersCount</span>
+                </div>
+                
+                <div class="flex items-center justify-between p-4 bg-slate-700/30 rounded-xl">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-500/20 rounded-lg mr-3">
+                            <i data-lucide="radio" class="w-4 h-4 text-purple-400"></i>
+                        </div>
+                        <span class="text-slate-300">Beacons</span>
+                    </div>
+                    <span class="text-xl font-bold text-white">@beaconsCount</span>
+                </div>
+                
+                @if (isInUse)
+                {
+                    <div class="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+                        <div class="text-sm text-red-300">
+                            <i data-lucide="alert-circle" class="w-3 h-3 inline mr-1"></i>
+                            Room is currently in use and cannot be deleted
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                        <div class="text-sm text-green-300">
+                            <i data-lucide="check-circle" class="w-3 h-3 inline mr-1"></i>
+                            Room is not in use and can be safely deleted
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Form -->
+@if (!isInUse)
+{
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-red-700/50 animate-slide-up" style="animation-delay: 0.4s;">
+        <div class="px-8 py-6 border-b border-red-700/50">
+            <h3 class="text-xl font-bold text-red-400 flex items-center">
+                <i data-lucide="trash-2" class="w-5 h-5 mr-2"></i>
+                Confirm Deletion
+            </h3>
+        </div>
+        <div class="px-8 py-6">
+            <form asp-action="Delete" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="mb-6">
+                    <p class="text-slate-300 mb-4">
+                        Are you sure you want to delete the room "<strong class="text-white">@Model.Name</strong>"?
+                        This action cannot be undone and will permanently remove the room template from the system.
+                    </p>
+                    
+                    <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                        <div class="flex items-start">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0"></i>
+                            <div class="text-sm text-red-300">
+                                <p class="font-medium mb-1">This will permanently:</p>
+                                <ul class="list-disc list-inside space-y-1 ml-4">
+                                    <li>Remove the room template from the system</li>
+                                    <li>Make the room name unavailable for future use</li>
+                                    <li>Remove all references to this room ID</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between pt-6 border-t border-slate-700/50">
+                    <div class="text-sm text-slate-400 flex items-center">
+                        <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+                        This action is permanent and cannot be reversed
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <a asp-action="Index" class="inline-flex items-center px-6 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200">
+                            <i data-lucide="x" class="w-4 h-4 mr-2"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="inline-flex items-center px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                            <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                            Delete Room
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+else
+{
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.4s;">
+        <div class="px-8 py-6">
+            <div class="text-center">
+                <div class="p-4 bg-red-500/10 rounded-2xl inline-block mb-4">
+                    <i data-lucide="shield-x" class="w-12 h-12 text-red-400"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">Cannot Delete Room</h3>
+                <p class="text-slate-400 mb-6">
+                    This room is currently assigned to @usersCount user(s) and @beaconsCount beacon(s).
+                    You must reassign or remove these assignments before the room can be deleted.
+                </p>
+                <div class="flex items-center justify-center space-x-3">
+                    <a asp-action="Index" class="inline-flex items-center px-6 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                        Back to Rooms
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="inline-flex items-center px-6 py-3 bg-brand-600/50 hover:bg-brand-600 text-brand-300 hover:text-white font-medium rounded-xl transition-all duration-200">
+                        <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+                        Edit Room Instead
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Initialize lucide icons when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+    </script>
+}

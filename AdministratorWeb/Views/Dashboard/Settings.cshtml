@@ -1,0 +1,448 @@
+@model AdministratorWeb.Models.LaundrySettings
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<!-- Dashboard Header -->
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">System Settings</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="settings" class="w-4 h-4 mr-2"></i>
+                Configure laundry service settings and pricing
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button class="inline-flex items-center px-4 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-white text-sm font-medium rounded-xl transition-all duration-200">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 mr-2"></i>
+                Reset to Defaults
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Form -->
+<div class="max-w-4xl mx-auto bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.1s;">
+    <div class="px-8 py-8">
+        <form asp-action="Settings" method="post" class="space-y-8">
+            <!-- Pricing Settings -->
+            <div class="bg-slate-700/30 rounded-2xl p-6 border border-slate-600/50">
+                <div class="flex items-center mb-6">
+                    <div class="p-2 bg-emerald-500/20 rounded-xl mr-3">
+                        <i data-lucide="dollar-sign" class="h-5 w-5 text-emerald-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Pricing Configuration</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label asp-for="RatePerKg" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="dollar-sign" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Rate Per Kg
+                        </label>
+                        <input asp-for="RatePerKg" type="number" step="0.01" placeholder="5.00" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="RatePerKg" class="text-red-400 text-sm mt-1 flex items-center">
+                                                    </span>
+                    </div>
+
+                    <div>
+                        <label asp-for="MinWeightPerRequest" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="minus" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Min Weight (kg)
+                        </label>
+                        <input asp-for="MinWeightPerRequest" type="number" step="0.1" placeholder="0.5" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="MinWeightPerRequest" class="text-red-400 text-sm mt-1 flex items-center">
+                                                    </span>
+                    </div>
+                    
+                    <div>
+                        <label asp-for="MaxWeightPerRequest" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="plus" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Max Weight (kg)
+                        </label>
+                        <input asp-for="MaxWeightPerRequest" type="number" step="0.1" placeholder="20.0" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="MaxWeightPerRequest" class="text-red-400 text-sm mt-1 flex items-center">
+                                                    </span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Company Information -->
+            <div class="bg-slate-700/30 rounded-2xl p-6 border border-slate-600/50">
+                <div class="flex items-center mb-6">
+                    <div class="p-2 bg-brand-500/20 rounded-xl mr-3">
+                        <i data-lucide="building-2" class="h-5 w-5 text-brand-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Company Information</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label asp-for="CompanyName" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="building" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Company Name
+                        </label>
+                        <input asp-for="CompanyName" placeholder="Jopart Autonomous Laundry" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="CompanyName" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label asp-for="CompanyDescription" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="file-text" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Company Description
+                        </label>
+                        <textarea asp-for="CompanyDescription" rows="3" placeholder="Describe your company..." class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent resize-none transition-all duration-200"></textarea>
+                        <span asp-validation-for="CompanyDescription" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label asp-for="CompanyAddress" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="map-pin" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Company Address
+                        </label>
+                        <textarea asp-for="CompanyAddress" rows="2" placeholder="Enter company address..." class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent resize-none transition-all duration-200"></textarea>
+                        <span asp-validation-for="CompanyAddress" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="CompanyPhone" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="phone" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Phone Number
+                        </label>
+                        <input asp-for="CompanyPhone" placeholder="+1 (555) 123-4567" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="CompanyPhone" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="CompanyEmail" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="mail" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Email Address
+                        </label>
+                        <input asp-for="CompanyEmail" type="email" placeholder="contact@jopart.com" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="CompanyEmail" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="CompanyWebsite" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="globe" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Website URL
+                        </label>
+                        <input asp-for="CompanyWebsite" type="url" placeholder="https://www.jopart.com" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="CompanyWebsite" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="OperatingHours" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="clock" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Operating Hours
+                        </label>
+                        <input asp-for="OperatingHours" placeholder="24/7" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="OperatingHours" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Media Links -->
+            <div class="bg-slate-700/30 rounded-2xl p-6 border border-slate-600/50">
+                <div class="flex items-center mb-6">
+                    <div class="p-2 bg-indigo-500/20 rounded-xl mr-3">
+                        <i data-lucide="share-2" class="h-5 w-5 text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Social Media</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label asp-for="FacebookUrl" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="facebook" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Facebook URL
+                        </label>
+                        <input asp-for="FacebookUrl" type="url" placeholder="https://facebook.com/jopart" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="FacebookUrl" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="TwitterUrl" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="twitter" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Twitter URL
+                        </label>
+                        <input asp-for="TwitterUrl" type="url" placeholder="https://twitter.com/jopart" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="TwitterUrl" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="InstagramUrl" class="block text-slate-300 text-sm font-semibold mb-3 flex items-center">
+                            <i data-lucide="instagram" class="w-4 h-4 mr-2 text-slate-400"></i>
+                            Instagram URL
+                        </label>
+                        <input asp-for="InstagramUrl" type="url" placeholder="https://instagram.com/jopart" class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200" />
+                        <span asp-validation-for="InstagramUrl" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Management Settings -->
+            <div class="bg-slate-700/30 rounded-2xl p-6 border border-slate-600/50">
+                <div class="flex items-center mb-6">
+                    <div class="p-2 bg-purple-500/20 rounded-xl mr-3">
+                        <i data-lucide="zap" class="h-5 w-5 text-purple-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Request Management</h3>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-slate-600/30 rounded-xl border border-slate-500/30">
+                    <div class="flex items-start space-x-3">
+                        <div class="p-2 bg-purple-500/20 rounded-lg">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-purple-400"></i>
+                        </div>
+                        <div>
+                            <label asp-for="AutoAcceptRequests" class="text-slate-200 font-semibold text-base cursor-pointer">
+                                Auto Accept Requests
+                            </label>
+                            <p class="text-slate-400 text-sm mt-1">
+                                Automatically accept and dispatch robots for new laundry requests without manual approval
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input asp-for="AutoAcceptRequests" type="checkbox" class="sr-only peer">
+                            <div class="w-14 h-7 bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Room Detection Settings -->
+            <div class="bg-slate-700/30 rounded-2xl p-6 border border-slate-600/50">
+                <div class="flex items-center mb-6">
+                    <div class="p-2 bg-cyan-500/20 rounded-xl mr-3">
+                        <i data-lucide="radio" class="h-5 w-5 text-cyan-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Room Detection Mode</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-slate-600/30 rounded-xl border border-slate-500/30 hover:bg-slate-600/40 transition-all duration-200 cursor-pointer" onclick="document.getElementById('radio-beacon').click()">
+                        <div class="flex items-start space-x-3">
+                            <div class="p-2 bg-cyan-500/20 rounded-lg">
+                                <i data-lucide="bluetooth" class="w-5 h-5 text-cyan-400"></i>
+                            </div>
+                            <div>
+                                <label for="radio-beacon" class="text-slate-200 font-semibold text-base cursor-pointer">
+                                    Bluetooth Beacon Detection
+                                </label>
+                                <p class="text-slate-400 text-sm mt-1">
+                                    Robots use Bluetooth beacons to identify and navigate to rooms
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <input asp-for="DetectionMode" type="radio" value="0" id="radio-beacon" class="w-5 h-5 text-cyan-600 bg-slate-600 border-slate-500 focus:ring-cyan-500/50 focus:ring-2">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-slate-600/30 rounded-xl border border-slate-500/30 hover:bg-slate-600/40 transition-all duration-200 cursor-pointer" onclick="document.getElementById('radio-color').click()">
+                        <div class="flex items-start space-x-3">
+                            <div class="p-2 bg-cyan-500/20 rounded-lg">
+                                <i data-lucide="palette" class="w-5 h-5 text-cyan-400"></i>
+                            </div>
+                            <div>
+                                <label for="radio-color" class="text-slate-200 font-semibold text-base cursor-pointer">
+                                    Floor Color Detection
+                                </label>
+                                <p class="text-slate-400 text-sm mt-1">
+                                    Robots use camera to detect floor colors to identify room arrival
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <input asp-for="DetectionMode" type="radio" value="1" id="radio-color" class="w-5 h-5 text-cyan-600 bg-slate-600 border-slate-500 focus:ring-cyan-500/50 focus:ring-2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Follower Color Settings -->
+            <div class="bg-slate-700/30 rounded-2xl p-6 border border-slate-600/50">
+                <div class="flex items-center mb-6">
+                    <div class="p-2 bg-emerald-500/20 rounded-xl mr-3">
+                        <i data-lucide="pipette" class="h-5 w-5 text-emerald-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Line Follower Color</h3>
+                </div>
+                <p class="text-slate-400 mb-6">
+                    Set the color of the line that the robot should follow. This setting persists across web restarts.
+                </p>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Color Picker -->
+                        <div>
+                            <label class="block text-slate-300 font-medium mb-2">
+                                <i data-lucide="palette" class="w-4 h-4 inline mr-2"></i>
+                                Pick Line Color
+                            </label>
+                            <div class="flex items-center space-x-4">
+                                <input type="color" id="colorPicker"
+                                       class="h-12 w-24 rounded-lg cursor-pointer bg-slate-600 border-2 border-slate-500"
+                                       value="#000000">
+                                <div class="flex-1">
+                                    <div id="colorPreview" class="h-12 rounded-lg border-2 border-slate-500 flex items-center justify-center text-white font-mono text-sm"
+                                         style="background-color: rgb(0, 0, 0);">
+                                        RGB(0, 0, 0)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RGB Sliders -->
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-slate-300 font-medium mb-2 text-sm">
+                                    <span class="text-red-400">Red:</span> <span id="rValue">0</span>
+                                </label>
+                                <input asp-for="LineFollowColorR" type="range" min="0" max="255"
+                                       class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider-red">
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 font-medium mb-2 text-sm">
+                                    <span class="text-green-400">Green:</span> <span id="gValue">0</span>
+                                </label>
+                                <input asp-for="LineFollowColorG" type="range" min="0" max="255"
+                                       class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider-green">
+                            </div>
+                            <div>
+                                <label class="block text-slate-300 font-medium mb-2 text-sm">
+                                    <span class="text-blue-400">Blue:</span> <span id="bValue">0</span>
+                                </label>
+                                <input asp-for="LineFollowColorB" type="range" min="0" max="255"
+                                       class="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer slider-blue">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Common Colors Quick Pick -->
+                    <div class="pt-4 border-t border-slate-600/50">
+                        <label class="block text-slate-300 font-medium mb-3">
+                            <i data-lucide="swatches" class="w-4 h-4 inline mr-2"></i>
+                            Quick Pick
+                        </label>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" class="color-preset w-12 h-12 rounded-lg border-2 border-slate-500 hover:border-white transition-all"
+                                    style="background-color: rgb(0, 0, 0);" data-rgb="0,0,0" title="Black"></button>
+                            <button type="button" class="color-preset w-12 h-12 rounded-lg border-2 border-slate-500 hover:border-white transition-all"
+                                    style="background-color: rgb(255, 255, 255);" data-rgb="255,255,255" title="White"></button>
+                            <button type="button" class="color-preset w-12 h-12 rounded-lg border-2 border-slate-500 hover:border-white transition-all"
+                                    style="background-color: rgb(255, 0, 0);" data-rgb="255,0,0" title="Red"></button>
+                            <button type="button" class="color-preset w-12 h-12 rounded-lg border-2 border-slate-500 hover:border-white transition-all"
+                                    style="background-color: rgb(0, 255, 0);" data-rgb="0,255,0" title="Green"></button>
+                            <button type="button" class="color-preset w-12 h-12 rounded-lg border-2 border-slate-500 hover:border-white transition-all"
+                                    style="background-color: rgb(0, 0, 255);" data-rgb="0,0,255" title="Blue"></button>
+                            <button type="button" class="color-preset w-12 h-12 rounded-lg border-2 border-slate-500 hover:border-white transition-all"
+                                    style="background-color: rgb(255, 255, 0);" data-rgb="255,255,0" title="Yellow"></button>
+                            <button type="button" class="color-preset w-12 h-12 rounded-lg border-2 border-slate-500 hover:border-white transition-all"
+                                    style="background-color: rgb(255, 0, 255);" data-rgb="255,0,255" title="Magenta"></button>
+                            <button type="button" class="color-preset w-12 h-12 rounded-lg border-2 border-slate-500 hover:border-white transition-all"
+                                    style="background-color: rgb(0, 255, 255);" data-rgb="0,255,255" title="Cyan"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="flex items-center justify-between pt-6 border-t border-slate-700/50">
+                <div class="text-sm text-slate-400 flex items-center">
+                    <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+                    Changes will take effect immediately after saving
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button type="button" class="inline-flex items-center px-6 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200">
+                        <i data-lucide="x" class="w-4 h-4 mr-2"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i data-lucide="save" class="w-4 h-4 mr-2"></i>
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Initialize lucide icons when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+
+            // Line Color Picker functionality
+            const colorPicker = document.getElementById('colorPicker');
+            const colorPreview = document.getElementById('colorPreview');
+            const rSlider = document.querySelector('input[name="LineFollowColorR"]');
+            const gSlider = document.querySelector('input[name="LineFollowColorG"]');
+            const bSlider = document.querySelector('input[name="LineFollowColorB"]');
+            const rValue = document.getElementById('rValue');
+            const gValue = document.getElementById('gValue');
+            const bValue = document.getElementById('bValue');
+
+            // Initialize with saved values from model
+            const initialR = parseInt(rSlider.value) || 0;
+            const initialG = parseInt(gSlider.value) || 0;
+            const initialB = parseInt(bSlider.value) || 0;
+            updateColorFromRGB(initialR, initialG, initialB);
+
+            // Update color when color picker changes
+            colorPicker.addEventListener('input', function() {
+                const hex = this.value;
+                const r = parseInt(hex.substr(1, 2), 16);
+                const g = parseInt(hex.substr(3, 2), 16);
+                const b = parseInt(hex.substr(5, 2), 16);
+                updateColorFromRGB(r, g, b);
+            });
+
+            // Update color when sliders change
+            [rSlider, gSlider, bSlider].forEach(slider => {
+                slider.addEventListener('input', function() {
+                    const r = parseInt(rSlider.value);
+                    const g = parseInt(gSlider.value);
+                    const b = parseInt(bSlider.value);
+                    updateColorFromRGB(r, g, b);
+                });
+            });
+
+            // Quick pick preset colors
+            document.querySelectorAll('.color-preset').forEach(button => {
+                button.addEventListener('click', function() {
+                    const rgb = this.dataset.rgb.split(',').map(v => parseInt(v));
+                    updateColorFromRGB(rgb[0], rgb[1], rgb[2]);
+                });
+            });
+
+            function updateColorFromRGB(r, g, b) {
+                // Update sliders
+                rSlider.value = r;
+                gSlider.value = g;
+                bSlider.value = b;
+
+                // Update value displays
+                rValue.textContent = r;
+                gValue.textContent = g;
+                bValue.textContent = b;
+
+                // Update color picker
+                const hex = '#' + [r, g, b].map(x => {
+                    const hexVal = x.toString(16);
+                    return hexVal.length === 1 ? '0' + hexVal : hexVal;
+                }).join('');
+                colorPicker.value = hex;
+
+                // Update preview
+                const rgb = `rgb(${r}, ${g}, ${b})`;
+                colorPreview.style.backgroundColor = rgb;
+                colorPreview.textContent = `RGB(${r}, ${g}, ${b})`;
+
+                // Update text color for contrast
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                colorPreview.style.color = brightness > 128 ? '#000' : '#fff';
+            }
+        });
+    </script>
+}

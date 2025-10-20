@@ -1,0 +1,558 @@
+@using Microsoft.EntityFrameworkCore
+@inject AdministratorWeb.Data.ApplicationDbContext DbContext
+@{
+    var companySettings = await DbContext.LaundrySettings.FirstOrDefaultAsync();
+    var companyName = companySettings?.CompanyName ?? "Jopart Laundry";
+    var companyDescription = companySettings?.CompanyDescription ?? "Advanced robotic room tracking and navigation system. Seamless integration with IoT beacons for precise indoor positioning.";
+}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@ViewData["Title"] - @companyName</title>
+    <link rel="icon" type="image/png" href="~/favicon.png" asp-append-version="true" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49'
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'slide-down': 'slideDown 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        slideDown: {
+                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark-custom antialiased">
+    @{
+        var adminRoutes = new[] { "/dashboard", "/robots", "/users", "/accounting", "/requests", "/beacon", "/rooms", "/messages" };
+        var isAdminPage = adminRoutes.Any(route => Context.Request.Path.StartsWithSegments(route));
+    }
+    @if (isAdminPage)
+    {
+        <!-- Dashboard Layout - Dark Mode -->
+        <div class="flex h-screen bg-dark-custom">
+            <!-- Sidebar -->
+            <div class="hidden lg:flex lg:w-72 lg:flex-col">
+                <div class="flex flex-col flex-grow pt-6 pb-4 overflow-y-auto bg-sidebar-custom backdrop-blur-xl border-r border-color"
+                     style="border-color: var(--border-color);">
+                    <!-- Brand -->
+                    <div class="flex items-center flex-shrink-0 px-6 mb-8">
+                        <div class="flex items-center space-x-3">
+                            <div class="relative">
+                                <div class="w-10 h-10 bg-gradient-to-br from-brand-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                                    <i data-lucide="washing-machine" class="w-5 h-5 text-white"></i>
+                                </div>
+                                <div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-800 animate-pulse"></div>
+                            </div>
+                            <div>
+                                <h1 class="text-lg font-bold text-white">@companyName</h1>
+                                <p class="text-xs text-slate-400">Admin Panel</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Navigation -->
+                    <div class="flex-grow flex flex-col">
+                        <nav class="flex-1 px-4 space-y-2">
+                            <!-- Main Navigation -->
+                            <div class="mb-6">
+                                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Main</p>
+                                <div class="space-y-1">
+                                    <a asp-controller="Dashboard" asp-action="Index" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                        <i data-lucide="layout-dashboard" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                        Dashboard
+                                    </a>
+                                    <a asp-controller="Requests" asp-action="Index" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Requests" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                        <i data-lucide="inbox" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Requests" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                        <span>Requests</span>
+                                        <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800">@await Component.InvokeAsync("RequestsCount")</span>
+                                    </a>
+                                    <a asp-controller="Robots" asp-action="Index" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Robots" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                        <i data-lucide="bot" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Robots" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                        <span>Robots</span>
+                                        <div class="ml-auto flex items-center">
+                                            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                            <span class="ml-1 text-xs text-slate-400">@await Component.InvokeAsync("RobotsStatus")</span>
+                                        </div>
+                                    </a>
+                                    <a asp-controller="Messages" asp-action="Index" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Messages" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                        <i data-lucide="messages-square" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Messages" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                        <span>Messages</span>
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Management -->
+                            <div class="mb-6">
+                                <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Management</p>
+                                <div class="space-y-1">
+                                    <a asp-controller="Users" asp-action="Index" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                        <i data-lucide="users" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                        Users
+                                    </a>
+                                    <a asp-controller="Accounting" asp-action="Index" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Accounting" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                        <i data-lucide="credit-card" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Accounting" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                        Accounting
+                                    </a>
+                                    <a asp-controller="Rooms" asp-action="Index" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Rooms" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                        <i data-lucide="home" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Rooms" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                        Rooms
+                                    </a>
+                                    <a asp-controller="Beacon" asp-action="Index" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Beacon" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                        <i data-lucide="radio" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Beacon" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                        Beacons
+                                    </a>
+                                </div>
+                            </div>
+                        </nav>
+                        
+                        <!-- Bottom section -->
+                        <div class="px-4 pb-4">
+                            <div class="border-t border-slate-700/50 pt-4">
+                                <a asp-controller="Dashboard" asp-action="Settings" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["action"]?.ToString() == "Settings" ? "bg-brand-600 text-white shadow-lg" : "text-slate-300 hover:bg-slate-700/50 hover:text-white") group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200">
+                                    <i data-lucide="settings" class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" && ViewContext.RouteData.Values["action"]?.ToString() == "Settings" ? "text-white" : "text-slate-400") mr-3 h-5 w-5"></i>
+                                    Settings
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mobile menu button -->
+            <div class="lg:hidden fixed top-4 left-4 z-50">
+                <button id="mobileMenuButton" class="p-2 rounded-xl bg-slate-800/90 backdrop-blur-sm text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <!-- Mobile sidebar overlay -->
+            <div id="mobileMenuOverlay" class="lg:hidden fixed inset-0 z-40 hidden">
+                <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" id="mobileMenuBackdrop"></div>
+                <div class="fixed inset-y-0 left-0 w-64 bg-slate-800 shadow-xl transform -translate-x-full transition-transform" id="mobileSidebar">
+                    <!-- Mobile navigation content (same as desktop) -->
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div class="flex flex-col flex-1 overflow-hidden lg:ml-0">
+                <!-- Top bar -->
+                <header class="relative z-10 flex-shrink-0 flex h-16 bg-slate-800/50 backdrop-blur-xl shadow-lg border-b border-slate-700/50">
+                    <div class="flex-1 px-4 lg:px-6 flex justify-between items-center">
+                        <div class="flex-1 flex items-center">
+                            <!-- Search bar -->
+                            <div class="relative max-w-lg w-full">
+                                <div class="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3">
+                                    <i data-lucide="search" class="h-4 w-4 text-slate-400"></i>
+                                </div>
+                                <input type="text" placeholder="Search..." class="block w-full pl-10 pr-3 py-2 bg-slate-700/50 border border-slate-600/50 rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200">
+                            </div>
+                        </div>
+                        <div class="ml-6 flex items-center">
+                            <partial name="_LoginPartial"/>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Page content -->
+                <main class="flex-1 relative overflow-y-auto focus:outline-none bg-dark-custom animate-fade-in">
+                    <div class="py-6 lg:py-8">
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+                             style="background-color: var(--bg-dark); color: var(--text-light);">
+                            <!-- Alert messages -->
+                            @if (TempData["Success"] != null)
+                            {
+                                <div class="mb-6 animate-slide-down">
+                                    <div class="bg-emerald-900/50 border border-emerald-700/50 text-emerald-200 px-4 py-3 rounded-xl backdrop-blur-sm" role="alert">
+                                        <div class="flex items-center">
+                                            <i data-lucide="check-circle" class="w-5 h-5 mr-2 text-emerald-400"></i>
+                                            <span>@TempData["Success"]</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (TempData["Error"] != null)
+                            {
+                                <div class="mb-6 animate-slide-down">
+                                    <div class="bg-red-900/50 border border-red-700/50 text-red-200 px-4 py-3 rounded-xl backdrop-blur-sm" role="alert">
+                                        <div class="flex items-center">
+                                            <span>@TempData["Error"]</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            
+                            @RenderBody()
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Public Layout -->
+        <nav class="bg-sidebar-custom backdrop-blur-xl shadow-lg border-b sticky top-0 z-50" 
+             style="border-color: var(--border-color);">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <a asp-controller="Home" asp-action="Index" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                            <div class="w-10 h-10 bg-gradient-to-br from-brand-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                                <i data-lucide="washing-machine" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <span class="text-xl font-bold" style="color: var(--text-light);">@companyName</span>
+                                <p class="text-xs -mt-1" style="color: var(--text-muted);">Room Service</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="flex items-center space-x-6">
+                        <!-- Navigation links -->
+                        <div class="hidden md:flex items-center space-x-8">
+                            <a href="#features" class="text-sm font-medium transition-colors" style="color: var(--text-muted);" onmouseover="this.style.color='var(--primary-blue)'" onmouseout="this.style.color='var(--text-muted)'">Features</a>
+                            <a href="#how-it-works" class="text-sm font-medium transition-colors" style="color: var(--text-muted);" onmouseover="this.style.color='var(--primary-blue)'" onmouseout="this.style.color='var(--text-muted)'">How it Works</a>
+                            <a href="#contact" class="text-sm font-medium transition-colors" style="color: var(--text-muted);" onmouseover="this.style.color='var(--primary-blue)'" onmouseout="this.style.color='var(--text-muted)'">Contact</a>
+                        </div>
+                        
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a asp-controller="Dashboard" asp-action="Index" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>
+                                Dashboard
+                            </a>
+                            <partial name="_LoginPartial"/>
+                        }
+                        else
+                        {
+                            <button onclick="openLoginModal()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                                <i data-lucide="log-in" class="w-4 h-4 mr-2"></i>
+                                Admin Login
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="animate-fade-in" style="background-color: var(--bg-dark); color: var(--text-light);">
+            @RenderBody()
+        </main>
+
+        <footer style="background-color: var(--bg-sidebar); color: var(--text-light);">
+            <div class="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <!-- Brand -->
+                    <div class="col-span-1 md:col-span-2">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="w-10 h-10 bg-gradient-to-br from-brand-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                                <i data-lucide="washing-machine" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold" style="color: var(--text-light);">@companyName</h3>
+                                <p class="text-sm" style="color: var(--text-muted);">Room Service</p>
+                            </div>
+                        </div>
+                        <p class="max-w-md" style="color: var(--text-muted);">
+                            @companyDescription
+                        </p>
+                    </div>
+                    
+                    <!-- Quick Links -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-4">Service</h4>
+                        <ul class="space-y-3">
+                            <li><a href="#" class="text-slate-400 hover:text-white transition-colors">How it Works</a></li>
+                            <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Pricing</a></li>
+                            <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Coverage Area</a></li>
+                            <li><a href="#" class="text-slate-400 hover:text-white transition-colors">FAQ</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Support -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-4">Support</h4>
+                        <ul class="space-y-3">
+                            <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Help Center</a></li>
+                            <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Contact Us</a></li>
+                            <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Privacy Policy</a></li>
+                            <li><a href="#" class="text-slate-400 hover:text-white transition-colors">Terms of Service</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="border-t border-slate-700 mt-12 pt-8">
+                    <div class="flex flex-col md:flex-row justify-between items-center">
+                        <p class="text-slate-400 text-sm">&copy; 2025 @companyName. All rights reserved.</p>
+                        <div class="flex space-x-6 mt-4 md:mt-0">
+                            @if (!string.IsNullOrEmpty(companySettings?.TwitterUrl))
+                            {
+                                <a href="@companySettings.TwitterUrl" target="_blank" class="text-slate-400 hover:text-white transition-colors">
+                                    <i data-lucide="twitter" class="w-5 h-5"></i>
+                                </a>
+                            }
+                            @if (!string.IsNullOrEmpty(companySettings?.FacebookUrl))
+                            {
+                                <a href="@companySettings.FacebookUrl" target="_blank" class="text-slate-400 hover:text-white transition-colors">
+                                    <i data-lucide="facebook" class="w-5 h-5"></i>
+                                </a>
+                            }
+                            @if (!string.IsNullOrEmpty(companySettings?.InstagramUrl))
+                            {
+                                <a href="@companySettings.InstagramUrl" target="_blank" class="text-slate-400 hover:text-white transition-colors">
+                                    <i data-lucide="instagram" class="w-5 h-5"></i>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Login Modal -->
+        <div id="loginModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm overflow-y-auto h-full w-full hidden z-50 animate-fade-in">
+            <div class="relative top-20 mx-auto p-6 border-0 w-full max-w-md shadow-2xl rounded-2xl bg-white animate-slide-up">
+                <div>
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-900">Admin Sign In</h3>
+                            <p class="text-sm text-slate-500 mt-1">Access the administration panel</p>
+                        </div>
+                        <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100 transition-all duration-200">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <form asp-area="Identity" asp-page="/Account/Login" method="post" class="space-y-4">
+                        <div>
+                            <label class="block text-slate-700 text-sm font-medium mb-2">Email Address</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i data-lucide="mail" class="w-4 h-4 text-slate-400"></i>
+                                </div>
+                                <input name="Email" type="email" required placeholder="admin@jopart.com" 
+                                       class="block w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-slate-700 text-sm font-medium mb-2">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i data-lucide="lock" class="w-4 h-4 text-slate-400"></i>
+                                </div>
+                                <input name="Password" type="password" required placeholder="Enter your password"
+                                       class="block w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200">
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center">
+                                <input name="RememberMe" type="checkbox" class="w-4 h-4 text-brand-600 bg-slate-100 border-slate-300 rounded focus:ring-brand-500 focus:ring-2">
+                                <span class="ml-2 text-sm text-slate-600">Remember me</span>
+                            </label>
+                            <a href="#" class="text-sm text-brand-600 hover:text-brand-700 transition-colors">Forgot password?</a>
+                        </div>
+                        
+                        <button type="submit" class="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <i data-lucide="log-in" class="w-4 h-4 mr-2"></i>
+                            Sign In to Dashboard
+                        </button>
+                        
+                        <div class="text-center">
+                            <p class="text-xs text-slate-500">
+                                Secured by Jopart Authentication System
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    <script>
+        // Initialize icons
+        lucide.createIcons();
+        
+        // Modal functions
+        function openLoginModal() {
+            const modal = document.getElementById('loginModal');
+            modal.classList.remove('hidden');
+            // Focus first input
+            setTimeout(() => {
+                const firstInput = modal.querySelector('input[type="email"]');
+                if (firstInput) firstInput.focus();
+            }, 150);
+        }
+        
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+        }
+        
+        // DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // User dropdown toggles
+            const userMenuButton = document.getElementById('userMenuButton');
+            const userDropdown = document.getElementById('userDropdown');
+            const publicUserMenuButton = document.getElementById('publicUserMenuButton');
+            const publicUserDropdown = document.getElementById('publicUserDropdown');
+            
+            // Admin user menu
+            if (userMenuButton && userDropdown) {
+                userMenuButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                });
+                
+                document.addEventListener('click', function(e) {
+                    if (!userMenuButton.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Public user menu
+            if (publicUserMenuButton && publicUserDropdown) {
+                publicUserMenuButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    publicUserDropdown.classList.toggle('hidden');
+                });
+                
+                document.addEventListener('click', function(e) {
+                    if (!publicUserMenuButton.contains(e.target) && !publicUserDropdown.contains(e.target)) {
+                        publicUserDropdown.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Mobile menu
+            const mobileMenuButton = document.getElementById('mobileMenuButton');
+            const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+            const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
+            const mobileSidebar = document.getElementById('mobileSidebar');
+            
+            if (mobileMenuButton && mobileMenuOverlay) {
+                mobileMenuButton.addEventListener('click', function() {
+                    mobileMenuOverlay.classList.remove('hidden');
+                    setTimeout(() => {
+                        mobileSidebar.classList.remove('-translate-x-full');
+                    }, 50);
+                });
+                
+                mobileMenuBackdrop.addEventListener('click', function() {
+                    mobileSidebar.classList.add('-translate-x-full');
+                    setTimeout(() => {
+                        mobileMenuOverlay.classList.add('hidden');
+                    }, 300);
+                });
+            }
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href !== '#') {
+                        e.preventDefault();
+                        const target = document.querySelector(href);
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+            });
+            
+            // Auto-dismiss alerts after 5 seconds
+            const alerts = document.querySelectorAll('[role="alert"]');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        alert.remove();
+                    }, 300);
+                }, 5000);
+            });
+        });
+        
+        // Close modal when clicking outside or pressing escape
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('loginModal');
+            if (event.target === modal) {
+                closeLoginModal();
+            }
+        });
+        
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeLoginModal();
+            }
+        });
+        
+        // Add loading states to forms
+        document.addEventListener('submit', function(e) {
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            if (submitButton) {
+                const originalText = submitButton.innerHTML;
+                submitButton.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 mr-2 animate-spin"></i>Loading...';
+                submitButton.disabled = true;
+                
+                // Re-initialize icons for the new loader icon
+                lucide.createIcons();
+                
+                // Reset after 10 seconds as fallback
+                setTimeout(() => {
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
+                    lucide.createIcons();
+                }, 10000);
+            }
+        });
+        
+        // Refresh icons periodically to catch dynamic content
+        setInterval(() => {
+            lucide.createIcons();
+        }, 2000);
+    </script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

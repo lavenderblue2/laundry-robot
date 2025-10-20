@@ -1,0 +1,234 @@
+@model AdministratorWeb.Models.LaundryRequest
+@{
+    ViewData["Title"] = $"Request #{Model.Id} Details";
+}
+
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-white">Request #@Model.Id Details</h1>
+    <p class="text-gray-400">Complete information about this laundry request</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Customer Information -->
+    <div class="bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-700">
+            <h3 class="text-lg font-medium text-white">Customer Information</h3>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Customer Name</label>
+                <div class="mt-1 text-white">@Model.CustomerName</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Customer ID</label>
+                <div class="mt-1 text-white">@Model.CustomerId</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Phone Number</label>
+                <div class="mt-1 text-white">@Model.CustomerPhone</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Address</label>
+                <div class="mt-1 text-white">@Model.Address</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Information -->
+    <div class="bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-700">
+            <h3 class="text-lg font-medium text-white">Request Information</h3>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Request Type</label>
+                <div class="mt-1">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-700 text-gray-200 border border-gray-600">
+                        @Model.Type.ToString()
+                    </span>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Status</label>
+                <div class="mt-1">
+                    @{
+                        var statusColor = Model.Status switch
+                        {
+                            AdministratorWeb.Models.RequestStatus.Pending => "bg-yellow-900 text-yellow-200 border-yellow-700",
+                            AdministratorWeb.Models.RequestStatus.Accepted => "bg-blue-900 text-blue-200 border-blue-700",
+                            AdministratorWeb.Models.RequestStatus.InProgress => "bg-purple-900 text-purple-200 border-purple-700",
+                            AdministratorWeb.Models.RequestStatus.Completed => "bg-green-900 text-green-200 border-green-700",
+                            AdministratorWeb.Models.RequestStatus.Declined => "bg-red-900 text-red-200 border-red-700",
+                            _ => "bg-gray-900 text-gray-200 border-gray-700"
+                        };
+                    }
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @statusColor border">
+                        @Model.Status.ToString()
+                    </span>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Requested At</label>
+                <div class="mt-1 text-white">@Model.RequestedAt.ToString("MMM dd, yyyy HH:mm")</div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Scheduled At</label>
+                <div class="mt-1 text-white">@(Model.ScheduledAt?.ToString("MMM dd, yyyy HH:mm") ?? "Not scheduled")</div>
+            </div>
+            @if (Model.ProcessedAt.HasValue)
+            {
+                <div>
+                    <label class="block text-sm font-medium text-gray-300">Processed At</label>
+                    <div class="mt-1 text-white">@Model.ProcessedAt.Value.ToString("MMM dd, yyyy HH:mm")</div>
+                </div>
+            }
+            @if (Model.CompletedAt.HasValue)
+            {
+                <div>
+                    <label class="block text-sm font-medium text-gray-300">Completed At</label>
+                    <div class="mt-1 text-white">@Model.CompletedAt.Value.ToString("MMM dd, yyyy HH:mm")</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Service Details -->
+    <div class="bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-700">
+            <h3 class="text-lg font-medium text-white">Service Details</h3>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Weight</label>
+                <div class="mt-1 text-white">
+                    @if (Model.Weight.HasValue)
+                    {
+                        <span>@Model.Weight.Value kg</span>
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">Not set</span>
+                    }
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Total Cost</label>
+                <div class="mt-1 text-white">
+                    @if (Model.TotalCost.HasValue)
+                    {
+                        <span class="text-green-400 font-semibold">₱@Model.TotalCost.Value.ToString("F2")</span>
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">Not calculated</span>
+                    }
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Payment Status</label>
+                <div class="mt-1">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full @(Model.IsPaid ? "bg-green-900 text-green-200 border-green-700" : "bg-red-900 text-red-200 border-red-700") border">
+                        @(Model.IsPaid ? "Paid" : "Unpaid")
+                    </span>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Assigned Robot</label>
+                <div class="mt-2">
+                    @if (!string.IsNullOrEmpty(Model.AssignedRobotName))
+                    {
+                        <div class="inline-flex items-center px-3 py-2 bg-blue-900/50 text-blue-300 border border-blue-700/50 rounded-lg">
+                            <i data-lucide="bot" class="w-4 h-4 mr-2"></i>
+                            <span class="font-medium">@Model.AssignedRobotName</span>
+                            <a asp-controller="Robots" asp-action="Details" asp-route-name="@Model.AssignedRobotName" 
+                               class="ml-2 inline-flex items-center text-blue-300 hover:text-blue-200 transition-colors">
+                                <i data-lucide="external-link" class="w-3 h-3"></i>
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="inline-flex items-center px-3 py-2 bg-gray-700 text-gray-400 rounded-lg">
+                            <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i>
+                            <span>No robot assigned</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-700">
+            <h3 class="text-lg font-medium text-white">Additional Information</h3>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Special Instructions</label>
+                <div class="mt-1 text-white">
+                    @if (!string.IsNullOrEmpty(Model.Instructions))
+                    {
+                        <p class="whitespace-pre-wrap">@Model.Instructions</p>
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">No special instructions</span>
+                    }
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.DeclineReason))
+            {
+                <div>
+                    <label class="block text-sm font-medium text-gray-300">Decline Reason</label>
+                    <div class="mt-1 text-red-400">
+                        <p class="whitespace-pre-wrap">@Model.DeclineReason</p>
+                    </div>
+                </div>
+            }
+            <div>
+                <label class="block text-sm font-medium text-gray-300">Handled By</label>
+                <div class="mt-1 text-white">
+                    @if (Model.HandledBy != null)
+                    {
+                        <span>@Model.HandledBy.FullName</span>
+                    }
+                    else
+                    {
+                        <span class="text-gray-400">Not yet handled</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-8 flex space-x-4">
+    <a asp-action="Index" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md text-sm font-medium inline-flex items-center">
+        <i data-lucide="arrow-left" class="w-4 h-4 inline mr-2"></i>
+        Back to Requests
+    </a>
+    
+    @if (Model.Status == AdministratorWeb.Models.RequestStatus.Pending)
+    {
+        <button onclick="showAcceptModal(@Model.Id)" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+            <i data-lucide="check" class="w-4 h-4 inline mr-2"></i>
+            Accept Request
+        </button>
+        <button onclick="showDeclineModal(@Model.Id)" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+            <i data-lucide="x" class="w-4 h-4 inline mr-2"></i>
+            Decline Request
+        </button>
+    }
+    
+    @if (Model.Status == AdministratorWeb.Models.RequestStatus.Accepted || Model.Status == AdministratorWeb.Models.RequestStatus.InProgress)
+    {
+        <form asp-action="CompleteRequest" method="post" class="inline">
+            <input type="hidden" name="requestId" value="@Model.Id" />
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+                <i data-lucide="check-circle" class="w-4 h-4 inline mr-2"></i>
+                Mark as Completed
+            </button>
+        </form>
+    }
+</div>

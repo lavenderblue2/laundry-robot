@@ -1,0 +1,402 @@
+@using Humanizer
+@model AdministratorWeb.Models.DTOs.RequestsIndexDto
+@{
+    ViewData["Title"] = "Manage Requests";
+}
+
+<!-- Dashboard Header -->
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Manage Requests</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="inbox" class="w-4 h-4 mr-2"></i>
+                Process and manage customer laundry requests
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button
+                class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
+                <i data-lucide="plus" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                <span>Create Request</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+    <!-- Pending Requests Card -->
+    <div
+        class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-yellow-500/50 transition-all duration-300 hover:scale-105 transform">
+        <div
+            class="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <div class="p-2 bg-yellow-500/20 rounded-xl">
+                            <i data-lucide="clock" class="h-6 w-6 text-yellow-400"></i>
+                        </div>
+                        <span class="ml-2 text-xs font-medium text-yellow-400 uppercase tracking-wider">Pending</span>
+                    </div>
+                    <div
+                        class="text-2xl font-bold text-white mb-1" data-stat="pending">@Model.Requests.Count(r => r.Status == AdministratorWeb.Models.RequestStatus.Pending)</div>
+                    <div class="text-sm text-slate-400">Awaiting Action</div>
+                </div>
+            </div>
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-orange-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+    </div>
+
+    <!-- In Progress Card -->
+    <div
+        class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-brand-500/50 transition-all duration-300 hover:scale-105 transform">
+        <div
+            class="absolute inset-0 bg-gradient-to-br from-brand-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <div class="p-2 bg-brand-500/20 rounded-xl">
+                            <i data-lucide="loader-2" class="h-6 w-6 text-brand-400 animate-spin"></i>
+                        </div>
+                        <span class="ml-2 text-xs font-medium text-brand-400 uppercase tracking-wider">Active</span>
+                    </div>
+                    <div
+                        class="text-2xl font-bold text-white mb-1" data-stat="active">@Model.Requests.Count(r => r.Status == AdministratorWeb.Models.RequestStatus.Accepted || r.Status == AdministratorWeb.Models.RequestStatus.InProgress)</div>
+                    <div class="text-sm text-slate-400">In Progress</div>
+                </div>
+            </div>
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+    </div>
+
+    <!-- Completed Card -->
+    <div
+        class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-emerald-500/50 transition-all duration-300 hover:scale-105 transform">
+        <div
+            class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <div class="p-2 bg-emerald-500/20 rounded-xl">
+                            <i data-lucide="check-circle" class="h-6 w-6 text-emerald-400"></i>
+                        </div>
+                        <span class="ml-2 text-xs font-medium text-emerald-400 uppercase tracking-wider">Done</span>
+                    </div>
+                    <div
+                        class="text-2xl font-bold text-white mb-1" data-stat="completed">@Model.Requests.Count(r => r.Status == AdministratorWeb.Models.RequestStatus.Completed)</div>
+                    <div class="text-sm text-slate-400">Completed</div>
+                </div>
+            </div>
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-green-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+    </div>
+
+    <!-- Declined Card -->
+    <div
+        class="group relative bg-slate-800/50 backdrop-blur-xl overflow-hidden shadow-xl rounded-2xl border border-slate-700/50 hover:border-red-500/50 transition-all duration-300 hover:scale-105 transform">
+        <div
+            class="absolute inset-0 bg-gradient-to-br from-red-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <div class="p-2 bg-red-500/20 rounded-xl">
+                            <i data-lucide="x-circle" class="h-6 w-6 text-red-400"></i>
+                        </div>
+                        <span class="ml-2 text-xs font-medium text-red-400 uppercase tracking-wider">Rejected</span>
+                    </div>
+                    <div
+                        class="text-2xl font-bold text-white mb-1" data-stat="declined">@Model.Requests.Count(r => r.Status == AdministratorWeb.Models.RequestStatus.Declined)</div>
+                    <div class="text-sm text-slate-400">Declined</div>
+                </div>
+            </div>
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-pink-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+    </div>
+</div>
+
+<!-- Requests List -->
+<div
+    class="bg-slate-800/50 backdrop-blur-xl shadow-xl overflow-hidden rounded-2xl border border-slate-700/50 animate-slide-up"
+    style="animation-delay: 0.2s;">
+    <div class="px-6 py-6 border-b border-slate-700/50">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-xl font-bold text-white">All Requests</h3>
+                <p class="mt-1 text-sm text-slate-400 flex items-center">
+                    <i data-lucide="list" class="w-4 h-4 mr-2"></i>
+                    Manage customer laundry requests
+                </p>
+            </div>
+            <button
+                class="inline-flex items-center px-3 py-2 bg-slate-700/50 hover:bg-slate-600/50 text-white text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap">
+                <i data-lucide="filter" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                <span>Filter</span>
+            </button>
+        </div>
+    </div>
+    <div id="requests-container" class="divide-y divide-slate-700/30">
+        <!-- Requests will be dynamically loaded here -->
+        <div class="px-6 py-16 text-center">
+            <div class="w-20 h-20 bg-slate-700/50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="loader-2" class="h-10 w-10 text-slate-500 animate-spin"></i>
+            </div>
+            <h3 class="text-xl font-medium text-white mb-3">Loading Requests...</h3>
+            <p class="text-slate-400">Real-time requests data is loading</p>
+        </div>
+    </div>
+</div>
+
+<!-- Accept Request Modal -->
+<div id="acceptModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm hidden z-50 animate-fade-in">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div
+            class="bg-slate-800/95 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md border border-slate-700/50 shadow-2xl animate-slide-up">
+            <div class="flex items-center mb-6">
+                <div class="p-2 bg-emerald-500/20 rounded-xl mr-3">
+                    <i data-lucide="check-circle" class="h-6 w-6 text-emerald-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Accept Request</h3>
+            </div>
+            <form asp-action="AcceptRequest" method="post" class="space-y-6">
+                <input type="hidden" id="acceptRequestId" name="requestId"/>
+
+                <!-- Request Details Section -->
+                <div id="requestDetails" class="bg-slate-700/30 border border-slate-600/50 rounded-xl p-4 mb-6 hidden">
+                    <h4 class="text-sm font-medium text-slate-200 mb-3 flex items-center">
+                        <i data-lucide="info" class="w-4 h-4 mr-2 text-slate-400"></i>
+                        Request Details
+                    </h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Customer:</span>
+                            <span class="text-white" id="detailCustomerName">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Room:</span>
+                            <span class="text-white" id="detailRoomName">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Assigned Robot:</span>
+                            <span class="text-white" id="detailRobotName">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Detected Weight:</span>
+                            <span class="text-white" id="detailDetectedWeight">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-emerald-500/20 rounded-lg mr-3">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-emerald-400 mb-1">Robot Already Assigned</h4>
+                            <p class="text-xs text-slate-300">Robot is assigned and ready to start once approved</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="flex space-x-3 pt-6">
+                    <button type="submit"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
+                        <i data-lucide="check" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                        <span>Accept Request</span>
+                    </button>
+                    <button type="button" onclick="hideAcceptModal()"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200 whitespace-nowrap">
+                        <i data-lucide="x" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                        <span>Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Decline Request Modal -->
+<div id="declineModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm hidden z-50 animate-fade-in">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div
+            class="bg-slate-800/95 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md border border-slate-700/50 shadow-2xl animate-slide-up">
+            <div class="flex items-center mb-6">
+                <div class="p-2 bg-red-500/20 rounded-xl mr-3">
+                    <i data-lucide="x-circle" class="h-6 w-6 text-red-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Decline Request</h3>
+            </div>
+            <form asp-action="DeclineRequest" method="post" class="space-y-6">
+                <input type="hidden" id="declineRequestId" name="requestId"/>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-3">Reason for decline</label>
+                    <textarea name="reason" rows="4"
+                              class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent resize-none transition-all duration-200"
+                              placeholder="Enter reason for declining this request..." required></textarea>
+                </div>
+
+                <div class="flex space-x-3 pt-6">
+                    <button type="submit"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
+                        <i data-lucide="x-circle" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                        <span>Decline Request</span>
+                    </button>
+                    <button type="button" onclick="hideDeclineModal()"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200 whitespace-nowrap">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                        <span>Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mark for Pickup/Delivery Modal -->
+<div id="markForPickupDeliveryModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm hidden z-50 animate-fade-in">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-slate-800/95 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md border border-slate-700/50 shadow-2xl animate-slide-up">
+            <div class="flex items-center mb-6">
+                <div class="p-2 bg-indigo-500/20 rounded-xl mr-3">
+                    <i data-lucide="package-check" class="h-6 w-6 text-indigo-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Mark for Pickup/Delivery</h3>
+            </div>
+            <form asp-action="MarkForPickupDelivery" method="post" class="space-y-6">
+                <input type="hidden" id="markForPickupDeliveryRequestId" name="requestId"/>
+
+                <div class="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-4 mb-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-indigo-500/20 rounded-lg mr-3">
+                            <i data-lucide="package-check" class="w-4 h-4 text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-white font-medium">Laundry Ready</p>
+                            <p class="text-slate-300 text-sm">Mark this laundry as ready for customer pickup or delivery</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex space-x-3 pt-6">
+                    <button type="submit"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
+                        <i data-lucide="package-check" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                        <span>Mark Ready</span>
+                    </button>
+                    <button type="button" onclick="hideMarkForPickupDeliveryModal()"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200 whitespace-nowrap">
+                        <i data-lucide="arrow-left" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                        <span>Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg z-50 max-w-sm">
+        <div class="flex items-center">
+            <i data-lucide="check-circle" class="h-5 w-5 mr-2"></i>
+            @TempData["Success"]
+        </div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-md shadow-lg z-50 max-w-sm">
+        <div class="flex items-center">
+            @TempData["Error"]
+        </div>
+    </div>
+}
+
+<script>
+    async function showAcceptModal(requestId) {
+        document.getElementById('acceptRequestId').value = requestId;
+        
+        // Fetch request details
+        try {
+            const response = await fetch(`/api/requests/${requestId}/details`);
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Update the details display
+                document.getElementById('detailCustomerName').textContent = data.customerName || 'N/A';
+                document.getElementById('detailRoomName').textContent = data.roomName || 'Not assigned';
+                document.getElementById('detailRobotName').textContent = data.assignedRobotName || 'Not assigned';
+                document.getElementById('detailDetectedWeight').textContent = 
+                    data.detectedWeightKg ? `${data.detectedWeightKg} kg` : 'No reading';
+                
+                // Autofill weight input if detected weight is available
+                const weightInput = document.querySelector('input[name="weight"]');
+                const detectedWeight = parseFloat(data.detectedWeightKg) || 0;
+                if (detectedWeight > 0) {
+                    weightInput.value = detectedWeight.toFixed(3);
+                } else {
+                    weightInput.value = '0';
+                }
+                
+                // Show the details section
+                document.getElementById('requestDetails').classList.remove('hidden');
+            } else {
+                console.error('Failed to fetch request details');
+            }
+        } catch (error) {
+            console.error('Error fetching request details:', error);
+        }
+        
+        document.getElementById('acceptModal').classList.remove('hidden');
+    }
+
+    function hideAcceptModal() {
+        document.getElementById('acceptModal').classList.add('hidden');
+        window.dispatchEvent(new Event('modalClosed'));
+    }
+
+    function showDeclineModal(requestId) {
+        document.getElementById('declineRequestId').value = requestId;
+        document.getElementById('declineModal').classList.remove('hidden');
+    }
+
+    function hideDeclineModal() {
+        document.getElementById('declineModal').classList.add('hidden');
+        window.dispatchEvent(new Event('modalClosed'));
+    }
+
+    function showMarkForPickupDeliveryModal(requestId) {
+        document.getElementById('markForPickupDeliveryRequestId').value = requestId;
+        document.getElementById('markForPickupDeliveryModal').classList.remove('hidden');
+    }
+
+    function hideMarkForPickupDeliveryModal() {
+        document.getElementById('markForPickupDeliveryModal').classList.add('hidden');
+        window.dispatchEvent(new Event('modalClosed'));
+    }
+
+    // Auto-hide notifications after 5 seconds
+    setTimeout(() => {
+        const notifications = document.querySelectorAll('.fixed.top-4.right-4');
+        notifications.forEach(notification => {
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => notification.remove(), 300);
+        });
+    }, 5000);
+</script>
+
+<!-- Real-time requests script -->
+<script src="~/js/realtimeRequests.js" asp-append-version="true"></script>

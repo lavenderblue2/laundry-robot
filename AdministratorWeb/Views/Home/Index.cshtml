@@ -1,0 +1,330 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<!-- Hero Section -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden" >
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute inset-0" style="background-image: radial-gradient(circle at 25% 25%, #0ea5e9 0%, transparent 50%), radial-gradient(circle at 75% 75%, #6366f1 0%, transparent 50%);"></div>
+    </div>
+    
+    <!-- Animated background elements -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -top-40 -right-32 w-80 h-80 bg-gradient-to-br from-brand-500/20 to-transparent rounded-full animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-32 w-96 h-96 bg-gradient-to-br from-indigo-500/20 to-transparent rounded-full animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+    
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <!-- Main heading -->
+        <div class="mb-8 animate-slide-up">
+            <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-sm font-medium text-white mb-6">
+                <i data-lucide="sparkles" class="w-4 h-4 mr-2 text-yellow-400"></i>
+                Powered by Advanced AI & Robotics
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+                <span class="block">Next-Gen</span>
+                <span class="block bg-gradient-to-r from-brand-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                    Laundry Robotics
+                </span>
+            </h1>
+            <p class="text-xl md:text-2xl mb-12 max-w-3xl mx-auto leading-relaxed" style="color: var(--text-muted);">
+                Revolutionary autonomous robots that collect, process, and deliver your laundry with precision and care. The future of laundry service is here.
+            </p>
+        </div>
+        
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 animate-slide-up" style="animation-delay: 0.2s;">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Dashboard" asp-action="Index" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-lg font-semibold rounded-2xl transition-all duration-300 shadow-2xl hover:shadow-brand-500/25 hover:scale-105 transform">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>
+                    Access Dashboard
+                </a>
+            }
+            else
+            {
+                <button onclick="openLoginModal()" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-lg font-semibold rounded-2xl transition-all duration-300 shadow-2xl hover:shadow-brand-500/25 hover:scale-105 transform">
+                    <i data-lucide="shield-check" class="w-5 h-5 mr-3"></i>
+                    Admin Access
+                </button>
+            }
+            <a href="#how-it-works" class="inline-flex items-center px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white text-lg font-semibold rounded-2xl transition-all duration-300 hover:scale-105 transform">
+                <i data-lucide="play-circle" class="w-5 h-5 mr-3"></i>
+                Watch Demo
+            </a>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto animate-slide-up" style="animation-delay: 0.4s;">
+            <div class="text-center">
+                <div class="text-3xl md:text-4xl font-bold mb-2" style="color: var(--text-light);">24/7</div>
+                <div class="text-sm" style="color: var(--text-muted);">Always Available</div>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl md:text-4xl font-bold mb-2" style="color: var(--text-light);">100%</div>
+                <div class="text-sm" style="color: var(--text-muted);">Autonomous</div>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl md:text-4xl font-bold mb-2" style="color: var(--text-light);">&lt;2hrs</div>
+                <div class="text-sm" style="color: var(--text-muted);">Pickup Time</div>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl md:text-4xl font-bold mb-2" style="color: var(--text-light);">99.9%</div>
+                <div class="text-sm" style="color: var(--text-muted);">Reliability</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scroll indicator -->
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <a href="#how-it-works" class="text-white/60 hover:text-white transition-colors">
+            <i data-lucide="chevron-down" class="w-6 h-6"></i>
+        </a>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section id="how-it-works" class="py-24" style="background-color: var(--bg-card);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-20">
+            <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-sm font-medium mb-6" style="color: var(--primary-blue);">
+                <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
+                Seamless Process
+            </div>
+            <h2 class="text-4xl md:text-5xl font-bold mb-6" style="color: var(--text-light);">
+                How Jopart Works
+            </h2>
+            <p class="text-xl max-w-3xl mx-auto" style="color: var(--text-muted);">
+                Experience the future of laundry service with our autonomous robotic fleet that handles everything from pickup to delivery
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <!-- Step 1 -->
+            <div class="relative group">
+                <div class="rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform" style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color);">
+                    <div class="absolute -top-6 left-8">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg" style="background: linear-gradient(135deg, var(--primary-blue), var(--success-green));">
+                            01
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300" style="background: rgba(70, 193, 254, 0.1);">
+                            <i data-lucide="smartphone" class="w-8 h-8" style="color: var(--primary-blue);"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-4 text-center" style="color: var(--text-light);">Request Service</h3>
+                        <p class="text-center leading-relaxed" style="color: var(--text-muted);">
+                            Simply request pickup through our intuitive mobile app. Schedule instantly or set recurring pickups that fit your routine.
+                        </p>
+                    </div>
+                    <div class="absolute bottom-4 right-4 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <i data-lucide="arrow-right" class="w-6 h-6" style="color: var(--primary-blue);"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 2 -->
+            <div class="relative group">
+                <div class="rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform" style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color);">
+                    <div class="absolute -top-6 left-8">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg" style="background: linear-gradient(135deg, var(--primary-blue), var(--warning-yellow));">
+                            02
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300" style="background: rgba(70, 193, 254, 0.1);">
+                            <i data-lucide="bot" class="w-8 h-8" style="color: var(--primary-blue);"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-4 text-center" style="color: var(--text-light);">Robot Collection</h3>
+                        <p class="text-center leading-relaxed" style="color: var(--text-muted);">
+                            Our autonomous robots navigate safely to your location, collect your laundry with care, and provide real-time tracking updates.
+                        </p>
+                    </div>
+                    <div class="absolute bottom-4 right-4 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <i data-lucide="arrow-right" class="w-6 h-6" style="color: var(--primary-blue);"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 3 -->
+            <div class="relative group">
+                <div class="rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 transform" style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color);">
+                    <div class="absolute -top-6 left-8">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg" style="background: linear-gradient(135deg, var(--success-green), var(--primary-blue));">
+                            03
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300" style="background: rgba(68, 214, 140, 0.1);">
+                            <i data-lucide="sparkles" class="w-8 h-8" style="color: var(--success-green);"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold mb-4 text-center" style="color: var(--text-light);">Process & Deliver</h3>
+                        <p class="text-center leading-relaxed" style="color: var(--text-muted);">
+                            Professional cleaning, precise folding, and fresh delivery back to your door—all handled by our advanced robotic systems.
+                        </p>
+                    </div>
+                    <div class="absolute bottom-4 right-4 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <i data-lucide="check" class="w-6 h-6" style="color: var(--success-green);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Process Timeline -->
+        <div class="mt-20">
+            <div class="rounded-3xl p-8 md:p-12 shadow-xl" style="background-color: var(--bg-sidebar); border: 1px solid var(--border-color);">
+                <div class="text-center mb-12">
+                    <h3 class="text-2xl font-bold mb-4" style="color: var(--text-light);">Complete Process Timeline</h3>
+                    <p style="color: var(--text-muted);">From request to delivery in under 24 hours</p>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8">
+                    <div class="text-center">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style="background: rgba(70, 193, 254, 0.1);">
+                            <i data-lucide="clock" class="w-6 h-6" style="color: var(--primary-blue);"></i>
+                        </div>
+                        <div class="text-sm font-medium" style="color: var(--text-light);">Request</div>
+                        <div class="text-xs" style="color: var(--text-muted);">0-5 min</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style="background: rgba(68, 214, 140, 0.1);">
+                            <i data-lucide="navigation" class="w-6 h-6" style="color: var(--success-green);"></i>
+                        </div>
+                        <div class="text-sm font-medium" style="color: var(--text-light);">Dispatch</div>
+                        <div class="text-xs" style="color: var(--text-muted);">5-15 min</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style="background: rgba(254, 221, 105, 0.1);">
+                            <i data-lucide="package" class="w-6 h-6" style="color: var(--warning-yellow);"></i>
+                        </div>
+                        <div class="text-sm font-medium" style="color: var(--text-light);">Pickup</div>
+                        <div class="text-xs" style="color: var(--text-muted);">15-120 min</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style="background: rgba(68, 214, 140, 0.1);">
+                            <i data-lucide="washing-machine" class="w-6 h-6" style="color: var(--success-green);"></i>
+                        </div>
+                        <div class="text-sm font-medium" style="color: var(--text-light);">Process</div>
+                        <div class="text-xs" style="color: var(--text-muted);">2-6 hours</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style="background: rgba(70, 193, 254, 0.1);">
+                            <i data-lucide="home" class="w-6 h-6" style="color: var(--primary-blue);"></i>
+                        </div>
+                        <div class="text-sm font-medium" style="color: var(--text-light);">Deliver</div>
+                        <div class="text-xs" style="color: var(--text-muted);">12-24 hours</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-24" style="background-color: var(--bg-dark);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-20">
+            <div class="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-sm font-medium mb-6" style="color: var(--success-green);">
+                <i data-lucide="star" class="w-4 h-4 mr-2"></i>
+                Why Choose Jopart
+            </div>
+            <h2 class="text-4xl md:text-5xl font-bold mb-6" style="color: var(--text-light);">
+                Advanced Features
+            </h2>
+            <p class="text-xl max-w-3xl mx-auto" style="color: var(--text-muted);">
+                Our cutting-edge technology ensures the highest quality service with unmatched convenience and reliability
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="text-center group">
+                <div class="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(135deg, var(--primary-blue), var(--success-green));">
+                    <i data-lucide="clock" class="w-10 h-10 text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3" style="color: var(--text-light);">24/7 Service</h3>
+                <p style="color: var(--text-muted);">
+                    Round-the-clock availability with instant response times and flexible scheduling
+                </p>
+            </div>
+            
+            <div class="text-center group">
+                <div class="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(135deg, var(--warning-yellow), var(--primary-blue));">
+                    <i data-lucide="zap" class="w-10 h-10 text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3" style="color: var(--text-light);">Lightning Fast</h3>
+                <p style="color: var(--text-muted);">
+                    Optimized routing and processing for same-day turnaround on most orders
+                </p>
+            </div>
+            
+            <div class="text-center group">
+                <div class="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(135deg, var(--success-green), var(--warning-yellow));">
+                    <i data-lucide="brain" class="w-10 h-10 text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3" style="color: var(--text-light);">AI Powered</h3>
+                <p style="color: var(--text-muted);">
+                    Machine learning algorithms optimize every aspect of the cleaning process
+                </p>
+            </div>
+            
+            <div class="text-center group">
+                <div class="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(135deg, var(--primary-blue), var(--danger-red));">
+                    <i data-lucide="shield-check" class="w-10 h-10 text-white"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3" style="color: var(--text-light);">Secure & Safe</h3>
+                <p style="color: var(--text-muted);">
+                    Advanced security protocols and careful handling of your valuable items
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-24 relative overflow-hidden" style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--primary-blue) 50%, var(--success-green) 100%);">
+    <!-- Background elements -->
+    <div class="absolute inset-0">
+        <div class="absolute top-0 left-0 w-full h-full opacity-10">
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 20% 80%, #ffffff 0%, transparent 50%), radial-gradient(circle at 80% 20%, #ffffff 0%, transparent 50%);"></div>
+        </div>
+    </div>
+    
+    <div class="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+        <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
+            Ready to Experience the Future?
+        </h2>
+        <p class="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
+            Join thousands of satisfied customers who have already embraced the convenience of autonomous laundry service.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Administrator"))
+            {
+                <a asp-controller="Dashboard" asp-action="Index" class="inline-flex items-center px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform" style="background: var(--bg-dark); color: var(--primary-blue);">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i>
+                    Access Dashboard
+                </a>
+            }
+            else if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Dashboard" asp-action="Index" class="inline-flex items-center px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform" style="background: var(--bg-dark); color: var(--primary-blue);">
+                    <i data-lucide="arrow-right" class="w-5 h-5 mr-3"></i>
+                    Go to Dashboard
+                </a>
+            }
+            else
+            {
+                <button onclick="openLoginModal()" class="inline-flex items-center px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform" style="background: var(--bg-dark); color: var(--primary-blue);">
+                    <i data-lucide="shield-check" class="w-5 h-5 mr-3"></i>
+                    Administrator Login
+                </button>
+            }
+            <a href="#contact" class="inline-flex items-center px-8 py-4 bg-white/20 backdrop-blur-sm border border-white/30 text-white text-lg font-semibold rounded-2xl transition-all duration-300 hover:bg-white/30 hover:scale-105 transform">
+                <i data-lucide="phone" class="w-5 h-5 mr-3"></i>
+                Contact Sales
+            </a>
+        </div>
+    </div>
+</section>

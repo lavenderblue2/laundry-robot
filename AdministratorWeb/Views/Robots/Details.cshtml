@@ -1,0 +1,899 @@
+@model AdministratorWeb.Models.DTOs.RobotDetailsDto
+@{
+ViewData["Title"] = $"Robot: {Model.Name}";
+var activeRequest = ViewData["ActiveRequest"] as AdministratorWeb.Models.LaundryRequest;
+}
+
+<!-- Dashboard Header -->
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-4">
+                    <li>
+                        <a asp-action="Index" class="text-slate-400 hover:text-slate-300 flex items-center">
+                            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                            Back to Robots
+                        </a>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="text-3xl font-bold text-white mb-2 mt-4">Robot: @Model.Name</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="bot" class="w-4 h-4 mr-2"></i>
+                Real-time robot monitoring, control, and beacon detection
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div
+                class="h-3 w-3 rounded-full @(Model.IsOffline ? "bg-red-400 animate-pulse" : Model.IsActive ? "bg-emerald-400 animate-pulse" : "bg-yellow-400")"></div>
+            <span
+                class="text-sm font-medium @(Model.IsOffline ? "text-red-400" : Model.IsActive ? "text-emerald-400" : "text-yellow-400")">
+                @(Model.IsOffline ? "Offline" : Model.IsActive ? "Active" : "Inactive")
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <!-- Camera Feed -->
+    <div class="xl:col-span-2 space-y-6">
+        <!-- Live Camera Feed -->
+        <div
+            class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-white">Live Camera Feed</h3>
+                <div class="flex items-center space-x-3">
+                    <div id="cameraStatus" class="h-2 w-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span class="text-sm text-slate-400">Live</span>
+                </div>
+            </div>
+
+            <div class="relative bg-slate-900/50 rounded-xl overflow-hidden border border-slate-600/50"
+                 style="aspect-ratio: 4/3;">
+                <img id="cameraFeed"
+                     src="/Robots/GetRobotImage?name=@Model.Name"
+                     alt="Robot Camera Feed"
+                     class="w-full h-full object-cover"/>
+
+                <!-- Camera overlay info -->
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-transparent p-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-slate-400">Line Status:</span>
+                            <span id="lineStatus" class="text-white ml-2 font-medium">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400">Error:</span>
+                            <span id="lineError" class="text-white ml-2 font-medium">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400">Method:</span>
+                            <span id="detectionMethod" class="text-white ml-2 font-medium">--</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400">Using Memory:</span>
+                            <span id="usingMemory" class="text-white ml-2 font-medium">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Beacon Detection Table -->
+        <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 animate-slide-up"
+             style="animation-delay: 0.1s;">
+            <div class="px-6 py-4 border-b border-slate-700/50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-brand-500/20 rounded-xl">
+                            <i data-lucide="radio" class="h-5 w-5 text-brand-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Beacon Detection</h3>
+                            <p class="text-sm text-slate-400">Real-time Bluetooth beacon tracking</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                            <span class="text-slate-400" data-beacon-stat="active">Active: @Model.ActiveBeacons</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            <span class="text-slate-400" data-beacon-stat="lost">Lost: @Model.LostBeacons</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span class="text-slate-400"
+                                  data-beacon-stat="timeout">Timeout: @Model.TimeoutBeacons</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table id="beaconTable" class="w-full"
+                           style="display: @(Model.DetectedBeacons.Any() ? "block" : "none")">
+                        <thead>
+                        <tr class="border-b border-slate-700/50">
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Beacon
+                            </th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Room
+                            </th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Signal
+                            </th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                RSSI
+                            </th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Distance
+                            </th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Last Seen
+                            </th>
+                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody id="beaconTableBody" class="divide-y divide-slate-700/50">
+                        @foreach (var beacon in Model.DetectedBeacons)
+                        {
+                        <tr class="hover:bg-slate-700/30 transition-colors duration-200">
+                            <td class="py-4 px-2">
+                                <div class="flex flex-col">
+                                    <div
+                                        class="text-sm font-medium text-white">@(string.IsNullOrEmpty(beacon.BeaconName) ? "Unknown Beacon" : beacon.BeaconName)</div>
+                                    <div class="text-xs text-slate-400 font-mono">@beacon.MacAddress</div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-2">
+                                            <span
+                                                class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-indigo-900/50 text-indigo-300 border border-indigo-700/50">
+                                                <i data-lucide="home" class="w-3 h-3 mr-1"></i>
+                                                @(string.IsNullOrEmpty(beacon.RoomName) ? "Unknown" : beacon.RoomName)
+                                            </span>
+                            </td>
+                            <td class="py-4 px-2">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-full bg-slate-700 rounded-full h-2">
+                                        @{
+                                        string signalColor = beacon.SignalStrength switch
+                                        {
+                                        RobotProject.Shared.DTOs.BeaconSignalStrength.Excellent => "bg-emerald-500",
+                                        RobotProject.Shared.DTOs.BeaconSignalStrength.Good => "bg-green-500",
+                                        RobotProject.Shared.DTOs.BeaconSignalStrength.Fair => "bg-yellow-500",
+                                        RobotProject.Shared.DTOs.BeaconSignalStrength.Weak => "bg-orange-500",
+                                        _ => "bg-red-500"
+                                        };
+                                        }
+                                        <div class="h-2 rounded-full transition-all duration-300 @signalColor"
+                                             style="width: @beacon.SignalPercentage%"></div>
+                                    </div>
+                                    <span class="text-xs text-slate-400 min-w-0">@beacon.SignalPercentage%</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-2">
+                                <div class="flex flex-col">
+                                        <span
+                                            class="text-sm font-medium @beacon.SignalStrengthCssClass">@beacon.CurrentRssi dBm</span>
+                                    <span
+                                        class="text-xs text-slate-400">Avg: @beacon.AverageRssi.ToString("F1")</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-2">
+                                <div class="flex flex-col">
+                                        <span
+                                            class="text-sm font-medium text-white">@beacon.DistanceMeters.ToString("F1")m</span>
+                                    <span
+                                        class="text-xs text-@(beacon.IsInRange ? "emerald" : "slate")-400">@(beacon.IsInRange ? "In Range" : "Out of Range")</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-2">
+                                            <span
+                                                class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium @beacon.StatusCssClass">
+                                                @{
+                                                string statusIcon = beacon.Status switch
+                                                {
+                                                RobotProject.Shared.DTOs.BeaconDetectionStatus.Active => "check-circle",
+                                                RobotProject.Shared.DTOs.BeaconDetectionStatus.Lost => "alert-circle",
+                                                _ => "x-circle"
+                                                };
+                                                }
+                                                <i data-lucide="@statusIcon" class="w-3 h-3 mr-1"></i>
+                                                @beacon.Status
+                                            </span>
+                            </td>
+                            <td class="py-4 px-2">
+                                <div class="flex flex-col">
+                                        <span
+                                            class="text-sm text-white">@beacon.LastDetected.ToString("HH:mm:ss")</span>
+                                    <span
+                                        class="text-xs text-slate-400">@(beacon.TimeSinceLastDetection.TotalSeconds < 60 ? $"{beacon.TimeSinceLastDetection.TotalSeconds:F0}s ago" : $"{beacon.TimeSinceLastDetection.TotalMinutes:F0}m ago")</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-2">
+                                <div class="flex flex-col space-y-2">
+                                    <button onclick="setAsTarget('@Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(beacon.MacAddress))', '@Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(beacon.BeaconName ?? "Unknown"))')"
+                                            class="bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center"
+                                            @(Model.IsOffline ? "disabled" : "")>
+                                        <i data-lucide="target" class="w-3 h-3 mr-1"></i>
+                                        Set as Target
+                                    </button>
+                                    <button onclick="unsetTarget('@Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(beacon.MacAddress))')"
+                                            class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center"
+                                            @(Model.IsOffline ? "disabled" : "")>
+                                        <i data-lucide="x-circle" class="w-3 h-3 mr-1"></i>
+                                        Unset Target
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noBeaconsMessage" class="text-center py-8"
+                     style="display: @(Model.DetectedBeacons.Any() ? "none" : "block")">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-700/30 rounded-full mb-4">
+                        <i data-lucide="radio" class="h-8 w-8 text-slate-400"></i>
+                    </div>
+                    <h4 class="text-lg font-medium text-white mb-2">No Beacons Detected</h4>
+                    <p class="text-slate-400">This robot is not currently detecting any Bluetooth beacons.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Robot Controls & Status -->
+    <div class="space-y-6">
+        <!-- Quick Controls -->
+        <div
+            class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up"
+            style="animation-delay: 0.2s;">
+            <div class="flex items-center mb-6">
+                <div class="p-2 bg-emerald-500/20 rounded-xl mr-3">
+                    <i data-lucide="gamepad-2" class="h-5 w-5 text-emerald-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Robot Controls</h3>
+            </div>
+            <div class="space-y-3">
+                <form asp-action="StartLineFollowing" method="post" class="w-full">
+                    <input type="hidden" name="name" value="@Model.Name"/>
+                    <button type="submit"
+                            class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+                            @(Model.IsOffline ? "disabled" : "")>
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                        Follow Line
+                    </button>
+                </form>
+
+                <form asp-action="StopRobot" method="post" class="w-full">
+                    <input type="hidden" name="name" value="@Model.Name"/>
+                    <button type="submit"
+                            class="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+                            @(Model.IsOffline ? "disabled" : "")>
+                        <i data-lucide="square" class="w-4 h-4 mr-2"></i>
+                        Stop
+                    </button>
+                </form>
+
+                <form asp-action="ForceStopAndCancelRequests" method="post" class="w-full">
+                    <input type="hidden" name="name" value="@Model.Name"/>
+                    <button type="submit"
+                            class="w-full bg-gradient-to-r from-red-800 to-rose-800 hover:from-red-900 hover:to-rose-900 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+                            @(Model.IsOffline ? "disabled" : "")>
+                        <i data-lucide="alert-octagon" class="w-4 h-4 mr-2"></i>
+                        Force Stop & Cancel All Requests
+                    </button>
+                </form>
+
+                <div class="pt-4 border-t border-slate-700/50">
+                    <label class="block text-sm font-medium text-slate-300 mb-3 flex items-center">
+                        <i data-lucide="map-pin" class="w-4 h-4 mr-2"></i>
+                        Navigation Controls
+                    </label>
+                    <div class="flex space-x-2 mb-3">
+                        <input type="text" id="roomInput" placeholder="Room name"
+                               class="flex-1 bg-slate-700/50 border border-slate-600/50 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200"
+                               @(Model.IsOffline ? "disabled" : "")/>
+                        <button onclick="goToRoom()"
+                                class="bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                                @(Model.IsOffline ? "disabled" : "")>
+                            <i data-lucide="navigation" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <button onclick="unsetTarget()"
+                            class="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+                            @(Model.IsOffline ? "disabled" : "")>
+                        <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i>
+                        Unset Target
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Robot Status -->
+        <div
+            class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up"
+            style="animation-delay: 0.3s;">
+            <div class="flex items-center mb-6">
+                <div class="p-2 bg-brand-500/20 rounded-xl mr-3">
+                    <i data-lucide="activity" class="h-5 w-5 text-brand-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Status Information</h3>
+            </div>
+            <div class="space-y-4 text-sm">
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">IP Address:</span>
+                    <span class="text-white font-mono">@Model.IpAddress</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Status:</span>
+                    <span class="px-3 py-1 text-xs font-semibold rounded-lg @GetStatusBadgeClass(Model.Status)">
+                        @Model.Status
+                    </span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Current Task:</span>
+                    <span class="text-white">@(Model.CurrentTask ?? "None")</span>
+                </div>
+                @{
+                    var targetRoom = ViewData["TargetRoom"] as AdministratorWeb.Models.Room;
+                }
+                @if (targetRoom != null)
+                {
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 flex items-center">
+                            <i data-lucide="palette" class="w-3 h-3 mr-2"></i>
+                            Target Floor Color:
+                        </span>
+                        @if (targetRoom.FloorColorRgb != null)
+                        {
+                            <span class="flex items-center space-x-2">
+                                <span class="w-6 h-6 rounded border border-slate-600" style="background-color: rgb(@targetRoom.FloorColorR, @targetRoom.FloorColorG, @targetRoom.FloorColorB);"></span>
+                                <span class="text-white font-mono text-xs">RGB(@targetRoom.FloorColorR,@targetRoom.FloorColorG,@targetRoom.FloorColorB)</span>
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-slate-500 text-xs">Beacon-only</span>
+                        }
+                    </div>
+                }
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Connected:</span>
+                    <span class="text-white">@Model.ConnectedAt.ToString("MMM dd, HH:mm:ss")</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Duration:</span>
+                    <span
+                        class="text-white">@(Model.ConnectedDuration.TotalHours >= 1 ? $"{Model.ConnectedDuration.Hours}h {Model.ConnectedDuration.Minutes}m" : $"{Model.ConnectedDuration.Minutes}m {Model.ConnectedDuration.Seconds}s")</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Last Ping:</span>
+                    <span class="text-white" id="lastPing">@Model.LastPing.ToString("HH:mm:ss")</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Accept Requests:</span>
+                    <span class="@(Model.CanAcceptRequests ? "text-emerald-400" : "text-red-400")">
+                        @(Model.CanAcceptRequests ? "Yes" : "No")
+                    </span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400 flex items-center">
+                        <i data-lucide="scale" class="w-3 h-3 mr-2"></i>
+                        Weight Reading:
+                    </span>
+                    <span class="text-white font-mono" id="weightReading">-- kg</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400 flex items-center">
+                        <i data-lucide="radar" class="w-3 h-3 mr-2"></i>
+                        Obstacle Distance:
+                    </span>
+                    <span class="text-white font-mono" id="ultrasonicDistance">-- m</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Request Card -->
+        @if (activeRequest != null)
+        {
+        <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-brand-500/50 p-6 animate-slide-up"
+             style="animation-delay: 0.3s;">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i data-lucide="user" class="w-5 h-5 mr-3 text-brand-400"></i>
+                    Active Request
+                </h3>
+                <span class="px-3 py-1 text-xs font-semibold rounded-lg bg-brand-900/50 text-brand-300 border border-brand-700/50">
+                        #@activeRequest.Id
+                    </span>
+            </div>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Customer:</span>
+                    <span class="text-white font-medium">@activeRequest.CustomerName</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Customer ID:</span>
+                    <span class="text-white font-mono text-sm">@activeRequest.CustomerId</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Status:</span>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-md bg-brand-900/50 text-brand-300 border border-brand-700/50">
+                            @activeRequest.Status
+                        </span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Requested At:</span>
+                    <span class="text-white text-sm">@activeRequest.RequestedAt.ToString("MMM dd, HH:mm:ss")</span>
+                </div>
+                @if (activeRequest.Weight.HasValue)
+                {
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Weight:</span>
+                    <span class="text-white font-medium">@activeRequest.Weight.Value kg</span>
+                </div>
+                }
+                @if (activeRequest.TotalCost.HasValue)
+                {
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">Total Cost:</span>
+                    <span class="text-emerald-400 font-bold">$@activeRequest.TotalCost.Value</span>
+                </div>
+                }
+                <div class="pt-3 border-t border-slate-700/50">
+                    <a href="/Requests/Details/@activeRequest.Id"
+                       class="inline-flex items-center justify-center w-full px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-all duration-200">
+                        <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
+                        View Full Request Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        }
+
+        <!-- Admin Controls -->
+        <div
+            class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up"
+            style="animation-delay: 0.4s;">
+            <div class="flex items-center mb-6">
+                <div class="p-2 bg-orange-500/20 rounded-xl mr-3">
+                    <i data-lucide="settings" class="h-5 w-5 text-orange-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Admin Controls</h3>
+            </div>
+            <div class="space-y-3">
+                <form asp-action="ToggleStatus" method="post" class="w-full">
+                    <input type="hidden" name="name" value="@Model.Name"/>
+                    <button type="submit"
+                            class="w-full @(Model.IsActive ? "bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700" : "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700") text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i data-lucide="@(Model.IsActive ? "pause" : "play")" class="w-4 h-4 mr-2 inline"></i>
+                        @(Model.IsActive ? "Deactivate Robot" : "Activate Robot")
+                    </button>
+                </form>
+
+                <form asp-action="ToggleAcceptRequests" method="post" class="w-full">
+                    <input type="hidden" name="name" value="@Model.Name"/>
+                    <button type="submit"
+                            class="w-full @(Model.CanAcceptRequests ? "bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700" : "bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700") text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i data-lucide="@(Model.CanAcceptRequests ? "x-circle" : "check-circle")"
+                           class="w-4 h-4 mr-2 inline"></i>
+                        @(Model.CanAcceptRequests ? "Disable Requests" : "Enable Requests")
+                    </button>
+                </form>
+
+                <form asp-action="Disconnect" method="post" class="w-full">
+                    <input type="hidden" name="name" value="@Model.Name"/>
+                    <button type="submit"
+                            class="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                            onclick="return confirm('Are you sure you want to disconnect this robot?')">
+                        <i data-lucide="power" class="w-4 h-4 mr-2 inline"></i>
+                        Disconnect Robot
+                    </button>
+                </form>
+
+                <div class="pt-4 border-t border-slate-700/50">
+                    <label class="block text-sm font-medium text-slate-300 mb-3 flex items-center">
+                        <i data-lucide="palette" class="w-4 h-4 mr-2"></i>
+                        Line Following Color
+                    </label>
+                    <div class="flex space-x-2 mb-3">
+                        <input type="color" id="followColorPicker" value="@Model.FollowColorHex"
+                               class="w-full h-10 rounded-xl border-2 border-slate-600/50 bg-slate-700/50 cursor-pointer"/>
+                        <button onclick="updateFollowColor()"
+                                class="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
+                            Apply Color
+                        </button>
+                    </div>
+                    <div class="flex space-x-1">
+                        <input type="number" id="colorR" min="0" max="255" value="@Model.FollowColorR" placeholder="R"
+                               class="flex-1 bg-slate-700/50 border border-slate-600/50 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500/50"/>
+                        <input type="number" id="colorG" min="0" max="255" value="@Model.FollowColorG" placeholder="G"
+                               class="flex-1 bg-slate-700/50 border border-slate-600/50 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500/50"/>
+                        <input type="number" id="colorB" min="0" max="255" value="@Model.FollowColorB" placeholder="B"
+                               class="flex-1 bg-slate-700/50 border border-slate-600/50 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500/50"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+
+private string GetStatusBadgeClass(AdministratorWeb.Models.RobotStatus status)
+{
+return status switch
+{
+AdministratorWeb.Models.RobotStatus.Available => "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50",
+AdministratorWeb.Models.RobotStatus.Busy => "bg-blue-900/50 text-blue-300 border border-blue-700/50",
+AdministratorWeb.Models.RobotStatus.Maintenance => "bg-yellow-900/50 text-yellow-300 border border-yellow-700/50",
+_ => "bg-slate-700/50 text-slate-300 border border-slate-600/50"
+};
+}
+
+}
+
+@section Scripts {
+<script>
+    let refreshInterval;
+
+    function startAutoRefresh() {
+        // Refresh camera feed and status every 1 second
+        refreshInterval = setInterval(() => {
+            refreshCameraFeed();
+            refreshRobotStatus();
+        }, 1000);
+    }
+
+    function refreshCameraFeed() {
+        const img = document.getElementById('cameraFeed');
+        const timestamp = new Date().getTime();
+        img.src = `/Robots/GetRobotImage?name=@Model.Name&t=${timestamp}`;
+    }
+
+    async function refreshRobotStatus() {
+        try {
+            const response = await fetch(`/Robots/GetRobotStatus?name=@Model.Name`);
+            const data = await response.json();
+
+            // Update status information
+            document.getElementById('lastPing').textContent = new Date(data.lastPing).toLocaleTimeString();
+            
+            // Update weight reading
+            if (data.weightKg !== undefined) {
+                document.getElementById('weightReading').textContent = `${data.weightKg.toFixed(4)} kg`;
+            } else {
+                document.getElementById('weightReading').textContent = '-- kg';
+            }
+
+            // Update ultrasonic distance
+            if (data.usSensor1ObstacleDistance !== undefined) {
+                document.getElementById('ultrasonicDistance').textContent = `${data.usSensor1ObstacleDistance.toFixed(2)} m`;
+            } else {
+                document.getElementById('ultrasonicDistance').textContent = '-- m';
+            }
+
+            if (data.cameraData) {
+                document.getElementById('lineStatus').textContent = '';
+                document.getElementById('lineError').textContent = data.cameraData.error ? `${data.cameraData.error}px` : '--';
+                document.getElementById('detectionMethod').textContent = data.cameraData.detectionMethod || '--';
+                document.getElementById('usingMemory').textContent = data.cameraData.usingMemory ? '🧠 Yes' : '📷 No';
+            }
+
+            // Update camera status indicator
+            const statusIndicator = document.getElementById('cameraStatus');
+            if (data.isOffline) {
+                statusIndicator.className = 'h-2 w-2 bg-red-400 rounded-full animate-pulse';
+            } else {
+                statusIndicator.className = 'h-2 w-2 bg-emerald-400 rounded-full animate-pulse';
+            }
+
+            // Update beacon detection table and stats
+            updateBeaconDetectionTable(data.detectedBeacons, data.beaconStats);
+
+        } catch (error) {
+            console.error('Error refreshing robot status:', error);
+        }
+    }
+
+    function updateBeaconDetectionTable(beacons, stats) {
+        // Update beacon stats
+        const activeElement = document.querySelector('[data-beacon-stat="active"]');
+        const lostElement = document.querySelector('[data-beacon-stat="lost"]');
+        const timeoutElement = document.querySelector('[data-beacon-stat="timeout"]');
+
+        if (activeElement) activeElement.textContent = `Active: ${stats.active}`;
+        if (lostElement) lostElement.textContent = `Lost: ${stats.lost}`;
+        if (timeoutElement) timeoutElement.textContent = `Timeout: ${stats.timeout}`;
+
+        // Get the beacon table body
+        const tableBody = document.querySelector('#beaconTableBody');
+        const noBeaconsMessage = document.querySelector('#noBeaconsMessage');
+        const beaconTable = document.querySelector('#beaconTable');
+
+        if (!beacons || beacons.length === 0) {
+            // Show no beacons message
+            if (beaconTable) beaconTable.style.display = 'none';
+            if (noBeaconsMessage) noBeaconsMessage.style.display = 'block';
+            return;
+        }
+
+        // Hide no beacons message and show table
+        if (beaconTable) beaconTable.style.display = 'block';
+        if (noBeaconsMessage) noBeaconsMessage.style.display = 'none';
+
+        if (!tableBody) return;
+
+        // Clear existing rows
+        tableBody.innerHTML = '';
+
+        // Add new rows
+        beacons.forEach(beacon => {
+            const timeSinceLastDetection = beacon.timeSinceLastDetection;
+            const timeText = timeSinceLastDetection.totalSeconds < 60
+                ? `${Math.floor(timeSinceLastDetection.totalSeconds)}s ago`
+                : `${Math.floor(timeSinceLastDetection.totalMinutes)}m ago`;
+
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-slate-700/30 transition-colors duration-200';
+            row.innerHTML = `
+                <td class="py-4 px-2">
+                    <div class="flex flex-col">
+                        <div class="text-sm font-medium text-white">${beacon.beaconName || 'Unknown Beacon'}</div>
+                        <div class="text-xs text-slate-400 font-mono">${beacon.macAddress}</div>
+                    </div>
+                </td>
+                <td class="py-4 px-2">
+                    <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-indigo-900/50 text-indigo-300 border border-indigo-700/50">
+                        <i data-lucide="home" class="w-3 h-3 mr-1"></i>
+                        ${beacon.roomName || 'Unknown'}
+                    </span>
+                </td>
+                <td class="py-4 px-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-full bg-slate-700 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all duration-300 ${beacon.signalStrengthColor}" style="width: ${beacon.signalPercentage}%"></div>
+                        </div>
+                        <span class="text-xs text-slate-400 min-w-0">${beacon.signalPercentage}%</span>
+                    </div>
+                </td>
+                <td class="py-4 px-2">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-medium ${beacon.signalStrengthCssClass}">${beacon.currentRssi} dBm</span>
+                        <span class="text-xs text-slate-400">Avg: ${beacon.averageRssi.toFixed(1)}</span>
+                    </div>
+                </td>
+                <td class="py-4 px-2">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-medium text-white">${beacon.distanceMeters.toFixed(1)}m</span>
+                        <span class="text-xs text-${beacon.isInRange ? 'emerald' : 'slate'}-400">${beacon.isInRange ? 'In Range' : 'Out of Range'}</span>
+                    </div>
+                </td>
+                <td class="py-4 px-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${beacon.statusCssClass}">
+                        <i data-lucide="${beacon.statusIcon}" class="w-3 h-3 mr-1"></i>
+                        ${beacon.status}
+                    </span>
+                </td>
+                <td class="py-4 px-2">
+                    <div class="flex flex-col">
+                        <span class="text-sm text-white">${new Date(beacon.lastDetected).toLocaleTimeString()}</span>
+                        <span class="text-xs text-slate-400">${timeText}</span>
+                    </div>
+                </td>
+                <td class="py-4 px-2">
+                    <div class="flex flex-col space-y-2">
+                        <button onclick="setAsTarget('${btoa(beacon.macAddress)}', '${btoa(beacon.beaconName || 'Unknown')}')" 
+                                class="bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center"
+                                @(Model.IsOffline ? "disabled" : "")>
+                            <i data-lucide="target" class="w-3 h-3 mr-1"></i>
+                            Set as Target
+                        </button>
+                        <button onclick="unsetTarget('${btoa(beacon.macAddress)}')" 
+                                class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center"
+                                @(Model.IsOffline ? "disabled" : "")>
+                            <i data-lucide="x-circle" class="w-3 h-3 mr-1"></i>
+                            Unset Target
+                        </button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // Re-initialize lucide icons for the new content
+        lucide.createIcons();
+    }
+
+    function goToRoom() {
+        const roomName = document.getElementById('roomInput').value.trim();
+        if (!roomName) {
+            alert('Please enter a room name');
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '@Url.Action("GoToRoom")';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'hidden';
+        nameInput.name = 'name';
+        nameInput.value = '@Model.Name';
+
+        const roomInput = document.createElement('input');
+        roomInput.type = 'hidden';
+        roomInput.name = 'room';
+        roomInput.value = roomName;
+
+        form.appendChild(nameInput);
+        form.appendChild(roomInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Initialize lucide icons
+    lucide.createIcons();
+
+    // Start auto-refresh when page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        startAutoRefresh();
+    });
+
+    // Stop auto-refresh when page is hidden/closed
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') {
+            clearInterval(refreshInterval);
+        } else {
+            startAutoRefresh();
+        }
+    });
+
+    function setAsTarget(beaconMacB64, beaconNameB64) {
+        if (!beaconMacB64) {
+            alert('Invalid beacon MAC address');
+            return;
+        }
+
+        // Decode base64 parameters
+        const beaconMac = atob(beaconMacB64);
+        const beaconName = atob(beaconNameB64);
+
+        const confirmed = confirm(`Set beacon "${beaconName}" (${beaconMac}) as navigation target for robot @Model.Name?`);
+        if (!confirmed) {
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '@Url.Action("SetBeaconTarget")';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'hidden';
+        nameInput.name = 'robotName';
+        nameInput.value = '@Model.Name';
+
+        const beaconInput = document.createElement('input');
+        beaconInput.type = 'hidden';
+        beaconInput.name = 'beaconMac';
+        beaconInput.value = beaconMac;
+
+        form.appendChild(nameInput);
+        form.appendChild(beaconInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function unsetTarget(beaconMacB64) {
+        const beaconMac = atob(beaconMacB64);
+        const confirmed = confirm(`Cancel navigation target for beacon ${beaconMac}?`);
+        if (!confirmed) {
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '@Url.Action("UnsetTarget")';
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'hidden';
+        nameInput.name = 'robotName';
+        nameInput.value = '@Model.Name';
+
+        const beaconInput = document.createElement('input');
+        beaconInput.type = 'hidden';
+        beaconInput.name = 'beaconMac';
+        beaconInput.value = beaconMac;
+
+        form.appendChild(nameInput);
+        form.appendChild(beaconInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    async function updateFollowColor() {
+        const picker = document.getElementById('followColorPicker');
+        const rInput = document.getElementById('colorR');
+        const gInput = document.getElementById('colorG');
+        const bInput = document.getElementById('colorB');
+
+        let r, g, b;
+
+        if (rInput.value && gInput.value && bInput.value) {
+            // Use manual RGB input
+            r = parseInt(rInput.value);
+            g = parseInt(gInput.value);
+            b = parseInt(bInput.value);
+        } else {
+            // Use color picker
+            const hex = picker.value;
+            r = parseInt(hex.substr(1, 2), 16);
+            g = parseInt(hex.substr(3, 2), 16);
+            b = parseInt(hex.substr(5, 2), 16);
+        }
+
+        // Update both inputs
+        rInput.value = r;
+        gInput.value = g;
+        bInput.value = b;
+        picker.value = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+
+        // Send POST request to backend
+        try {
+            const formData = new FormData();
+            formData.append('robotName', '@Model.Name');
+            formData.append('r', r.toString());
+            formData.append('g', g.toString());
+            formData.append('b', b.toString());
+
+            const response = await fetch('@Url.Action("UpdateRobotColor", "Robots")', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(result.message);
+            } else {
+                alert(`Error: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Error updating robot color:', error);
+            alert('Failed to update robot color. Please try again.');
+        }
+    }
+
+    // Sync color picker and RGB inputs
+    document.getElementById('followColorPicker').addEventListener('change', function() {
+        const hex = this.value;
+        document.getElementById('colorR').value = parseInt(hex.substr(1, 2), 16);
+        document.getElementById('colorG').value = parseInt(hex.substr(3, 2), 16);
+        document.getElementById('colorB').value = parseInt(hex.substr(5, 2), 16);
+    });
+
+    // Sync RGB inputs to color picker
+    ['colorR', 'colorG', 'colorB'].forEach(id => {
+        document.getElementById(id).addEventListener('input', function() {
+            const r = parseInt(document.getElementById('colorR').value) || 0;
+            const g = parseInt(document.getElementById('colorG').value) || 0;
+            const b = parseInt(document.getElementById('colorB').value) || 0;
+
+            const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            document.getElementById('followColorPicker').value = hex;
+        });
+    });
+</script>
+}
