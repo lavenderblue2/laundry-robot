@@ -241,7 +241,20 @@ namespace AdministratorWeb.Controllers.Api
                                                    r.Status == RequestStatus.FinishedWashingGoingToBase ||
                                                    r.Status == RequestStatus.Cancelled)); // Cancelled requests need robot to return to base
 
+                    // Check if there's any navigation target beacon set
+                    bool hasNavigationTarget = activeBeacons.Any(b => b.IsNavigationTarget);
+
                     // Robot should line follow if EITHER manual flag is set OR there's an active request
+                    // BUT if manual mode is on with NO navigation target, auto-clear the flag to prevent robot from moving aimlessly
+                    if (manualLineFollowing && !hasNavigationTarget && activeRequest == null)
+                    {
+                        _logger.LogWarning(
+                            "Robot {RobotName} has manual line following enabled but NO navigation target - auto-clearing flag to prevent aimless movement",
+                            name);
+                        await _robotService.SetLineFollowingAsync(name, false);
+                        manualLineFollowing = false;
+                    }
+
                     isLineFollowing = manualLineFollowing || activeRequest != null;
 
                     if (manualLineFollowing && activeRequest == null)
