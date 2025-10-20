@@ -362,6 +362,7 @@ namespace AdministratorWeb.Controllers.Api
                     RssiThreshold = b.RssiThreshold,
                     IsActive = b.IsActive,
                     IsNavigationTarget = b.IsNavigationTarget,
+                    IsBase = b.IsBase,
                     Priority = b.Priority
                 })
                 .ToListAsync();
