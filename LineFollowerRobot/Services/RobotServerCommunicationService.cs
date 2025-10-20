@@ -141,7 +141,9 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
             var detectedBeacons = GetDetectedBeacons();
 
             // Check if robot is near any navigation target
-            bool isInTarget = CheckIfAtNavigationTarget(detectedBeacons);
+            // ARRIVAL DETECTION DISABLED: Using LineFollowerService beacon detection instead
+            // This prevents duplicate/conflicting arrival detection systems
+            bool isInTarget = false; // CheckIfAtNavigationTarget(detectedBeacons);
 
             // Get current weight reading
             double currentWeightKg = GetCurrentWeight();
