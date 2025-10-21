@@ -301,5 +301,125 @@ namespace AdministratorWeb.Controllers
             TempData["Success"] = "Adjustment deleted successfully.";
             return RedirectToAction(nameof(Adjustments));
         }
+
+        public async Task<IActionResult> SalesReport(DateTime? from, DateTime? to, string? period)
+        {
+            // Set default date range
+            var today = DateTime.Today;
+            var fromDate = from ?? new DateTime(today.Year, today.Month, 1); // Default: Start of month
+            var toDate = to ?? today;
+
+            // Apply quick period presets
+            if (!string.IsNullOrEmpty(period))
+            {
+                switch (period.ToLower())
+                {
+                    case "today":
+                        fromDate = today;
+                        toDate = today;
+                        break;
+                    case "week":
+                        fromDate = today.AddDays(-7);
+                        toDate = today;
+                        break;
+                    case "month":
+                        fromDate = new DateTime(today.Year, today.Month, 1);
+                        toDate = today;
+                        break;
+                    case "year":
+                        fromDate = new DateTime(today.Year, 1, 1);
+                        toDate = today;
+                        break;
+                }
+            }
+
+            // Fetch payments for the period
+            var payments = await _context.Payments
+                .Where(p => p.CreatedAt >= fromDate && p.CreatedAt <= toDate.AddDays(1))
+                .OrderBy(p => p.CreatedAt)
+                .ToListAsync();
+
+            var completedPayments = payments.Where(p => p.Status == PaymentStatus.Completed).ToList();
+
+            // Calculate summary statistics
+            var totalRevenue = completedPayments.Sum(p => p.Amount);
+            var totalTransactions = payments.Count;
+            var avgTransactionValue = totalTransactions > 0 ? totalRevenue / completedPayments.Count : 0;
+
+            // Payment status breakdown
+            var completedCount = payments.Count(p => p.Status == PaymentStatus.Completed);
+            var pendingCount = payments.Count(p => p.Status == PaymentStatus.Pending);
+            var failedCount = payments.Count(p => p.Status == PaymentStatus.Failed);
+
+            // Daily revenue breakdown
+            var dailyRevenue = completedPayments
+                .GroupBy(p => p.CreatedAt.Date)
+                .Select(g => new DailyRevenueDto
+                {
+                    Date = g.Key,
+                    Revenue = g.Sum(p => p.Amount),
+                    TransactionCount = g.Count()
+                })
+                .OrderBy(d => d.Date)
+                .ToList();
+
+            // Top customers by revenue
+            var topCustomers = completedPayments
+                .GroupBy(p => new { p.CustomerId, p.CustomerName })
+                .Select(g => new CustomerRevenueDto
+                {
+                    CustomerId = g.Key.CustomerId,
+                    CustomerName = g.Key.CustomerName,
+                    TotalSpent = g.Sum(p => p.Amount),
+                    TransactionCount = g.Count()
+                })
+                .OrderByDescending(c => c.TotalSpent)
+                .Take(10)
+                .ToList();
+
+            // Revenue by payment method
+            var revenueByMethod = completedPayments
+                .GroupBy(p => p.Method.ToString())
+                .ToDictionary(g => g.Key, g => g.Sum(p => p.Amount));
+
+            // Transactions by status
+            var transactionsByStatus = payments
+                .GroupBy(p => p.Status.ToString())
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var reportDto = new SalesReportDto
+            {
+                TotalRevenue = totalRevenue,
+                TotalTransactions = totalTransactions,
+                AverageTransactionValue = avgTransactionValue,
+                CompletedCount = completedCount,
+                PendingCount = pendingCount,
+                FailedCount = failedCount,
+                FromDate = fromDate,
+                ToDate = toDate,
+                PeriodLabel = $"{fromDate:MMM dd, yyyy} - {toDate:MMM dd, yyyy}",
+                DailyRevenue = dailyRevenue,
+                TopCustomers = topCustomers,
+                RevenueByMethod = revenueByMethod,
+                TransactionsByStatus = transactionsByStatus
+            };
+
+            ViewData["SalesReportData"] = reportDto;
+            return View(reportDto);
+        }
+
+        public async Task<IActionResult> ExportSalesReportExcel(DateTime? from, DateTime? to)
+        {
+            // This will be implemented with EPPlus library
+            TempData["Info"] = "Excel export feature coming soon!";
+            return RedirectToAction(nameof(SalesReport), new { from, to });
+        }
+
+        public async Task<IActionResult> ExportSalesReportPdf(DateTime? from, DateTime? to)
+        {
+            // This will be implemented with iTextSharp or similar
+            TempData["Info"] = "PDF export feature coming soon!";
+            return RedirectToAction(nameof(SalesReport), new { from, to });
+        }
     }
 }

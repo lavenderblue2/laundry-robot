@@ -1,0 +1,412 @@
+@model AdministratorWeb.Models.DTOs.SalesReportDto
+@{
+    ViewData["Title"] = "Sales Report";
+}
+
+<!-- Header Section -->
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Sales Report</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="bar-chart-3" class="w-4 h-4 mr-2"></i>
+                Comprehensive sales analytics and insights
+            </p>
+        </div>
+        <div class="flex items-center space-x-3 no-print">
+            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="printer" class="w-4 h-4 mr-2"></i>
+                Print Report
+            </button>
+            <a asp-action="ExportSalesReportExcel" asp-route-from="@Model.FromDate" asp-route-to="@Model.ToDate" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-2"></i>
+                Export Excel
+            </a>
+            <a asp-action="ExportSalesReportPdf" asp-route-from="@Model.FromDate" asp-route-to="@Model.ToDate" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                Export PDF
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Period Selector -->
+<div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 mb-8 no-print animate-slide-up" style="animation-delay: 0.1s;">
+    <div class="p-6">
+        <form method="get" class="space-y-4">
+            <!-- Quick Period Buttons -->
+            <div class="flex gap-2 flex-wrap">
+                <span class="text-sm font-medium text-gray-300 mr-2">Quick Period:</span>
+                <a asp-action="SalesReport" asp-route-period="today" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition">Today</a>
+                <a asp-action="SalesReport" asp-route-period="week" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition">This Week</a>
+                <a asp-action="SalesReport" asp-route-period="month" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition">This Month</a>
+                <a asp-action="SalesReport" asp-route-period="year" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition">This Year</a>
+            </div>
+
+            <!-- Custom Date Range -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">From Date</label>
+                    <input name="from" type="date" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">To Date</label>
+                    <input name="to" type="date" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                        Generate Report
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Period Label -->
+<div class="mb-6 animate-slide-up" style="animation-delay: 0.15s;">
+    <div class="inline-flex items-center px-4 py-2 bg-brand-600/20 border border-brand-500/30 rounded-lg">
+        <i data-lucide="calendar" class="w-4 h-4 mr-2 text-brand-400"></i>
+        <span class="text-brand-300 font-medium">Report Period: @Model.PeriodLabel</span>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.2s;">
+    <!-- Total Revenue Card -->
+    <div class="group relative bg-gradient-to-br from-emerald-600 to-green-600 overflow-hidden shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+        <div class="absolute inset-0 bg-gradient-to-br from-black/20 to-transparent"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <i data-lucide="dollar-sign" class="h-8 w-8 text-white"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">₱@Model.TotalRevenue.ToString("N2")</div>
+            <div class="text-emerald-100 text-sm font-medium">Total Revenue</div>
+        </div>
+    </div>
+
+    <!-- Total Transactions Card -->
+    <div class="group relative bg-gradient-to-br from-blue-600 to-indigo-600 overflow-hidden shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+        <div class="absolute inset-0 bg-gradient-to-br from-black/20 to-transparent"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <i data-lucide="receipt" class="h-8 w-8 text-white"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">@Model.TotalTransactions</div>
+            <div class="text-blue-100 text-sm font-medium">Total Transactions</div>
+        </div>
+    </div>
+
+    <!-- Average Transaction Card -->
+    <div class="group relative bg-gradient-to-br from-purple-600 to-pink-600 overflow-hidden shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+        <div class="absolute inset-0 bg-gradient-to-br from-black/20 to-transparent"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <i data-lucide="trending-up" class="h-8 w-8 text-white"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">₱@Model.AverageTransactionValue.ToString("N2")</div>
+            <div class="text-purple-100 text-sm font-medium">Average Transaction</div>
+        </div>
+    </div>
+
+    <!-- Completed Payments Card -->
+    <div class="group relative bg-gradient-to-br from-cyan-600 to-teal-600 overflow-hidden shadow-xl rounded-2xl transform hover:scale-105 transition-all duration-300">
+        <div class="absolute inset-0 bg-gradient-to-br from-black/20 to-transparent"></div>
+        <div class="relative p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <i data-lucide="check-circle" class="h-8 w-8 text-white"></i>
+                </div>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">@Model.CompletedCount</div>
+            <div class="text-cyan-100 text-sm font-medium">Completed Payments</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Revenue Trend Chart -->
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.3s;">
+        <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+            <i data-lucide="line-chart" class="w-5 h-5 mr-2 text-brand-400"></i>
+            Daily Revenue Trend
+        </h3>
+        <canvas id="revenueChart" height="300"></canvas>
+    </div>
+
+    <!-- Payment Status Breakdown -->
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.35s;">
+        <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+            <i data-lucide="pie-chart" class="w-5 h-5 mr-2 text-brand-400"></i>
+            Payment Status Breakdown
+        </h3>
+        <canvas id="statusChart" height="300"></canvas>
+    </div>
+</div>
+
+<!-- Top Customers Table -->
+<div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 mb-8 animate-slide-up" style="animation-delay: 0.4s;">
+    <div class="px-6 py-6 border-b border-slate-700/50">
+        <h3 class="text-xl font-bold text-white flex items-center">
+            <i data-lucide="users" class="w-5 h-5 mr-2 text-brand-400"></i>
+            Top 10 Customers by Revenue
+        </h3>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-700">
+            <thead class="bg-slate-700/50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Rank</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Customer</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Total Spent</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Transactions</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Avg per Transaction</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/30">
+                @{
+                    var rank = 1;
+                    foreach (var customer in Model.TopCustomers)
+                    {
+                        var avgPerTransaction = customer.TransactionCount > 0 ? customer.TotalSpent / customer.TransactionCount : 0;
+                        var medalColor = rank == 1 ? "text-yellow-400" : rank == 2 ? "text-gray-300" : rank == 3 ? "text-orange-400" : "text-slate-500";
+
+                        <tr class="hover:bg-slate-700/20 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-2xl font-bold @medalColor">@rank</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-white">@customer.CustomerName</div>
+                                <div class="text-xs text-gray-400">ID: @customer.CustomerId</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-lg font-bold text-emerald-400">₱@customer.TotalSpent.ToString("N2")</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 bg-brand-900/50 text-brand-300 text-sm font-medium rounded-lg border border-brand-700/50">
+                                    @customer.TransactionCount
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-300">₱@avgPerTransaction.ToString("N2")</div>
+                            </td>
+                        </tr>
+                        rank++;
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    @if (!Model.TopCustomers.Any())
+    {
+        <div class="px-6 py-12 text-center">
+            <i data-lucide="users" class="mx-auto h-12 w-12 text-gray-600"></i>
+            <h3 class="mt-2 text-sm font-medium text-white">No customer data</h3>
+            <p class="mt-1 text-sm text-gray-400">No transactions found for this period.</p>
+        </div>
+    }
+</div>
+
+<!-- Payment Status Summary -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.45s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Completed</p>
+                <p class="text-3xl font-bold text-emerald-400">@Model.CompletedCount</p>
+            </div>
+            <div class="p-3 bg-emerald-500/20 rounded-xl">
+                <i data-lucide="check-circle" class="h-8 w-8 text-emerald-400"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.5s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Pending</p>
+                <p class="text-3xl font-bold text-yellow-400">@Model.PendingCount</p>
+            </div>
+            <div class="p-3 bg-yellow-500/20 rounded-xl">
+                <i data-lucide="clock" class="h-8 w-8 text-yellow-400"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.55s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Failed</p>
+                <p class="text-3xl font-bold text-red-400">@Model.FailedCount</p>
+            </div>
+            <div class="p-3 bg-red-500/20 rounded-xl">
+                <i data-lucide="x-circle" class="h-8 w-8 text-red-400"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+    // Revenue Trend Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueChart = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: [@Html.Raw(string.Join(",", Model.DailyRevenue.Select(d => $"'{d.Date:MMM dd}'")))],
+            datasets: [{
+                label: 'Daily Revenue (₱)',
+                data: [@string.Join(",", Model.DailyRevenue.Select(d => d.Revenue))],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                pointBackgroundColor: 'rgb(59, 130, 246)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#cbd5e1',
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '₱' + context.parsed.y.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#94a3b8',
+                        callback: function(value) {
+                            return '₱' + value.toFixed(0);
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(148, 163, 184, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#94a3b8'
+                    },
+                    grid: {
+                        color: 'rgba(148, 163, 184, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Status Breakdown Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'Pending', 'Failed'],
+            datasets: [{
+                data: [@Model.CompletedCount, @Model.PendingCount, @Model.FailedCount],
+                backgroundColor: [
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(234, 179, 8, 0.8)',
+                    'rgba(239, 68, 68, 0.8)'
+                ],
+                borderColor: [
+                    'rgb(16, 185, 129)',
+                    'rgb(234, 179, 8)',
+                    'rgb(239, 68, 68)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#cbd5e1',
+                        padding: 20,
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#cbd5e1',
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    borderWidth: 1,
+                    padding: 12
+                }
+            }
+        }
+    });
+</script>
+
+<!-- Print Styles -->
+<style>
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+        body {
+            background: white !important;
+        }
+        .bg-slate-800, .bg-gray-800 {
+            background: white !important;
+            border: 1px solid #e5e7eb !important;
+        }
+        .text-white {
+            color: black !important;
+        }
+        .text-gray-400, .text-slate-400 {
+            color: #6b7280 !important;
+        }
+    }
+
+    .animate-slide-up {
+        animation: slideUp 0.6s ease-out forwards;
+        opacity: 0;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
