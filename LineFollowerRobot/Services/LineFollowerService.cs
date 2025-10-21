@@ -53,6 +53,8 @@ public class LineFollowerService : BackgroundService
     // 10-Check Beacon Verification System @ 200ms intervals (Total: 2 seconds)
     private int _consecutiveBeaconDetections = 0;
     private const int REQUIRED_CONSECUTIVE_DETECTIONS = 10; // 10 checks for high reliability
+    private int _consecutiveRssiFailures = 0; // Track consecutive RSSI drops during verification
+    private const int MAX_RSSI_FAILURES_BEFORE_RESUME = 5; // Allow 5 RSSI drops before giving up
     private DateTime _lastBeaconVerificationCheck = DateTime.MinValue;
     private const int VERIFICATION_CHECK_INTERVAL_MS = 200; // Check every 200ms (fast response)
     private bool _arrivalConfirmed = false; // Flag to prevent further beacon processing after arrival
@@ -145,6 +147,7 @@ public class LineFollowerService : BackgroundService
                     _lineLostCounter = 0;
                     // Reset beacon verification
                     _consecutiveBeaconDetections = 0;
+                    _consecutiveRssiFailures = 0; // Reset RSSI failure counter
                     _lastBeaconVerificationCheck = DateTime.MinValue;
                     _arrivalConfirmed = false; // Reset arrival flag when starting new navigation
                     _verifyingBeacon = false; // Reset verification pause flag
@@ -425,10 +428,11 @@ public class LineFollowerService : BackgroundService
     /// Handle beacon detection events with 10-CHECK VERIFICATION ALGORITHM
     /// Algorithm:
     /// 1. Detect beacon in range → FULL STOP and check RSSI
-    /// 2. Wait 200ms, check again → If RSSI still >= threshold, count++
+    /// 2. Wait 200ms, check again → If RSSI still >= threshold, count++ and reset failure counter
     /// 3. Repeat 10 times total (2 seconds total verification time)
     /// 4. If all 10 checks pass → Confirm arrival and announce
-    /// 5. If ANY check fails (RSSI drops below threshold) → Immediately reset counter and resume moving
+    /// 5. If RSSI drops below threshold → Increment failure counter
+    /// 6. If 5 consecutive RSSI failures → Resume moving (prevents missing target due to 1 bad reading)
     /// </summary>
     private async void OnBeaconDetected(object? sender, BeaconInfo beacon)
     {
@@ -501,6 +505,7 @@ public class LineFollowerService : BackgroundService
                 if ((now - _lastBeaconVerificationCheck).TotalMilliseconds >= VERIFICATION_CHECK_INTERVAL_MS)
                 {
                     _consecutiveBeaconDetections++;
+                    _consecutiveRssiFailures = 0; // Reset failure counter when RSSI is good
                     _lastBeaconVerificationCheck = now;
 
                     _logger.LogWarning(
@@ -521,6 +526,7 @@ public class LineFollowerService : BackgroundService
                         _arrivalConfirmed = true; // Set flag to ignore all future beacon detections
                         await _motorService.StopLineFollowingAsync();
                         _consecutiveBeaconDetections = 0; // Reset for next navigation
+                        _consecutiveRssiFailures = 0; // Reset failure counter
 
                         _logger.LogInformation("🛑 ARRIVAL ANNOUNCED - Robot has reached destination - beacon processing disabled until next navigation");
                     }
@@ -534,19 +540,34 @@ public class LineFollowerService : BackgroundService
             }
             else
             {
-                // RSSI dropped below threshold during verification - IMMEDIATELY resume movement
+                // RSSI dropped below threshold during verification
                 if (_consecutiveBeaconDetections > 0 && _verifyingBeacon)
                 {
+                    _consecutiveRssiFailures++;
+
                     _logger.LogWarning(
-                        "✗ VERIFICATION FAILED! RSSI dropped: {Rssi} dBm < {Threshold} dBm after {CheckCount} checks. IMMEDIATELY RESUMING movement.",
-                        beacon.Rssi, targetBeaconConfig.RssiThreshold, _consecutiveBeaconDetections);
+                        "✗ RSSI DROP during verification: {Rssi} dBm < {Threshold} dBm (failure {FailureCount}/5, passed {PassCount}/10 checks)",
+                        beacon.Rssi, targetBeaconConfig.RssiThreshold, _consecutiveRssiFailures, _consecutiveBeaconDetections);
 
-                    // Reset verification state and resume line following immediately
-                    _consecutiveBeaconDetections = 0;
-                    _lastBeaconVerificationCheck = DateTime.MinValue;
-                    _verifyingBeacon = false; // Resume line following NOW
+                    // Only resume after 5 consecutive RSSI failures (prevents missing target due to temporary fluctuations)
+                    if (_consecutiveRssiFailures >= MAX_RSSI_FAILURES_BEFORE_RESUME)
+                    {
+                        _logger.LogWarning(
+                            "✗ VERIFICATION FAILED! 5 consecutive RSSI failures - target not stable. RESUMING movement.");
 
-                    _logger.LogInformation("▶ Line following RESUMED - robot will continue until RSSI is stable");
+                        // Reset verification state and resume line following
+                        _consecutiveBeaconDetections = 0;
+                        _consecutiveRssiFailures = 0;
+                        _lastBeaconVerificationCheck = DateTime.MinValue;
+                        _verifyingBeacon = false; // Resume line following
+
+                        _logger.LogInformation("▶ Line following RESUMED - robot will continue until beacon RSSI is stable");
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Staying stopped - waiting for RSSI to stabilize ({FailureCount}/5 failures)",
+                            _consecutiveRssiFailures);
+                    }
                 }
             }
         }
