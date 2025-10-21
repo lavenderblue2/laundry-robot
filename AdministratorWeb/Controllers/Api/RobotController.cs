@@ -417,22 +417,28 @@ namespace AdministratorWeb.Controllers.Api
         {
             try
             {
+                // PRIORITY ORDER: Look for active requests FIRST, then cancelled requests
+                // This prevents old cancelled requests from blocking new requests
                 var activeRequest = await _context.LaundryRequests
-                    .FirstOrDefaultAsync(r => r.AssignedRobotName == robotName &&
-                                              (r.Status == RequestStatus
-                                                   .Accepted || // this will make the robot go to customer room
-                                               r.Status == RequestStatus
-                                                   .LaundryLoaded || // this will make the robot go to base
-                                               r.Status == RequestStatus
-                                                   .FinishedWashingGoingToRoom || // makes the robot go to customer
-                                               r.Status == RequestStatus.FinishedWashingGoingToBase || // go to base
-                                               r.Status == RequestStatus.Cancelled)); // cancelled - robot returns to base
+                    .Where(r => r.AssignedRobotName == robotName &&
+                                (r.Status == RequestStatus.Accepted ||
+                                 r.Status == RequestStatus.LaundryLoaded ||
+                                 r.Status == RequestStatus.FinishedWashingGoingToRoom ||
+                                 r.Status == RequestStatus.FinishedWashingGoingToBase ||
+                                 r.Status == RequestStatus.Cancelled))
+                    .OrderByDescending(r => r.Status != RequestStatus.Cancelled) // Active requests first
+                    .ThenByDescending(r => r.Id) // Then newest request
+                    .FirstOrDefaultAsync();
 
                 if (activeRequest == null)
                 {
                     _logger.LogInformation("No active request found for robot {RobotName}", robotName);
                     return null;
                 }
+
+                _logger.LogInformation(
+                    "Found request for robot {RobotName}: Request #{RequestId}, Status: {Status}, Customer: {CustomerId}",
+                    robotName, activeRequest.Id, activeRequest.Status, activeRequest.CustomerId);
 
                 // Get the customer who made the request
                 if (string.IsNullOrEmpty(activeRequest.CustomerId))
