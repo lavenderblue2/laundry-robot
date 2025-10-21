@@ -50,13 +50,16 @@ public class LineFollowerService : BackgroundService
     // Beacon detection logging throttle
     private int _beaconDetectionCount = 0;
 
-    // 3-Check Beacon Verification System
-    private int _consecutiveBeaconDetections = 0;
-    private const int REQUIRED_CONSECUTIVE_DETECTIONS = 3;
-    private DateTime _lastBeaconVerificationCheck = DateTime.MinValue;
-    private const int VERIFICATION_CHECK_INTERVAL_MS = 500; // Check every 500ms
+    // SLIDING WINDOW BEACON DETECTION SYSTEM
+    private readonly object _beaconLock = new object(); // Thread safety
+    private readonly Dictionary<string, Queue<int>> _rssiBuffers = new(); // MAC -> RSSI buffer (10 samples)
+    private readonly Dictionary<string, int> _beaconScores = new(); // MAC -> current score
+    private readonly Dictionary<string, int> _confirmationCounter = new(); // MAC -> confirmation counter
+    private const int RSSI_BUFFER_SIZE = 10; // 10 samples = 1 second window @ 100ms/sample
+    private const int SCORE_THRESHOLD_CONFIRM = 15; // Need +15 points to trigger confirmation
+    private const int SCORE_THRESHOLD_MAINTAIN = 10; // Stay above +10 during confirmation
+    private const int CONFIRMATION_READINGS = 3; // Need 3 more readings above threshold after trigger
     private bool _arrivalConfirmed = false; // Flag to prevent further beacon processing after arrival
-    private bool _verifyingBeacon = false; // Flag to pause line following during beacon verification
 
     public LineFollowerService(
         ILogger<LineFollowerService> logger,
@@ -141,11 +144,14 @@ public class LineFollowerService : BackgroundService
                     _previousError = 0;
                     _integral = 0;
                     _lineLostCounter = 0;
-                    // Reset beacon verification
-                    _consecutiveBeaconDetections = 0;
-                    _lastBeaconVerificationCheck = DateTime.MinValue;
-                    _arrivalConfirmed = false; // Reset arrival flag when starting new navigation
-                    _verifyingBeacon = false; // Reset verification pause flag
+                    // Reset sliding window beacon detection
+                    lock (_beaconLock)
+                    {
+                        _rssiBuffers.Clear();
+                        _beaconScores.Clear();
+                        _confirmationCounter.Clear();
+                        _arrivalConfirmed = false; // Reset arrival flag when starting new navigation
+                    }
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
@@ -157,14 +163,6 @@ public class LineFollowerService : BackgroundService
 
                 if (shouldFollowLine)
                 {
-                    // PAUSE line following if we're verifying a beacon
-                    if (_verifyingBeacon)
-                    {
-                        _motorService.Stop(); // Ensure motors stay stopped
-                        await Task.Delay(100, stoppingToken);
-                        continue; // Skip line detection until verification completes
-                    }
-
                     // Check for obstacle
                     if (_obstacleDetected)
                     {
@@ -419,13 +417,18 @@ public class LineFollowerService : BackgroundService
     }
 
     /// <summary>
-    /// Handle beacon detection events with 3-CHECK VERIFICATION ALGORITHM
+    /// Handle beacon detection events with SLIDING WINDOW + WEIGHTED SCORING ALGORITHM
     /// Algorithm:
-    /// 1. Detect beacon in range → Stop and check RSSI
-    /// 2. Wait 500ms, check again → If still in range, count++
-    /// 3. Repeat 3 times total
-    /// 4. If all 3 checks pass → Confirm arrival and stop completely
-    /// 5. If any check fails → Reset counter and continue moving
+    /// 1. Maintain 10-sample RSSI buffer per beacon (1 second window @ 100ms/sample)
+    /// 2. Calculate weighted score based on signal quality:
+    ///    - Strong signal (RSSI >= threshold): +2 points
+    ///    - Acceptable signal (RSSI >= threshold - 5): +1 point
+    ///    - Weak signal (RSSI < threshold - 5): -1 point
+    ///    - Missing sample: -2 points
+    /// 3. When score reaches +15: Trigger confirmation mode
+    /// 4. During confirmation: Need 3 more readings with score staying above +10
+    /// 5. Robot keeps moving until arrival is CONFIRMED (no premature stopping)
+    /// 6. Thread-safe with lock to prevent race conditions
     /// </summary>
     private async void OnBeaconDetected(object? sender, BeaconInfo beacon)
     {
@@ -442,7 +445,12 @@ public class LineFollowerService : BackgroundService
             // Only care about beacons if we're line following
             if (!isLineFollowing)
             {
-                _consecutiveBeaconDetections = 0; // Reset if not following
+                lock (_beaconLock)
+                {
+                    _rssiBuffers.Clear();
+                    _beaconScores.Clear();
+                    _confirmationCounter.Clear();
+                }
                 return;
             }
 
@@ -454,7 +462,6 @@ public class LineFollowerService : BackgroundService
             }
 
             // Find if this beacon is an active target (navigation target OR base beacon)
-            // IMPORTANT: We need to verify ALL beacons, including the base for return trips
             var targetBeaconConfig = serverCommService.ActiveBeacons
                 .FirstOrDefault(b => string.Equals(b.MacAddress, beacon.MacAddress,
                                          StringComparison.OrdinalIgnoreCase));
@@ -470,78 +477,141 @@ public class LineFollowerService : BackgroundService
                 return; // Not a target we care about
             }
 
-            // Only log every 20th detection to reduce spam
-            _beaconDetectionCount++;
             var beaconType = targetBeaconConfig.IsBase ? "BASE" : "TARGET";
-            if (_beaconDetectionCount % 20 == 0)
-            {
-                _logger.LogInformation(
-                    "{Type} BEACON DETECTED: {BeaconMac} ({Name}) RSSI: {Rssi} dBm (threshold: {Threshold} dBm)",
-                    beaconType, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
-            }
+            var mac = beacon.MacAddress;
 
-            // Check if we've reached the target (within RSSI threshold)
-            if (beacon.Rssi >= targetBeaconConfig.RssiThreshold)
-            {
-                // 3-CHECK VERIFICATION SYSTEM
-                var now = DateTime.UtcNow;
+            // Variables to capture inside lock
+            bool shouldStopRobot = false;
+            int currentScore = 0;
+            double avgRssi = 0;
 
-                // Only increment if enough time has passed since last check (avoid spam)
-                if ((now - _lastBeaconVerificationCheck).TotalMilliseconds >= VERIFICATION_CHECK_INTERVAL_MS)
+            // THREAD-SAFE SLIDING WINDOW UPDATE
+            lock (_beaconLock)
+            {
+                // Initialize buffer for this beacon if needed
+                if (!_rssiBuffers.ContainsKey(mac))
                 {
-                    _consecutiveBeaconDetections++;
-                    _lastBeaconVerificationCheck = now;
+                    _rssiBuffers[mac] = new Queue<int>();
+                    _beaconScores[mac] = 0;
+                    _confirmationCounter[mac] = 0;
+                }
+
+                var buffer = _rssiBuffers[mac];
+
+                // Add new RSSI sample to buffer
+                buffer.Enqueue(beacon.Rssi);
+
+                // Remove old samples (keep only last 10)
+                while (buffer.Count > RSSI_BUFFER_SIZE)
+                {
+                    buffer.Dequeue();
+                }
+
+                // Calculate weighted score based on signal quality
+                int newScore = CalculateWeightedScore(buffer, targetBeaconConfig.RssiThreshold);
+                int oldScore = _beaconScores[mac];
+                _beaconScores[mac] = newScore;
+                currentScore = newScore;
+
+                // Calculate moving average for logging
+                avgRssi = buffer.Average();
+
+                // Only log every 20th detection to reduce spam
+                _beaconDetectionCount++;
+                if (_beaconDetectionCount % 20 == 0)
+                {
+                    _logger.LogInformation(
+                        "{Type} BEACON: {BeaconMac} ({Name}) | RSSI: {Rssi} dBm (avg: {Avg:F1}) | Score: {Score} | Samples: {Count}/{Max}",
+                        beaconType, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, avgRssi,
+                        newScore, buffer.Count, RSSI_BUFFER_SIZE);
+                }
+
+                // Check if we've triggered confirmation mode
+                if (newScore >= SCORE_THRESHOLD_CONFIRM)
+                {
+                    // Increment confirmation counter
+                    _confirmationCounter[mac]++;
 
                     _logger.LogWarning(
-                        "{Type} BEACON CHECK [{Check}/3]: Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING TO VERIFY",
-                        beaconType, _consecutiveBeaconDetections, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
+                        "{Type} BEACON CONFIRMATION [{Count}/{Required}]: {BeaconMac} ({Name}) | Score: {Score} | Avg RSSI: {Avg:F1} dBm",
+                        beaconType, _confirmationCounter[mac], CONFIRMATION_READINGS, beacon.MacAddress,
+                        beacon.Name ?? "Unknown", newScore, avgRssi);
 
-                    // PAUSE line following and stop the robot for verification
-                    _verifyingBeacon = true;
-                    _motorService.Stop();
-
-                    // If we've verified 3 times consecutively, we've arrived!
-                    if (_consecutiveBeaconDetections >= REQUIRED_CONSECUTIVE_DETECTIONS)
+                    // Check if we've confirmed arrival (score stayed high for 3 readings)
+                    if (_confirmationCounter[mac] >= CONFIRMATION_READINGS && newScore >= SCORE_THRESHOLD_MAINTAIN)
                     {
                         _logger.LogWarning(
-                            "✓✓✓ {Type} BEACON CONFIRMED! 3 consecutive checks passed. Beacon {BeaconMac} ({Name}) - ARRIVAL CONFIRMED!",
-                            beaconType, beacon.MacAddress, beacon.Name ?? "Unknown");
+                            "✓✓✓ {Type} BEACON ARRIVAL CONFIRMED! Beacon {BeaconMac} ({Name}) | Final Score: {Score} | Avg RSSI: {Avg:F1} dBm - STOPPING NOW!",
+                            beaconType, beacon.MacAddress, beacon.Name ?? "Unknown", newScore, avgRssi);
 
                         _arrivalConfirmed = true; // Set flag to ignore all future beacon detections
-                        await _motorService.StopLineFollowingAsync();
-                        _consecutiveBeaconDetections = 0; // Reset for next navigation
+                        shouldStopRobot = true; // Signal to stop outside lock
+
+                        // Clear all buffers for next navigation
+                        _rssiBuffers.Clear();
+                        _beaconScores.Clear();
+                        _confirmationCounter.Clear();
 
                         _logger.LogInformation("🛑 Arrival confirmed - beacon processing disabled until next navigation starts");
                     }
-                    else
+                }
+                else if (newScore < SCORE_THRESHOLD_MAINTAIN)
+                {
+                    // Score dropped - reset confirmation counter but keep buffer
+                    if (_confirmationCounter[mac] > 0)
                     {
                         _logger.LogInformation(
-                            "⏸ Verification in progress... Waiting for check {NextCheck}/3 (next check in {Ms}ms)",
-                            _consecutiveBeaconDetections + 1, VERIFICATION_CHECK_INTERVAL_MS);
+                            "⚠ {Type} BEACON score dropped to {Score} - resetting confirmation counter (was {OldCount})",
+                            beaconType, newScore, _confirmationCounter[mac]);
+                        _confirmationCounter[mac] = 0;
                     }
                 }
             }
-            else
+
+            // STOP ROBOT OUTSIDE LOCK (can't await inside lock)
+            if (shouldStopRobot)
             {
-                // RSSI dropped below threshold - reset verification
-                if (_consecutiveBeaconDetections > 0)
-                {
-                    _logger.LogWarning(
-                        "✗ VERIFICATION FAILED! RSSI dropped: {Rssi} < {Threshold}. Resetting counter and RESUMING line following.",
-                        beacon.Rssi, targetBeaconConfig.RssiThreshold);
-
-                    _consecutiveBeaconDetections = 0;
-                    _lastBeaconVerificationCheck = DateTime.MinValue;
-                    _verifyingBeacon = false; // Resume line following
-
-                    _logger.LogInformation("▶ Line following resumed - verification failed");
-                }
+                await _motorService.StopLineFollowingAsync();
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in OnBeaconDetected for beacon {BeaconMac}", beacon?.MacAddress ?? "Unknown");
         }
+    }
+
+    /// <summary>
+    /// Calculate weighted score for beacon proximity based on RSSI buffer
+    /// </summary>
+    private int CalculateWeightedScore(Queue<int> rssiBuffer, int threshold)
+    {
+        int score = 0;
+
+        foreach (var rssi in rssiBuffer)
+        {
+            if (rssi >= threshold)
+            {
+                // Strong signal - definitely at beacon
+                score += 2;
+            }
+            else if (rssi >= threshold - 5)
+            {
+                // Acceptable signal - probably at beacon (allows for small fluctuations)
+                score += 1;
+            }
+            else if (rssi >= threshold - 10)
+            {
+                // Weak but present - neutral (0 points)
+                score += 0;
+            }
+            else
+            {
+                // Too weak - probably not at beacon yet
+                score -= 1;
+            }
+        }
+
+        return score;
     }
 
     private void OnDistanceChanged(object? sender, double distance)
