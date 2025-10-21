@@ -50,17 +50,6 @@ public class LineFollowerService : BackgroundService
     // Beacon detection logging throttle
     private int _beaconDetectionCount = 0;
 
-    // SLIDING WINDOW BEACON DETECTION SYSTEM
-    private readonly object _beaconLock = new object(); // Thread safety
-    private readonly Dictionary<string, Queue<int>> _rssiBuffers = new(); // MAC -> RSSI buffer (10 samples)
-    private readonly Dictionary<string, int> _beaconScores = new(); // MAC -> current score
-    private readonly Dictionary<string, int> _confirmationCounter = new(); // MAC -> confirmation counter
-    private const int RSSI_BUFFER_SIZE = 10; // 10 samples = 1 second window @ 100ms/sample
-    private const int SCORE_THRESHOLD_CONFIRM = 15; // Need +15 points to trigger confirmation
-    private const int SCORE_THRESHOLD_MAINTAIN = 10; // Stay above +10 during confirmation
-    private const int CONFIRMATION_READINGS = 3; // Need 3 more readings above threshold after trigger
-    private bool _arrivalConfirmed = false; // Flag to prevent further beacon processing after arrival
-
     public LineFollowerService(
         ILogger<LineFollowerService> logger,
         IConfiguration config,
@@ -144,14 +133,6 @@ public class LineFollowerService : BackgroundService
                     _previousError = 0;
                     _integral = 0;
                     _lineLostCounter = 0;
-                    // Reset sliding window beacon detection
-                    lock (_beaconLock)
-                    {
-                        _rssiBuffers.Clear();
-                        _beaconScores.Clear();
-                        _confirmationCounter.Clear();
-                        _arrivalConfirmed = false; // Reset arrival flag when starting new navigation
-                    }
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
@@ -417,40 +398,19 @@ public class LineFollowerService : BackgroundService
     }
 
     /// <summary>
-    /// Handle beacon detection events with SLIDING WINDOW + WEIGHTED SCORING ALGORITHM
-    /// Algorithm:
-    /// 1. Maintain 10-sample RSSI buffer per beacon (1 second window @ 100ms/sample)
-    /// 2. Calculate weighted score based on signal quality:
-    ///    - Strong signal (RSSI >= threshold): +2 points
-    ///    - Acceptable signal (RSSI >= threshold - 5): +1 point
-    ///    - Weak signal (RSSI < threshold - 5): -1 point
-    ///    - Missing sample: -2 points
-    /// 3. When score reaches +15: Trigger confirmation mode
-    /// 4. During confirmation: Need 3 more readings with score staying above +10
-    /// 5. Robot keeps moving until arrival is CONFIRMED (no premature stopping)
-    /// 6. Thread-safe with lock to prevent race conditions
+    /// Handle beacon detection events for real-time proximity checking
+    /// SIMPLIFIED: Only check if we should stop based on IsNavigationTarget beacons
+    /// ORIGINAL WORKING ALGORITHM - IMMEDIATE STOP when RSSI >= threshold
     /// </summary>
     private async void OnBeaconDetected(object? sender, BeaconInfo beacon)
     {
         try
         {
-            // If arrival already confirmed, ignore all further beacon detections
-            if (_arrivalConfirmed)
-            {
-                return; // Stop processing beacons - we've already arrived!
-            }
-
             var isLineFollowing = _motorService.IsLineFollowingActive;
 
             // Only care about beacons if we're line following
             if (!isLineFollowing)
             {
-                lock (_beaconLock)
-                {
-                    _rssiBuffers.Clear();
-                    _beaconScores.Clear();
-                    _confirmationCounter.Clear();
-                }
                 return;
             }
 
@@ -461,157 +421,41 @@ public class LineFollowerService : BackgroundService
                 return;
             }
 
-            // Find if this beacon is an active target (navigation target OR base beacon)
+            // Find if this beacon is a navigation target
             var targetBeaconConfig = serverCommService.ActiveBeacons
-                .FirstOrDefault(b => string.Equals(b.MacAddress, beacon.MacAddress,
+                .FirstOrDefault(b => b.IsNavigationTarget &&
+                                     string.Equals(b.MacAddress, beacon.MacAddress,
                                          StringComparison.OrdinalIgnoreCase));
 
             if (targetBeaconConfig == null)
             {
-                return; // Not in active beacons list, ignore
+                return; // Not a navigation target, ignore
             }
 
-            // Skip if this is neither a navigation target nor a base beacon
-            if (!targetBeaconConfig.IsNavigationTarget && !targetBeaconConfig.IsBase)
+            _logger.LogInformation(
+                "TARGET BEACON DETECTED: {BeaconMac} ({Name}) RSSI: {Rssi} dBm (threshold: {Threshold} dBm)",
+                beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
+
+            // Check if we've reached the target (within RSSI threshold)
+            if (beacon.Rssi >= targetBeaconConfig.RssiThreshold)
             {
-                return; // Not a target we care about
-            }
+                _logger.LogWarning(
+                    "TARGET REACHED! Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING LINE FOLLOWING",
+                    beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
 
-            var beaconType = targetBeaconConfig.IsBase ? "BASE" : "TARGET";
-            var mac = beacon.MacAddress;
-
-            // Variables to capture inside lock
-            bool shouldStopRobot = false;
-            int currentScore = 0;
-            double avgRssi = 0;
-
-            // THREAD-SAFE SLIDING WINDOW UPDATE
-            lock (_beaconLock)
-            {
-                // Initialize buffer for this beacon if needed
-                if (!_rssiBuffers.ContainsKey(mac))
-                {
-                    _rssiBuffers[mac] = new Queue<int>();
-                    _beaconScores[mac] = 0;
-                    _confirmationCounter[mac] = 0;
-                }
-
-                var buffer = _rssiBuffers[mac];
-
-                // Add new RSSI sample to buffer
-                buffer.Enqueue(beacon.Rssi);
-
-                // Remove old samples (keep only last 10)
-                while (buffer.Count > RSSI_BUFFER_SIZE)
-                {
-                    buffer.Dequeue();
-                }
-
-                // Calculate weighted score based on signal quality
-                int newScore = CalculateWeightedScore(buffer, targetBeaconConfig.RssiThreshold);
-                int oldScore = _beaconScores[mac];
-                _beaconScores[mac] = newScore;
-                currentScore = newScore;
-
-                // Calculate moving average for logging
-                avgRssi = buffer.Average();
-
-                // Only log every 20th detection to reduce spam
-                _beaconDetectionCount++;
-                if (_beaconDetectionCount % 20 == 0)
-                {
-                    _logger.LogInformation(
-                        "{Type} BEACON: {BeaconMac} ({Name}) | RSSI: {Rssi} dBm (avg: {Avg:F1}) | Score: {Score} | Samples: {Count}/{Max}",
-                        beaconType, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, avgRssi,
-                        newScore, buffer.Count, RSSI_BUFFER_SIZE);
-                }
-
-                // Check if we've triggered confirmation mode
-                if (newScore >= SCORE_THRESHOLD_CONFIRM)
-                {
-                    // Increment confirmation counter
-                    _confirmationCounter[mac]++;
-
-                    _logger.LogWarning(
-                        "{Type} BEACON CONFIRMATION [{Count}/{Required}]: {BeaconMac} ({Name}) | Score: {Score} | Avg RSSI: {Avg:F1} dBm",
-                        beaconType, _confirmationCounter[mac], CONFIRMATION_READINGS, beacon.MacAddress,
-                        beacon.Name ?? "Unknown", newScore, avgRssi);
-
-                    // Check if we've confirmed arrival (score stayed high for 3 readings)
-                    if (_confirmationCounter[mac] >= CONFIRMATION_READINGS && newScore >= SCORE_THRESHOLD_MAINTAIN)
-                    {
-                        _logger.LogWarning(
-                            "✓✓✓ {Type} BEACON ARRIVAL CONFIRMED! Beacon {BeaconMac} ({Name}) | Final Score: {Score} | Avg RSSI: {Avg:F1} dBm - STOPPING NOW!",
-                            beaconType, beacon.MacAddress, beacon.Name ?? "Unknown", newScore, avgRssi);
-
-                        _arrivalConfirmed = true; // Set flag to ignore all future beacon detections
-                        shouldStopRobot = true; // Signal to stop outside lock
-
-                        // Clear all buffers for next navigation
-                        _rssiBuffers.Clear();
-                        _beaconScores.Clear();
-                        _confirmationCounter.Clear();
-
-                        _logger.LogInformation("🛑 Arrival confirmed - beacon processing disabled until next navigation starts");
-                    }
-                }
-                else if (newScore < SCORE_THRESHOLD_MAINTAIN)
-                {
-                    // Score dropped - reset confirmation counter but keep buffer
-                    if (_confirmationCounter[mac] > 0)
-                    {
-                        _logger.LogInformation(
-                            "⚠ {Type} BEACON score dropped to {Score} - resetting confirmation counter (was {OldCount})",
-                            beaconType, newScore, _confirmationCounter[mac]);
-                        _confirmationCounter[mac] = 0;
-                    }
-                }
-            }
-
-            // STOP ROBOT OUTSIDE LOCK (can't await inside lock)
-            if (shouldStopRobot)
-            {
                 await _motorService.StopLineFollowingAsync();
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Target beacon in range but not close enough: RSSI {Rssi} dBm < {Threshold} dBm threshold",
+                    beacon.Rssi, targetBeaconConfig.RssiThreshold);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in OnBeaconDetected for beacon {BeaconMac}", beacon?.MacAddress ?? "Unknown");
         }
-    }
-
-    /// <summary>
-    /// Calculate weighted score for beacon proximity based on RSSI buffer
-    /// </summary>
-    private int CalculateWeightedScore(Queue<int> rssiBuffer, int threshold)
-    {
-        int score = 0;
-
-        foreach (var rssi in rssiBuffer)
-        {
-            if (rssi >= threshold)
-            {
-                // Strong signal - definitely at beacon
-                score += 2;
-            }
-            else if (rssi >= threshold - 5)
-            {
-                // Acceptable signal - probably at beacon (allows for small fluctuations)
-                score += 1;
-            }
-            else if (rssi >= threshold - 10)
-            {
-                // Weak but present - neutral (0 points)
-                score += 0;
-            }
-            else
-            {
-                // Too weak - probably not at beacon yet
-                score -= 1;
-            }
-        }
-
-        return score;
     }
 
     private void OnDistanceChanged(object? sender, double distance)
