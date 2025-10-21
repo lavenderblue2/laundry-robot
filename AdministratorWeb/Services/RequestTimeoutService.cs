@@ -12,7 +12,6 @@ namespace AdministratorWeb.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<RequestTimeoutService> _logger;
         private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1); // Check every minute
-        private readonly TimeSpan _arrivalTimeout = TimeSpan.FromMinutes(5); // 5-minute timeout
         private readonly TimeSpan _startupDelay = TimeSpan.FromSeconds(30); // Wait 30 seconds on startup
 
         public RequestTimeoutService(IServiceProvider serviceProvider, ILogger<RequestTimeoutService> logger)
@@ -49,7 +48,12 @@ namespace AdministratorWeb.Services
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            var cutoffTime = DateTime.UtcNow.Subtract(_arrivalTimeout);
+            // Get timeout duration from settings (default to 5 minutes if not set)
+            var settings = await context.LaundrySettings.FirstOrDefaultAsync();
+            var timeoutMinutes = settings?.RoomArrivalTimeoutMinutes ?? 5;
+            var arrivalTimeout = TimeSpan.FromMinutes(timeoutMinutes);
+
+            var cutoffTime = DateTime.UtcNow.Subtract(arrivalTimeout);
 
             // Check for requests that timed out at customer room (initial pickup)
             var timedOutPickupRequests = await context.LaundryRequests
@@ -72,7 +76,7 @@ namespace AdministratorWeb.Services
                 if (request.Status == RequestStatus.ArrivedAtRoom)
                 {
                     // Initial pickup timeout - cancel request but keep robot assigned so it returns to base
-                    _logger.LogWarning("Request {RequestId} timed out - customer did not load laundry within 5 minutes - CANCELLING REQUEST", request.Id);
+                    _logger.LogWarning("Request {RequestId} timed out - customer did not load laundry within {TimeoutMinutes} minutes - CANCELLING REQUEST", request.Id, timeoutMinutes);
                     request.Status = RequestStatus.Cancelled;
                     request.ProcessedAt = DateTime.UtcNow;
                     // Keep AssignedRobotName so robot will return to base (will be cleared when robot arrives at base)
@@ -82,7 +86,7 @@ namespace AdministratorWeb.Services
                 else if (request.Status == RequestStatus.FinishedWashingArrivedAtRoom)
                 {
                     // Delivery timeout - cancel delivery attempt, keep robot assigned to return to base
-                    _logger.LogWarning("Request {RequestId} delivery timed out - customer did not pick up laundry within 5 minutes - CANCELLING DELIVERY", request.Id);
+                    _logger.LogWarning("Request {RequestId} delivery timed out - customer did not pick up laundry within {TimeoutMinutes} minutes - CANCELLING DELIVERY", request.Id, timeoutMinutes);
                     request.Status = RequestStatus.FinishedWashingGoingToBase;
                     request.ProcessedAt = DateTime.UtcNow;
                     // Keep AssignedRobotName so robot will return to base with laundry

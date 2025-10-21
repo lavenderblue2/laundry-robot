@@ -82,6 +82,10 @@ namespace AdministratorWeb.Models
         [Range(0, 255)]
         public byte LineFollowColorB { get; set; } = 0;
 
+        [Display(Name = "Room Arrival Timeout (minutes)")]
+        [Range(1, 60, ErrorMessage = "Timeout must be between 1 and 60 minutes")]
+        public int RoomArrivalTimeoutMinutes { get; set; } = 5;
+
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

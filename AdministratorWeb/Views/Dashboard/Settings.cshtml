@@ -187,25 +187,48 @@
                     </div>
                     <h3 class="text-xl font-bold text-white">Request Management</h3>
                 </div>
-                <div class="flex items-center justify-between p-4 bg-slate-600/30 rounded-xl border border-slate-500/30">
-                    <div class="flex items-start space-x-3">
-                        <div class="p-2 bg-purple-500/20 rounded-lg">
-                            <i data-lucide="check-circle" class="w-5 h-5 text-purple-400"></i>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-slate-600/30 rounded-xl border border-slate-500/30">
+                        <div class="flex items-start space-x-3">
+                            <div class="p-2 bg-purple-500/20 rounded-lg">
+                                <i data-lucide="check-circle" class="w-5 h-5 text-purple-400"></i>
+                            </div>
+                            <div>
+                                <label asp-for="AutoAcceptRequests" class="text-slate-200 font-semibold text-base cursor-pointer">
+                                    Auto Accept Requests
+                                </label>
+                                <p class="text-slate-400 text-sm mt-1">
+                                    Automatically accept and dispatch robots for new laundry requests without manual approval
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <label asp-for="AutoAcceptRequests" class="text-slate-200 font-semibold text-base cursor-pointer">
-                                Auto Accept Requests
+                        <div class="flex items-center">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input asp-for="AutoAcceptRequests" type="checkbox" class="sr-only peer">
+                                <div class="w-14 h-7 bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
                             </label>
-                            <p class="text-slate-400 text-sm mt-1">
-                                Automatically accept and dispatch robots for new laundry requests without manual approval
-                            </p>
                         </div>
                     </div>
-                    <div class="flex items-center">
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input asp-for="AutoAcceptRequests" type="checkbox" class="sr-only peer">
-                            <div class="w-14 h-7 bg-slate-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
-                        </label>
+
+                    <div class="p-4 bg-slate-600/30 rounded-xl border border-slate-500/30">
+                        <div class="flex items-start space-x-3">
+                            <div class="p-2 bg-amber-500/20 rounded-lg">
+                                <i data-lucide="clock" class="w-5 h-5 text-amber-400"></i>
+                            </div>
+                            <div class="flex-1">
+                                <label asp-for="RoomArrivalTimeoutMinutes" class="text-slate-200 font-semibold text-base block mb-1">
+                                    Room Arrival Timeout
+                                </label>
+                                <p class="text-slate-400 text-sm mb-3">
+                                    How long customers have to load/unload laundry after robot arrives at their room
+                                </p>
+                                <div class="flex items-center space-x-4">
+                                    <input asp-for="RoomArrivalTimeoutMinutes" type="number" min="1" max="60" class="w-24 px-4 py-2 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent text-center font-semibold text-lg" />
+                                    <span class="text-slate-300 font-medium">minutes</span>
+                                </div>
+                                <span asp-validation-for="RoomArrivalTimeoutMinutes" class="text-red-400 text-sm mt-1 flex items-center"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

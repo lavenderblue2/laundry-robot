@@ -39,6 +39,7 @@ export default function ActiveRequestScreen() {
         const [isLoading, setIsLoading] = useState(false);
         const [isConfirming, setIsConfirming] = useState(false);
         const [timeRemaining, setTimeRemaining] = useState<number>(0);
+        const [timerDurationSeconds, setTimerDurationSeconds] = useState<number>(300); // Default 5 minutes
         const [robotWeight, setRobotWeight] = useState<number>(0);
         const { showAlert, AlertComponent } = useCustomAlert();
 
@@ -184,7 +185,21 @@ export default function ActiveRequestScreen() {
                 );
         };
 
+        // Fetch timer settings from backend
+        const loadTimerSettings = async () => {
+                try {
+                        const response = await apiGet('/requests/timer-settings');
+                        if (response?.data?.roomArrivalTimeoutSeconds) {
+                                setTimerDurationSeconds(response.data.roomArrivalTimeoutSeconds);
+                        }
+                } catch (error: any) {
+                        console.error('Error loading timer settings:', error);
+                        // Keep default 300 seconds (5 minutes) if fetch fails
+                }
+        };
+
         useEffect(() => {
+                loadTimerSettings(); // Load timer settings once on mount
                 loadActiveRequest();
 
                 // Auto-refresh every 5 seconds
@@ -197,14 +212,14 @@ export default function ActiveRequestScreen() {
                 let timer: NodeJS.Timeout | null = null;
 
                 if (activeRequest && (getStatusString(activeRequest.status) === 'arrivedatroom' || getStatusString(activeRequest.status) === 'finishedwashingarrivedatroom') && activeRequest.arrivedAtRoomAt) {
-                        // Calculate time remaining (5 minutes = 300 seconds)
+                        // Calculate time remaining using dynamic timer duration from server
                         // Parse UTC time properly and convert to local time for calculation
                         const arrivedTimeUTC = new Date(activeRequest.arrivedAtRoomAt + (activeRequest.arrivedAtRoomAt.endsWith('Z') ? '' : 'Z'));
                         const currentTimeUTC = new Date();
                         const elapsed = Math.floor((currentTimeUTC.getTime() - arrivedTimeUTC.getTime()) / 1000);
-                        const remaining = Math.max(300 - elapsed, 0); // 5 minutes in seconds
+                        const remaining = Math.max(timerDurationSeconds - elapsed, 0);
 
-                        console.log('Timer sync - ArrivedAt:', activeRequest.arrivedAtRoomAt, 'Elapsed:', elapsed, 'Remaining:', remaining);
+                        console.log('Timer sync - ArrivedAt:', activeRequest.arrivedAtRoomAt, 'Duration:', timerDurationSeconds, 'Elapsed:', elapsed, 'Remaining:', remaining);
                         setTimeRemaining(remaining);
 
                         if (remaining > 0) {
@@ -227,7 +242,7 @@ export default function ActiveRequestScreen() {
                 return () => {
                         if (timer) clearInterval(timer);
                 };
-        }, [activeRequest]);
+        }, [activeRequest, timerDurationSeconds]);
 
         // Refresh data when screen comes into focus
         useFocusEffect(

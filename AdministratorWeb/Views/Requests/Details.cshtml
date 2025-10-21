@@ -203,6 +203,44 @@
     </div>
 </div>
 
+@* Room Arrival Timer - Only show when robot is at room *@
+@if (Model.Status == AdministratorWeb.Models.RequestStatus.ArrivedAtRoom || Model.Status == AdministratorWeb.Models.RequestStatus.FinishedWashingArrivedAtRoom)
+{
+    <div class="mt-6 bg-amber-900/30 border border-amber-700/50 shadow rounded-lg overflow-hidden" id="timerCard">
+        <div class="px-6 py-4 border-b border-amber-700/50">
+            <h3 class="text-lg font-medium text-amber-200 flex items-center">
+                <i data-lucide="clock" class="w-5 h-5 mr-2"></i>
+                Room Arrival Timer
+            </h3>
+        </div>
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-amber-300 mb-2">
+                        @if (Model.Status == AdministratorWeb.Models.RequestStatus.ArrivedAtRoom)
+                        {
+                            <span>Robot arrived at room for pickup</span>
+                        }
+                        else
+                        {
+                            <span>Robot arrived at room for delivery</span>
+                        }
+                    </p>
+                    <p class="text-xs text-gray-400">
+                        Arrived at: @(Model.ArrivedAtRoomAt?.ToLocalTime().ToString("MMM dd, yyyy HH:mm:ss") ?? "N/A")
+                    </p>
+                </div>
+                <div class="text-right">
+                    <div class="text-3xl font-bold text-amber-200 font-mono" id="timerDisplay">
+                        --:--
+                    </div>
+                    <div class="text-xs text-gray-400 mt-1">Time Remaining</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <div class="mt-8 flex space-x-4">
     <a asp-action="Index" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md text-sm font-medium inline-flex items-center">
         <i data-lucide="arrow-left" class="w-4 h-4 inline mr-2"></i>
@@ -232,3 +270,58 @@
         </form>
     }
 </div>
+
+@section Scripts {
+@if (Model.Status == AdministratorWeb.Models.RequestStatus.ArrivedAtRoom || Model.Status == AdministratorWeb.Models.RequestStatus.FinishedWashingArrivedAtRoom)
+{
+    var arrivedAtIso = Model.ArrivedAtRoomAt?.ToString("o");
+    <script>
+        (async function() {
+            const arrivedAtStr = '@Html.Raw(arrivedAtIso)';
+            if (!arrivedAtStr) return;
+
+            let timerDurationSeconds = 300;
+            try {
+                const response = await fetch('/api/requests/timer-settings');
+                if (response.ok) {
+                    const data = await response.json();
+                    timerDurationSeconds = data.roomArrivalTimeoutSeconds || 300;
+                }
+            } catch (error) {
+                console.error('Failed to fetch timer settings:', error);
+            }
+
+            const arrivedAt = new Date(arrivedAtStr);
+            const timerDisplay = document.getElementById('timerDisplay');
+
+            function updateTimer() {
+                const now = new Date();
+                const elapsedSeconds = Math.floor((now - arrivedAt) / 1000);
+                const remainingSeconds = Math.max(timerDurationSeconds - elapsedSeconds, 0);
+
+                const minutes = Math.floor(remainingSeconds / 60);
+                const seconds = remainingSeconds % 60;
+
+                if (timerDisplay) {
+                    timerDisplay.textContent = minutes + ':' + seconds.toString().padStart(2, '0');
+
+                    if (remainingSeconds <= 60) {
+                        timerDisplay.classList.add('text-red-400');
+                        timerDisplay.classList.remove('text-amber-200');
+                    } else {
+                        timerDisplay.classList.add('text-amber-200');
+                        timerDisplay.classList.remove('text-red-400');
+                    }
+                }
+
+                if (remainingSeconds === 0) {
+                    setTimeout(function() { location.reload(); }, 2000);
+                }
+            }
+
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        })();
+    </script>
+}
+}
