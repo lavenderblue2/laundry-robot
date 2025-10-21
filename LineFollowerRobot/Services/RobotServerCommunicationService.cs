@@ -27,11 +27,6 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
     // Public property to expose active beacons
     public List<BeaconConfigurationDto>? ActiveBeacons { get; private set; }
 
-    // Weight limit settings from server
-    private decimal? _maxWeightKg;
-    private decimal? _minWeightKg;
-    private bool _maxWeightExceeded = false;
-
     public RobotServerCommunicationService(
         ILogger<RobotServerCommunicationService> logger,
         BluetoothBeaconService beaconService,
@@ -146,19 +141,10 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
             // Get current weight reading
             double currentWeightKg = GetCurrentWeight();
 
-            // Check if weight exceeds maximum
-            CheckWeightLimits(currentWeightKg);
-
             // Get current ultrasonic distance
             double ultrasonicDistance = GetUltrasonicDistance();
 
-            // Create request payload with error messages if applicable
-            var errors = new List<string>();
-            if (_maxWeightExceeded && _maxWeightKg.HasValue)
-            {
-                errors.Add($"MAX WEIGHT EXCEEDED: {currentWeightKg:F2}kg > {_maxWeightKg:F2}kg - Please remove some weight");
-            }
-
+            // Create request payload
             var request = new RobotDataExchangeRequest
             {
                 RobotName = _robotName,
@@ -166,8 +152,7 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
                 DetectedBeacons = detectedBeacons,
                 IsInTarget = isInTarget,
                 WeightKg = currentWeightKg,
-                USSensor1ObstacleDistance = ultrasonicDistance,
-                Errors = errors
+                USSensor1ObstacleDistance = ultrasonicDistance
             };
 
             // Serialize request to JSON
@@ -226,171 +211,34 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
         }
     }
 
-    // Store detection mode from server
-    private string _detectionMode = "beacon"; // default to beacon mode
-
-    // Arrival confirmation system - requires 3 consecutive positive detections
-    private int _arrivalConfirmationCount = 0;
-    private const int REQUIRED_CONFIRMATIONS = 3; // Must detect target 3 times in a row
-    private const int CONFIRMATION_DELAY_MS = 1000; // Minimum 1 second between confirmations
-    private DateTime? _firstDetectionTime = null;
-    private DateTime? _lastConfirmationTime = null; // Track last confirmation time
-    private string? _currentTargetRoom = null; // Track which room we're confirming arrival at
-
     /// <summary>
     /// Check if robot is near any navigation target beacon OR if floor color was detected
-    /// Uses 3-confirmation system to prevent false positives from signal fluctuations
-    /// Detection method depends on server configuration (beacon or color mode)
     /// </summary>
     private bool CheckIfAtNavigationTarget(List<BeaconInfo> detectedBeacons)
     {
-        bool currentlyDetected = false;
-        string? targetRoomName = null;
-
-        if (_detectionMode == "color")
+        // Check floor color detection first
+        var lineFollowerService = _serviceProvider.GetService<LineFollowerService>();
+        if (lineFollowerService != null && lineFollowerService.FloorColorDetected)
         {
-            // Color detection mode - ONLY check floor color
-            var lineFollowerService = _serviceProvider.GetService<LineFollowerService>();
-            currentlyDetected = lineFollowerService != null && lineFollowerService.FloorColorDetected;
-
-            // Get target room name from active beacons
-            if (currentlyDetected && ActiveBeacons != null)
-            {
-                targetRoomName = ActiveBeacons.FirstOrDefault(b => b.IsNavigationTarget)?.RoomName;
-            }
-        }
-        else
-        {
-            // Beacon detection mode - ONLY check beacon proximity
-            if (ActiveBeacons != null && ActiveBeacons.Any())
-            {
-                // Get ONLY the navigation target beacons (should be exactly 1)
-                var navigationTargets = ActiveBeacons.Where(b => b.IsNavigationTarget).ToList();
-
-                _logger.LogDebug("Checking navigation targets: {Count} target(s) configured", navigationTargets.Count);
-
-                foreach (var detectedBeacon in detectedBeacons)
-                {
-                    var targetBeacon = navigationTargets.FirstOrDefault(b =>
-                        string.Equals(b.MacAddress, detectedBeacon.MacAddress, StringComparison.OrdinalIgnoreCase));
-
-                    if (targetBeacon != null)
-                    {
-                        _logger.LogDebug("Navigation target beacon {Mac} ({Room}): RSSI={Rssi}, Threshold={Threshold}, InRange={InRange}",
-                            detectedBeacon.MacAddress, targetBeacon.RoomName, detectedBeacon.Rssi,
-                            targetBeacon.RssiThreshold, detectedBeacon.Rssi >= targetBeacon.RssiThreshold);
-
-                        if (detectedBeacon.Rssi >= targetBeacon.RssiThreshold)
-                        {
-                            currentlyDetected = true;
-                            targetRoomName = targetBeacon.RoomName;
-                            break;
-                        }
-                    }
-                }
-            }
+            _logger.LogInformation("Robot reached target via floor color detection");
+            return true;
         }
 
-        // Check if target room has changed - if so, reset confirmation counter
-        if (targetRoomName != _currentTargetRoom)
+        // Check beacon proximity
+        if (ActiveBeacons == null || !ActiveBeacons.Any())
+            return false;
+
+        foreach (var detectedBeacon in detectedBeacons)
         {
-            if (_arrivalConfirmationCount > 0)
+            var targetBeacon = ActiveBeacons.FirstOrDefault(b =>
+                b.IsNavigationTarget &&
+                string.Equals(b.MacAddress, detectedBeacon.MacAddress, StringComparison.OrdinalIgnoreCase));
+
+            if (targetBeacon != null && detectedBeacon.Rssi >= targetBeacon.RssiThreshold)
             {
-                _logger.LogWarning(
-                    "Target changed from '{OldTarget}' to '{NewTarget}' - resetting confirmation counter (was at {Count}/{Required})",
-                    _currentTargetRoom ?? "None", targetRoomName ?? "None", _arrivalConfirmationCount, REQUIRED_CONFIRMATIONS);
-            }
-            _arrivalConfirmationCount = 0;
-            _firstDetectionTime = null;
-            _currentTargetRoom = targetRoomName;
-        }
-
-        // Confirmation logic - ONLY stop if we have a navigation target AND it's within threshold
-        // Check if we actually have any navigation targets set
-        bool hasNavigationTarget = ActiveBeacons != null && ActiveBeacons.Any(b => b.IsNavigationTarget);
-
-        if (currentlyDetected && hasNavigationTarget)
-        {
-            // Target is currently detected AND we have an active navigation target
-            if (_arrivalConfirmationCount == 0)
-            {
-                // FIRST DETECTION - STOP IMMEDIATELY to avoid overshooting
-                _logger.LogInformation("Target '{TargetRoom}' detected within threshold - STOPPING to verify (1/{RequiredConfirmations})",
-                    targetRoomName, REQUIRED_CONFIRMATIONS);
-
-                try
-                {
-                    var motorService = _serviceProvider.GetService<LineFollowerMotorService>();
-                    motorService?.StopLineFollowingAsync().GetAwaiter().GetResult();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error stopping robot for arrival verification");
-                }
-
-                _firstDetectionTime = DateTime.UtcNow;
-                _lastConfirmationTime = DateTime.UtcNow;
-                _arrivalConfirmationCount = 1;
-            }
-            else
-            {
-                // Check if enough time has passed since last confirmation (enforce delay)
-                var timeSinceLastConfirmation = DateTime.UtcNow - (_lastConfirmationTime ?? DateTime.UtcNow);
-                if (timeSinceLastConfirmation.TotalMilliseconds < CONFIRMATION_DELAY_MS)
-                {
-                    // Not enough time has passed, skip this check
-                    return false;
-                }
-
-                // Increment confirmation count (robot is now stopped and verifying)
-                _arrivalConfirmationCount++;
-                _lastConfirmationTime = DateTime.UtcNow;
-                _logger.LogInformation("Verifying arrival at '{TargetRoom}' ({CurrentCount}/{RequiredConfirmations})...",
-                    targetRoomName, _arrivalConfirmationCount, REQUIRED_CONFIRMATIONS);
-
-                // Check if we've reached required confirmations
-                if (_arrivalConfirmationCount >= REQUIRED_CONFIRMATIONS)
-                {
-                    var mode = _detectionMode == "color" ? "FLOOR COLOR" : "BEACON";
-                    var dwellTime = DateTime.UtcNow - _firstDetectionTime.Value;
-                    _logger.LogInformation("✓ ARRIVAL CONFIRMED at '{TargetRoom}' via {Mode} after {Confirmations} checks ({DwellSeconds:F1}s)",
-                        targetRoomName, mode, REQUIRED_CONFIRMATIONS, dwellTime.TotalSeconds);
-
-                    // Reset counters AFTER confirming arrival
-                    _arrivalConfirmationCount = 0;
-                    _firstDetectionTime = null;
-                    _lastConfirmationTime = null;
-                    _currentTargetRoom = null; // Clear target so next target starts fresh
-                    return true;
-                }
-            }
-        }
-        else
-        {
-            // Target NOT detected OR no navigation target set - reset confirmation counter and resume if needed
-            if (_arrivalConfirmationCount > 0)
-            {
-                var reason = !hasNavigationTarget ? "navigation target cleared" : "beacon signal lost";
-                _logger.LogWarning("Target '{TargetRoom}' lost after {Count}/{RequiredConfirmations} checks ({Reason}) - FALSE ALARM! Resuming...",
-                    _currentTargetRoom, _arrivalConfirmationCount, REQUIRED_CONFIRMATIONS, reason);
-                _arrivalConfirmationCount = 0;
-                _firstDetectionTime = null;
-                _lastConfirmationTime = null;
-
-                // Robot stopped for verification but lost signal - explicitly resume line following
-                try
-                {
-                    var motorService = _serviceProvider.GetService<LineFollowerMotorService>();
-                    if (motorService != null)
-                    {
-                        motorService.StartLineFollowingAsync().GetAwaiter().GetResult();
-                        _logger.LogInformation("Line following resumed after false alarm");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error resuming line following after false alarm");
-                }
+                _logger.LogInformation("Robot is at navigation target: {BeaconName} (RSSI: {Rssi} >= {Threshold})",
+                    targetBeacon.Name, detectedBeacon.Rssi, targetBeacon.RssiThreshold);
+                return true;
             }
         }
 
@@ -494,29 +342,15 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
             // Handle line following command from server
             if (motorService != null)
             {
-                bool currentlyFollowing = motorService.IsLineFollowingActive;
-
-                if (serverResponse.IsLineFollowing && !currentlyFollowing)
+                if (serverResponse.IsLineFollowing)
                 {
                     _logger.LogInformation("Server instructed robot to start line following");
                     await motorService.StartLineFollowingAsync();
                 }
-                else if (!serverResponse.IsLineFollowing && currentlyFollowing)
+                else
                 {
                     _logger.LogInformation("Server instructed robot to stop line following");
                     await motorService.StopLineFollowingAsync();
-                }
-                // Else: No state change, don't spam logs or re-call methods
-            }
-
-            // Update detection mode from server configuration
-            if (serverResponse.Configuration != null && serverResponse.Configuration.ContainsKey("room_detection_mode"))
-            {
-                var detectionMode = serverResponse.Configuration["room_detection_mode"]?.ToString()?.ToLower() ?? "beacon";
-                if (_detectionMode != detectionMode)
-                {
-                    _detectionMode = detectionMode;
-                    _logger.LogWarning("Room detection mode changed to: {DetectionMode}", _detectionMode.ToUpper());
                 }
             }
 
@@ -556,70 +390,10 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
                     serverResponse.DataExchangeIntervalSeconds);
                 // TODO: Implement dynamic interval adjustment
             }
-
-            // Update weight limits from server
-            if (serverResponse.MaxWeightKg.HasValue)
-            {
-                if (_maxWeightKg != serverResponse.MaxWeightKg)
-                {
-                    _maxWeightKg = serverResponse.MaxWeightKg;
-                    _logger.LogInformation("Maximum weight limit updated: {MaxWeightKg}kg", _maxWeightKg);
-                }
-            }
-
-            if (serverResponse.MinWeightKg.HasValue)
-            {
-                if (_minWeightKg != serverResponse.MinWeightKg)
-                {
-                    _minWeightKg = serverResponse.MinWeightKg;
-                    _logger.LogInformation("Minimum weight limit updated: {MinWeightKg}kg (billing only)", _minWeightKg);
-                }
-            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing server response");
-        }
-    }
-
-    /// <summary>
-    /// Check if current weight exceeds maximum limit and take action
-    /// </summary>
-    private void CheckWeightLimits(double currentWeightKg)
-    {
-        if (!_maxWeightKg.HasValue || currentWeightKg <= 0)
-            return;
-
-        bool wasExceeded = _maxWeightExceeded;
-        _maxWeightExceeded = currentWeightKg > (double)_maxWeightKg.Value;
-
-        // Only log when state changes (entering or leaving exceeded state)
-        if (_maxWeightExceeded && !wasExceeded)
-        {
-            _logger.LogWarning(
-                "⚠️  MAX WEIGHT EXCEEDED! Current: {CurrentWeight:F2}kg, Max: {MaxWeight:F2}kg - PLEASE REMOVE SOME WEIGHT",
-                currentWeightKg, _maxWeightKg);
-
-            // Try to stop line following
-            try
-            {
-                var motorService = _serviceProvider.GetService<LineFollowerMotorService>();
-                if (motorService != null)
-                {
-                    Task.Run(async () => await motorService.StopLineFollowingAsync());
-                    _logger.LogWarning("Line following stopped due to max weight exceeded");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error stopping line following due to max weight");
-            }
-        }
-        else if (!_maxWeightExceeded && wasExceeded)
-        {
-            _logger.LogInformation(
-                "✓ Weight is now within limits: {CurrentWeight:F2}kg <= {MaxWeight:F2}kg",
-                currentWeightKg, _maxWeightKg);
         }
     }
 
