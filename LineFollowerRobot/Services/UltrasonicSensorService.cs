@@ -4,7 +4,7 @@ namespace LineFollowerRobot.Services;
 
 public class UltrasonicSensorService
 {
-    public const double STOP_DISTANCE = 0.5; // meters
+    public const double STOP_DISTANCE = 0.25; // meters
 
     private readonly ILogger<UltrasonicSensorService> _logger;
     private readonly IConfiguration _config;
@@ -69,7 +69,7 @@ public class UltrasonicSensorService
             var distance = duration * 34300 / 2 / 100; // meters
 
             // Ignore invalid readings (sensor not connected or error)
-            if (distance < 0.02 || distance > 4.0) return;
+            if (distance < 0.02 || distance > 2.0) return;
 
             _lastDistance = distance;
             DistanceChanged?.Invoke(this, distance);
