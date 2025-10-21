@@ -161,3 +161,4 @@ publish/
 
 # SQL scripts (might contain sensitive data)
 *.sql
+# Cache refresh
