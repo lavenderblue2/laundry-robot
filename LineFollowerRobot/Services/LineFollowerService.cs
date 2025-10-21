@@ -48,6 +48,8 @@ public class LineFollowerService : BackgroundService
     private bool _floorColorDetected = false;
 
     // No complex verification - simple immediate stop when RSSI >= threshold
+    private bool _arrivedAtTarget = false; // Flag to track if robot reached target
+    public bool ArrivedAtTarget => _arrivedAtTarget; // Public property for server communication
 
     public LineFollowerService(
         ILogger<LineFollowerService> logger,
@@ -132,6 +134,7 @@ public class LineFollowerService : BackgroundService
                     _previousError = 0;
                     _integral = 0;
                     _lineLostCounter = 0;
+                    _arrivedAtTarget = false; // Reset arrival flag for new navigation
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
@@ -438,10 +441,13 @@ public class LineFollowerService : BackgroundService
             if (beacon.Rssi >= targetBeaconConfig.RssiThreshold)
             {
                 _logger.LogWarning(
-                    "TARGET REACHED! Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING LINE FOLLOWING",
+                    "TARGET REACHED! Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING LINE FOLLOWING AND ANNOUNCING ARRIVAL",
                     beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
 
+                _arrivedAtTarget = true; // Set arrival flag so server knows we arrived
                 await _motorService.StopLineFollowingAsync();
+
+                _logger.LogInformation("✓ ARRIVAL FLAG SET - Server will be notified on next data exchange");
             }
             else
             {

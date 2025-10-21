@@ -140,8 +140,9 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
             // Get detected beacons from beacon service
             var detectedBeacons = GetDetectedBeacons();
 
-            // Server-side arrival detection DISABLED - robot-side handles all beacon detection
-            bool isInTarget = false;
+            // Check if robot has arrived at target (robot-side handles arrival detection)
+            var lineFollowerService = _serviceProvider.GetService<LineFollowerService>();
+            bool isInTarget = lineFollowerService?.ArrivedAtTarget ?? false;
 
             // Get current weight reading
             double currentWeightKg = GetCurrentWeight();

@@ -193,9 +193,19 @@ namespace AdministratorWeb.Controllers.Api
                 // Determine if robot should be line following
                 bool isLineFollowing = false;
 
-                // Check if we have a cancelled request that needs to return to base
-                var cancelledRequest = await _context.LaundryRequests
-                    .FirstOrDefaultAsync(r => r.AssignedRobotName == name && r.Status == RequestStatus.Cancelled);
+                // Check if the MOST RECENT request is cancelled (not just ANY cancelled request)
+                // This prevents old cancelled requests from interfering with new active requests
+                var mostRecentRequest = await _context.LaundryRequests
+                    .Where(r => r.AssignedRobotName == name &&
+                                (r.Status == RequestStatus.Accepted ||
+                                 r.Status == RequestStatus.LaundryLoaded ||
+                                 r.Status == RequestStatus.FinishedWashingGoingToRoom ||
+                                 r.Status == RequestStatus.FinishedWashingGoingToBase ||
+                                 r.Status == RequestStatus.Cancelled))
+                    .OrderByDescending(r => r.Id)
+                    .FirstOrDefaultAsync();
+
+                var cancelledRequest = mostRecentRequest?.Status == RequestStatus.Cancelled ? mostRecentRequest : null;
 
                 if (request.IsInTarget && cancelledRequest == null)
                 {
