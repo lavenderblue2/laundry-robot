@@ -133,6 +133,9 @@ public class LineFollowerService : BackgroundService
                     _previousError = 0;
                     _integral = 0;
                     _lineLostCounter = 0;
+                    // Reset detection flags to prevent stale state from previous requests
+                    _floorColorDetected = false;
+                    _obstacleDetected = false;
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
