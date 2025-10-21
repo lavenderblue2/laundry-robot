@@ -21,7 +21,7 @@
                 <div class="ml-5 w-0 flex-1">
                     <dl>
                         <dt class="text-sm font-medium text-gray-400 truncate">Total Spent</dt>
-                        <dd class="text-lg font-medium text-white">$@customerProfileData.TotalSpent.ToString("N2")</dd>
+                        <dd class="text-lg font-medium text-white">₱@customerProfileData.TotalSpent.ToString("N2")</dd>
                     </dl>
                 </div>
             </div>
@@ -69,7 +69,7 @@
                 <div class="ml-5 w-0 flex-1">
                     <dl>
                         <dt class="text-sm font-medium text-gray-400 truncate">Outstanding</dt>
-                        <dd class="text-lg font-medium text-white">$@customerProfileData.OutstandingAmount.ToString("N2")</dd>
+                        <dd class="text-lg font-medium text-white">₱@customerProfileData.OutstandingAmount.ToString("N2")</dd>
                     </dl>
                 </div>
             </div>
@@ -120,7 +120,7 @@
                                 }
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                                $@payment.Amount.ToString("N2")
+                                ₱@payment.Amount.ToString("N2")
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                 @payment.Method

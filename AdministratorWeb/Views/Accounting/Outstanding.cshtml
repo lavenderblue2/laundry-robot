@@ -42,7 +42,7 @@
                             }
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-lg font-semibold text-white">$@request.TotalCost?.ToString("N2")</div>
+                            <div class="text-lg font-semibold text-white">₱@request.TotalCost?.ToString("N2")</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                             @request.CompletedAt?.ToString("MMM dd, yyyy")
@@ -94,17 +94,7 @@
                     <label class="block text-gray-300 text-sm font-bold mb-2">Amount:</label>
                     <div id="paymentAmount" class="text-white bg-gray-700 px-3 py-2 rounded font-semibold"></div>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-gray-300 text-sm font-bold mb-2">Payment Method:</label>
-                    <select name="paymentMethod" required class="bg-gray-700 border border-gray-600 rounded w-full py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="Cash">Cash</option>
-                        <option value="CreditCard">Credit Card</option>
-                        <option value="DebitCard">Debit Card</option>
-                        <option value="BankTransfer">Bank Transfer</option>
-                        <option value="PayPal">PayPal</option>
-                        <option value="DigitalWallet">Digital Wallet</option>
-                    </select>
-                </div>
+                <input type="hidden" name="paymentMethod" value="Cash" />
                 <div class="mb-4">
                     <label class="block text-gray-300 text-sm font-bold mb-2">Notes (Optional):</label>
                     <textarea name="notes" rows="2" class="bg-gray-700 border border-gray-600 rounded w-full py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Payment reference, receipt number, etc."></textarea>
@@ -126,7 +116,7 @@
     function openMarkPaidModal(requestId, customerName, amount) {
         document.getElementById('requestId').value = requestId;
         document.getElementById('customerName').textContent = customerName;
-        document.getElementById('paymentAmount').textContent = '$' + parseFloat(amount).toFixed(2);
+        document.getElementById('paymentAmount').textContent = '₱' + parseFloat(amount).toFixed(2);
         document.getElementById('markPaidModal').classList.remove('hidden');
     }
     
