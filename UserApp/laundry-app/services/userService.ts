@@ -1,3 +1,4 @@
+import { apiGet, apiPut, apiDelete } from './api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
@@ -10,8 +11,36 @@ export interface Admin {
   isActive: boolean;
 }
 
+export interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  roomName?: string;
+  roomDescription?: string;
+  assignedBeaconMacAddress?: string;
+}
+
+export interface UpdateProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  roomNumber?: string;
+  roomDescription?: string;
+}
+
+export interface NotificationSettings {
+  pushNotifications: boolean;
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  requestUpdates: boolean;
+  promotions: boolean;
+}
+
 /**
- * Get list of all administrators - HARDCODED like the web fix
+ * Get list of all administrators - HARDCODED URL like the web fix
  */
 export const getAdmins = async (): Promise<Admin[]> => {
   try {
@@ -39,5 +68,61 @@ export const getAdmins = async (): Promise<Admin[]> => {
     console.error('❌ Error fetching admins:', error.response?.data || error.message);
     console.error('Status:', error.response?.status);
     throw error;
+  }
+};
+
+export const userService = {
+  async getProfile(): Promise<UserProfile> {
+    const response = await apiGet('/user/profile');
+    return response.data;
+  },
+
+  async updateProfile(data: UpdateProfileRequest): Promise<{ success: boolean; message: string }> {
+    
+    const response = await apiPut('/user/profile', data);
+    return response.data;
+  },
+
+  async getNotificationSettings(): Promise<NotificationSettings> {
+    
+    const response = await apiGet('/user/notifications');
+    return response.data;
+  },
+
+  async updateNotificationSettings(settings: NotificationSettings): Promise<{ success: boolean; message: string }> {
+    
+    const response = await apiPut('/user/notifications', settings);
+    return response.data;
+  },
+
+  async deleteAccount(): Promise<{ success: boolean; message: string }> {
+    
+    const response = await apiDelete('/user/account');
+    return response.data;
+  },
+
+  async getLaundryHistory(page: number = 1, limit: number = 10): Promise<{
+    requests: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    
+    const response = await apiGet(`/user/history?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  async getLaundryStatistics(): Promise<{
+    totalRequests: number;
+    completedRequests: number;
+    totalWeight: number;
+    totalSpent: number;
+    averageWeight: number;
+    favoriteTimeSlot?: string;
+    lastRequest?: string;
+  }> {
+    
+    const response = await apiGet('/user/statistics');
+    return response.data;
   }
 };

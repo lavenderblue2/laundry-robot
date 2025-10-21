@@ -70,6 +70,13 @@ namespace AdministratorWeb.Controllers.Api
                 return NotFound("User not found");
             }
 
+            // DEBUG LOGGING
+            Console.WriteLine($"[API PROFILE DEBUG] User ID: {user.Id}");
+            Console.WriteLine($"[API PROFILE DEBUG] User Name: {user.UserName}");
+            Console.WriteLine($"[API PROFILE DEBUG] RoomName: '{user.RoomName ?? "NULL"}'");
+            Console.WriteLine($"[API PROFILE DEBUG] RoomDescription: '{user.RoomDescription ?? "NULL"}'");
+            Console.WriteLine($"[API PROFILE DEBUG] AssignedBeaconMac: '{user.AssignedBeaconMacAddress ?? "NULL"}'");
+
             return Ok(new
             {
                 firstName = user.FirstName,

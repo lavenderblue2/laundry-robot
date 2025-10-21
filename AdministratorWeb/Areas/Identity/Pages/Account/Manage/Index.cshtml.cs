@@ -22,6 +22,8 @@ namespace AdministratorWeb.Areas.Identity.Pages.Account.Manage
         }
 
         public string Username { get; set; }
+        public string RoomName { get; set; }
+        public string RoomDescription { get; set; }
 
         [TempData]
         public string StatusMessage { get; set; }
@@ -42,6 +44,13 @@ namespace AdministratorWeb.Areas.Identity.Pages.Account.Manage
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
 
             Username = userName;
+            RoomName = user.RoomName ?? "NULL IN DATABASE";
+            RoomDescription = user.RoomDescription ?? "NULL IN DATABASE";
+
+            // DEBUG LOGGING
+            Console.WriteLine($"[PROFILE DEBUG] User: {userName}");
+            Console.WriteLine($"[PROFILE DEBUG] RoomName from DB: '{user.RoomName}'");
+            Console.WriteLine($"[PROFILE DEBUG] RoomDescription from DB: '{user.RoomDescription}'");
 
             Input = new InputModel
             {
