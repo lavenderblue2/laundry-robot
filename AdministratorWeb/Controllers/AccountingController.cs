@@ -410,15 +410,54 @@ namespace AdministratorWeb.Controllers
 
         public async Task<IActionResult> ExportSalesReportExcel(DateTime? from, DateTime? to)
         {
-            // This will be implemented with EPPlus library
-            TempData["Info"] = "Excel export feature coming soon!";
-            return RedirectToAction(nameof(SalesReport), new { from, to });
+            // Set default date range
+            var today = DateTime.Today;
+            var fromDate = from ?? new DateTime(today.Year, today.Month, 1);
+            var toDate = to ?? today;
+
+            // Fetch payments for the period
+            var payments = await _context.Payments
+                .Where(p => p.CreatedAt >= fromDate && p.CreatedAt <= toDate.AddDays(1))
+                .OrderBy(p => p.CreatedAt)
+                .ToListAsync();
+
+            // Create CSV content
+            var csv = new System.Text.StringBuilder();
+            csv.AppendLine("Sales Report");
+            csv.AppendLine($"Period: {fromDate:yyyy-MM-dd} to {toDate:yyyy-MM-dd}");
+            csv.AppendLine($"Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            csv.AppendLine();
+            csv.AppendLine("Transaction ID,Customer Name,Customer ID,Amount,Status,Payment Method,Date");
+
+            foreach (var payment in payments)
+            {
+                csv.AppendLine($"\"{payment.TransactionId}\",\"{payment.CustomerName}\",\"{payment.CustomerId}\",{payment.Amount},\"{payment.Status}\",\"{payment.Method}\",\"{payment.CreatedAt:yyyy-MM-dd HH:mm}\"");
+            }
+
+            csv.AppendLine();
+            csv.AppendLine("Summary");
+            var totalRevenue = payments.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount);
+            var totalTransactions = payments.Count;
+            var completedCount = payments.Count(p => p.Status == PaymentStatus.Completed);
+            var pendingCount = payments.Count(p => p.Status == PaymentStatus.Pending);
+            var failedCount = payments.Count(p => p.Status == PaymentStatus.Failed);
+
+            csv.AppendLine($"Total Revenue,{totalRevenue}");
+            csv.AppendLine($"Total Transactions,{totalTransactions}");
+            csv.AppendLine($"Completed,{completedCount}");
+            csv.AppendLine($"Pending,{pendingCount}");
+            csv.AppendLine($"Failed,{failedCount}");
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+            var fileName = $"SalesReport_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.csv";
+
+            return File(bytes, "text/csv", fileName);
         }
 
         public async Task<IActionResult> ExportSalesReportPdf(DateTime? from, DateTime? to)
         {
-            // This will be implemented with iTextSharp or similar
-            TempData["Info"] = "PDF export feature coming soon!";
+            // PDF export uses browser's print-to-PDF functionality
+            // Just redirect back to show the print-friendly view
             return RedirectToAction(nameof(SalesReport), new { from, to });
         }
     }

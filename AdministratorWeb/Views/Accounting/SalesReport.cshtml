@@ -14,18 +14,14 @@
             </p>
         </div>
         <div class="flex items-center space-x-3 no-print">
-            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
-                <i data-lucide="printer" class="w-4 h-4 mr-2"></i>
-                Print Report
-            </button>
-            <a asp-action="ExportSalesReportExcel" asp-route-from="@Model.FromDate" asp-route-to="@Model.ToDate" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
-                <i data-lucide="file-spreadsheet" class="w-4 h-4 mr-2"></i>
-                Export Excel
+            <a asp-action="ExportSalesReportExcel" asp-route-from="@Model.FromDate.ToString("yyyy-MM-dd")" asp-route-to="@Model.ToDate.ToString("yyyy-MM-dd")" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                Export CSV
             </a>
-            <a asp-action="ExportSalesReportPdf" asp-route-from="@Model.FromDate" asp-route-to="@Model.ToDate" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
                 <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
-                Export PDF
-            </a>
+                Save as PDF
+            </button>
         </div>
     </div>
 </div>
