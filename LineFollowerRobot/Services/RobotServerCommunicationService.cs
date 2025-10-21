@@ -140,8 +140,9 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
             // Get detected beacons from beacon service
             var detectedBeacons = GetDetectedBeacons();
 
-            // Check if robot is near any navigation target
-            bool isInTarget = CheckIfAtNavigationTarget(detectedBeacons);
+            // Check if robot is near BASE beacon (server-side handles IsBase, robot-side handles IsNavigationTarget)
+            // Server handles base beacon because robot doesn't reliably know which one is base
+            bool isInTarget = CheckIfAtBaseBeacon(detectedBeacons);
 
             // Get current weight reading
             double currentWeightKg = GetCurrentWeight();
@@ -236,6 +237,149 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
     private DateTime? _firstDetectionTime = null;
     private DateTime? _lastConfirmationTime = null; // Track last confirmation time
     private string? _currentTargetRoom = null; // Track which room we're confirming arrival at
+
+    /// <summary>
+    /// Check if robot is near BASE beacon (for return trips)
+    /// Uses 3-confirmation system @ 1000ms intervals to prevent false positives
+    /// Server handles base beacon verification because robot doesn't reliably know which one is base
+    /// </summary>
+    private bool CheckIfAtBaseBeacon(List<BeaconInfo> detectedBeacons)
+    {
+        bool currentlyDetected = false;
+        string? targetRoomName = null;
+
+        // Beacon detection mode - ONLY check BASE beacons (not navigation targets)
+        if (ActiveBeacons != null && ActiveBeacons.Any())
+        {
+            // Get ONLY the base beacons (IsBase=true, NOT IsNavigationTarget)
+            var baseBeacons = ActiveBeacons.Where(b => b.IsBase).ToList();
+
+            _logger.LogDebug("Checking base beacons: {Count} base beacon(s) configured", baseBeacons.Count);
+
+            foreach (var detectedBeacon in detectedBeacons)
+            {
+                var baseBeacon = baseBeacons.FirstOrDefault(b =>
+                    string.Equals(b.MacAddress, detectedBeacon.MacAddress, StringComparison.OrdinalIgnoreCase));
+
+                if (baseBeacon != null)
+                {
+                    _logger.LogDebug("Base beacon {Mac} ({Room}): RSSI={Rssi}, Threshold={Threshold}, InRange={InRange}",
+                        detectedBeacon.MacAddress, baseBeacon.RoomName, detectedBeacon.Rssi,
+                        baseBeacon.RssiThreshold, detectedBeacon.Rssi >= baseBeacon.RssiThreshold);
+
+                    if (detectedBeacon.Rssi >= baseBeacon.RssiThreshold)
+                    {
+                        currentlyDetected = true;
+                        targetRoomName = baseBeacon.RoomName;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Check if target room has changed - if so, reset confirmation counter
+        if (targetRoomName != _currentTargetRoom)
+        {
+            if (_arrivalConfirmationCount > 0)
+            {
+                _logger.LogWarning(
+                    "Base beacon changed from '{OldTarget}' to '{NewTarget}' - resetting confirmation counter (was at {Count}/{Required})",
+                    _currentTargetRoom ?? "None", targetRoomName ?? "None", _arrivalConfirmationCount, REQUIRED_CONFIRMATIONS);
+            }
+            _arrivalConfirmationCount = 0;
+            _firstDetectionTime = null;
+            _currentTargetRoom = targetRoomName;
+        }
+
+        // Confirmation logic - ONLY stop if we have a base beacon AND it's within threshold
+        bool hasBaseBeacon = ActiveBeacons != null && ActiveBeacons.Any(b => b.IsBase);
+
+        if (currentlyDetected && hasBaseBeacon)
+        {
+            // Base beacon is currently detected
+            if (_arrivalConfirmationCount == 0)
+            {
+                // FIRST DETECTION - STOP IMMEDIATELY to avoid overshooting
+                _logger.LogInformation("BASE beacon '{TargetRoom}' detected within threshold - STOPPING to verify (1/{RequiredConfirmations})",
+                    targetRoomName, REQUIRED_CONFIRMATIONS);
+
+                try
+                {
+                    var motorService = _serviceProvider.GetService<LineFollowerMotorService>();
+                    motorService?.StopLineFollowingAsync().GetAwaiter().GetResult();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error stopping robot for base beacon arrival verification");
+                }
+
+                _firstDetectionTime = DateTime.UtcNow;
+                _lastConfirmationTime = DateTime.UtcNow;
+                _arrivalConfirmationCount = 1;
+            }
+            else
+            {
+                // Check if enough time has passed since last confirmation (enforce delay)
+                var timeSinceLastConfirmation = DateTime.UtcNow - (_lastConfirmationTime ?? DateTime.UtcNow);
+                if (timeSinceLastConfirmation.TotalMilliseconds < CONFIRMATION_DELAY_MS)
+                {
+                    // Not enough time has passed, skip this check
+                    return false;
+                }
+
+                // Increment confirmation count (robot is now stopped and verifying)
+                _arrivalConfirmationCount++;
+                _lastConfirmationTime = DateTime.UtcNow;
+                _logger.LogInformation("Verifying BASE beacon arrival at '{TargetRoom}' ({CurrentCount}/{RequiredConfirmations})...",
+                    targetRoomName, _arrivalConfirmationCount, REQUIRED_CONFIRMATIONS);
+
+                // Check if we've reached required confirmations
+                if (_arrivalConfirmationCount >= REQUIRED_CONFIRMATIONS)
+                {
+                    var dwellTime = DateTime.UtcNow - _firstDetectionTime.Value;
+                    _logger.LogInformation("✓ BASE BEACON ARRIVAL CONFIRMED at '{TargetRoom}' after {Confirmations} checks ({DwellSeconds:F1}s)",
+                        targetRoomName, REQUIRED_CONFIRMATIONS, dwellTime.TotalSeconds);
+
+                    // Reset counters AFTER confirming arrival
+                    _arrivalConfirmationCount = 0;
+                    _firstDetectionTime = null;
+                    _lastConfirmationTime = null;
+                    _currentTargetRoom = null; // Clear target so next target starts fresh
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            // Base beacon NOT detected - reset confirmation counter and resume if needed
+            if (_arrivalConfirmationCount > 0)
+            {
+                var reason = !hasBaseBeacon ? "base beacon cleared" : "beacon signal lost";
+                _logger.LogWarning("BASE beacon '{TargetRoom}' lost after {Count}/{RequiredConfirmations} checks ({Reason}) - FALSE ALARM! Resuming...",
+                    _currentTargetRoom, _arrivalConfirmationCount, REQUIRED_CONFIRMATIONS, reason);
+                _arrivalConfirmationCount = 0;
+                _firstDetectionTime = null;
+                _lastConfirmationTime = null;
+
+                // Robot stopped for verification but lost signal - explicitly resume line following
+                try
+                {
+                    var motorService = _serviceProvider.GetService<LineFollowerMotorService>();
+                    if (motorService != null)
+                    {
+                        motorService.StartLineFollowingAsync().GetAwaiter().GetResult();
+                        _logger.LogInformation("Line following resumed after base beacon false alarm");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error resuming line following after base beacon false alarm");
+                }
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Check if robot is near any navigation target beacon OR if floor color was detected

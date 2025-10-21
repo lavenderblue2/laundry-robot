@@ -50,11 +50,11 @@ public class LineFollowerService : BackgroundService
     // Beacon detection logging throttle
     private int _beaconDetectionCount = 0;
 
-    // 3-Check Beacon Verification System
+    // 10-Check Beacon Verification System @ 200ms intervals (Total: 2 seconds)
     private int _consecutiveBeaconDetections = 0;
-    private const int REQUIRED_CONSECUTIVE_DETECTIONS = 3;
+    private const int REQUIRED_CONSECUTIVE_DETECTIONS = 10; // 10 checks for high reliability
     private DateTime _lastBeaconVerificationCheck = DateTime.MinValue;
-    private const int VERIFICATION_CHECK_INTERVAL_MS = 500; // Check every 500ms
+    private const int VERIFICATION_CHECK_INTERVAL_MS = 200; // Check every 200ms (fast response)
     private bool _arrivalConfirmed = false; // Flag to prevent further beacon processing after arrival
     private bool _verifyingBeacon = false; // Flag to pause line following during beacon verification
     private DateTime _navigationStartTime = DateTime.MinValue; // Track when navigation started
@@ -422,18 +422,16 @@ public class LineFollowerService : BackgroundService
     }
 
     /// <summary>
-    /// Handle beacon detection events with 3-CHECK VERIFICATION ALGORITHM
+    /// Handle beacon detection events with 10-CHECK VERIFICATION ALGORITHM
     /// Algorithm:
-    /// 1. Detect beacon in range → Stop and check RSSI
-    /// 2. Wait 500ms, check again → If still in range, count++
-    /// 3. Repeat 3 times total
-    /// 4. If all 3 checks pass → Confirm arrival and stop completely
-    /// 5. If any check fails → Reset counter and continue moving
+    /// 1. Detect beacon in range → FULL STOP and check RSSI
+    /// 2. Wait 200ms, check again → If RSSI still >= threshold, count++
+    /// 3. Repeat 10 times total (2 seconds total verification time)
+    /// 4. If all 10 checks pass → Confirm arrival and announce
+    /// 5. If ANY check fails (RSSI drops below threshold) → Immediately reset counter and resume moving
     /// </summary>
     private async void OnBeaconDetected(object? sender, BeaconInfo beacon)
     {
-        // ARRIVAL DETECTION DISABLED: Using RobotServerCommunicationService instead
-        return;
         try
         {
             // If arrival already confirmed, ignore all further beacon detections
@@ -477,20 +475,20 @@ public class LineFollowerService : BackgroundService
                 return; // Not in active beacons list, ignore
             }
 
-            // Skip if this is neither a navigation target nor a base beacon
-            if (!targetBeaconConfig.IsNavigationTarget && !targetBeaconConfig.IsBase)
+            // Robot-side ONLY handles navigation targets (NOT base beacons)
+            // Base beacons are handled by server-side verification
+            if (!targetBeaconConfig.IsNavigationTarget || targetBeaconConfig.IsBase)
             {
-                return; // Not a target we care about
+                return; // Skip base beacons and non-target beacons
             }
 
             // Only log every 20th detection to reduce spam
             _beaconDetectionCount++;
-            var beaconType = targetBeaconConfig.IsBase ? "BASE" : "TARGET";
             if (_beaconDetectionCount % 20 == 0)
             {
                 _logger.LogInformation(
-                    "{Type} BEACON DETECTED: {BeaconMac} ({Name}) RSSI: {Rssi} dBm (threshold: {Threshold} dBm)",
-                    beaconType, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
+                    "NAVIGATION TARGET BEACON DETECTED: {BeaconMac} ({Name}) RSSI: {Rssi} dBm (threshold: {Threshold} dBm)",
+                    beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
             }
 
             // Check if we've reached the target (within RSSI threshold)
@@ -506,61 +504,49 @@ public class LineFollowerService : BackgroundService
                     _lastBeaconVerificationCheck = now;
 
                     _logger.LogWarning(
-                        "{Type} BEACON CHECK [{Check}/3]: Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING TO VERIFY",
-                        beaconType, _consecutiveBeaconDetections, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
+                        "NAVIGATION TARGET CHECK [{Check}/10]: Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - FULL STOP FOR VERIFICATION",
+                        _consecutiveBeaconDetections, beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
 
-                    // PAUSE line following and stop the robot for verification
+                    // FULL STOP - pause line following and stop the robot for verification
                     _verifyingBeacon = true;
                     _motorService.Stop();
 
-                    // If we've verified 3 times consecutively, we've arrived!
+                    // If we've verified 10 times consecutively, we've arrived!
                     if (_consecutiveBeaconDetections >= REQUIRED_CONSECUTIVE_DETECTIONS)
                     {
                         _logger.LogWarning(
-                            "✓✓✓ {Type} BEACON CONFIRMED! 3 consecutive checks passed. Beacon {BeaconMac} ({Name}) - ARRIVAL CONFIRMED!",
-                            beaconType, beacon.MacAddress, beacon.Name ?? "Unknown");
+                            "✓✓✓ NAVIGATION TARGET ARRIVAL CONFIRMED! All 10 consecutive checks passed (RSSI >= {Threshold} dBm). Beacon {BeaconMac} ({Name})",
+                            targetBeaconConfig.RssiThreshold, beacon.MacAddress, beacon.Name ?? "Unknown");
 
                         _arrivalConfirmed = true; // Set flag to ignore all future beacon detections
                         await _motorService.StopLineFollowingAsync();
                         _consecutiveBeaconDetections = 0; // Reset for next navigation
 
-                        _logger.LogInformation("🛑 Arrival confirmed - beacon processing disabled until next navigation starts");
+                        _logger.LogInformation("🛑 ARRIVAL ANNOUNCED - Robot has reached destination - beacon processing disabled until next navigation");
                     }
                     else
                     {
                         _logger.LogInformation(
-                            "⏸ Verification in progress... Waiting for check {NextCheck}/3 (next check in {Ms}ms)",
+                            "⏸ Verification in progress... Waiting for check {NextCheck}/10 (next check in {Ms}ms)",
                             _consecutiveBeaconDetections + 1, VERIFICATION_CHECK_INTERVAL_MS);
                     }
                 }
             }
             else
             {
-                // RSSI dropped below threshold during verification
+                // RSSI dropped below threshold during verification - IMMEDIATELY resume movement
                 if (_consecutiveBeaconDetections > 0 && _verifyingBeacon)
                 {
-                    // Check if we should give up on verification (been trying for too long)
-                    var timeSinceFirstCheck = (DateTime.UtcNow - _lastBeaconVerificationCheck).TotalMilliseconds;
+                    _logger.LogWarning(
+                        "✗ VERIFICATION FAILED! RSSI dropped: {Rssi} dBm < {Threshold} dBm after {CheckCount} checks. IMMEDIATELY RESUMING movement.",
+                        beacon.Rssi, targetBeaconConfig.RssiThreshold, _consecutiveBeaconDetections);
 
-                    // Only give up if we haven't gotten a good reading for 2 seconds
-                    if (timeSinceFirstCheck > 2000)
-                    {
-                        _logger.LogWarning(
-                            "✗ VERIFICATION TIMEOUT! RSSI: {Rssi} < {Threshold}. No good readings for 2s. Resetting counter and RESUMING line following.",
-                            beacon.Rssi, targetBeaconConfig.RssiThreshold);
+                    // Reset verification state and resume line following immediately
+                    _consecutiveBeaconDetections = 0;
+                    _lastBeaconVerificationCheck = DateTime.MinValue;
+                    _verifyingBeacon = false; // Resume line following NOW
 
-                        _consecutiveBeaconDetections = 0;
-                        _lastBeaconVerificationCheck = DateTime.MinValue;
-                        _verifyingBeacon = false; // Resume line following
-
-                        _logger.LogInformation("▶ Line following resumed - verification timeout");
-                    }
-                    else
-                    {
-                        // Just a temporary dip - keep verifying
-                        _logger.LogDebug("Temporary RSSI dip: {Rssi} < {Threshold} - continuing verification",
-                            beacon.Rssi, targetBeaconConfig.RssiThreshold);
-                    }
+                    _logger.LogInformation("▶ Line following RESUMED - robot will continue until RSSI is stable");
                 }
             }
         }
