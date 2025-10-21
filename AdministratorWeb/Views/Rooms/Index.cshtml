@@ -1,4 +1,4 @@
-@model IEnumerable<AdministratorWeb.Models.Room>
+@model List<(AdministratorWeb.Models.Room room, int usersCount, int beaconsCount)>
 @{
     ViewData["Title"] = "Room Management";
 }
@@ -126,8 +126,9 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-700/50" id="roomsTableBody">
-                    @foreach (var room in Model.OrderBy(r => r.Name))
+                    @foreach (var item in Model.OrderBy(i => i.room.Name))
                     {
+                        var room = item.room;
                         <tr class="hover:bg-slate-700/20 transition-colors duration-200 room-row" data-status="@(room.IsActive ? "active" : "inactive")" data-name="@room.Name.ToLower()">
                             <td class="px-8 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
@@ -176,11 +177,11 @@
                                 <div class="text-sm text-slate-300">
                                     <div class="flex items-center mb-1">
                                         <i data-lucide="users" class="w-3 h-3 mr-1 text-slate-400"></i>
-                                        <span>Users: 0</span>
+                                        <span>Users: @item.usersCount</span>
                                     </div>
                                     <div class="flex items-center">
                                         <i data-lucide="radio" class="w-3 h-3 mr-1 text-slate-400"></i>
-                                        <span>Beacons: 0</span>
+                                        <span>Beacons: @item.beaconsCount</span>
                                     </div>
                                 </div>
                             </td>

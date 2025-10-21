@@ -50,14 +50,23 @@ namespace AdministratorWeb.Controllers
                 }
 
                 var rooms = await query.OrderBy(r => r.Name).ToListAsync();
-                
-                return View(rooms);
+
+                // Calculate usage statistics for each room
+                var roomsWithCounts = new List<(Room room, int usersCount, int beaconsCount)>();
+                foreach (var room in rooms)
+                {
+                    var usersCount = await _context.Users.CountAsync(u => u.RoomName == room.Name);
+                    var beaconsCount = await _context.BluetoothBeacons.CountAsync(b => b.RoomName == room.Name);
+                    roomsWithCounts.Add((room, usersCount, beaconsCount));
+                }
+
+                return View(roomsWithCounts);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading rooms index page");
                 TempData["Error"] = "Failed to load room data.";
-                return View(new List<Room>());
+                return View(new List<(Room room, int usersCount, int beaconsCount)>());
             }
         }
 

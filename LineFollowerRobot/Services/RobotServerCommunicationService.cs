@@ -597,7 +597,23 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
                 }
 
                 await _beaconService.UpdateBeaconConfigurations(beaconConfigs);
-                _logger.LogDebug("Updated beacon configurations from server: {BeaconCount} beacons",
+
+                // Log navigation targets received from server
+                var navigationTargets = serverResponse.ActiveBeacons.Where(b => b.IsNavigationTarget).ToList();
+                if (navigationTargets.Any())
+                {
+                    _logger.LogWarning(
+                        "✓ NAVIGATION TARGETS RECEIVED: {Count} beacon(s) - {Targets}",
+                        navigationTargets.Count,
+                        string.Join(", ", navigationTargets.Select(b => $"{b.Name} ({b.RoomName}) MAC:{b.MacAddress} RSSI>={b.RssiThreshold}"))
+                    );
+                }
+                else
+                {
+                    _logger.LogWarning("⚠ NO NAVIGATION TARGETS received from server - robot has no destination!");
+                }
+
+                _logger.LogDebug("Updated beacon configurations from server: {BeaconCount} total beacons",
                     beaconConfigs.Count);
             }
             else
