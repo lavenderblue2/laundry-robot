@@ -26,7 +26,7 @@
             </a>
             <a asp-action="Payments" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
                 <i data-lucide="search" class="w-4 h-4 mr-2"></i>
-                View All Payments
+                View Payment Reports
             </a>
         </div>
     </div>
@@ -84,7 +84,7 @@
                         <div class="p-2 bg-purple-500/20 rounded-xl">
                             <i data-lucide="trending-up" class="h-6 w-6 text-purple-400"></i>
                         </div>
-                        <span class="ml-2 text-xs font-medium text-purple-400 uppercase tracking-wider">Month</span>
+                        <span class="ml-2 text-xs font-medium text-purple-400 uppercase tracking-wider">Monthly Sales</span>
                     </div>
                     <div class="text-2xl font-bold text-white mb-1">₱@accountingData.MonthRevenue.ToString("N0")</div>
                     <div class="text-sm text-slate-400">This Month</div>
@@ -104,7 +104,7 @@
                         <div class="p-2 bg-yellow-500/20 rounded-xl">
                             <i data-lucide="alert-circle" class="h-6 w-6 text-yellow-400"></i>
                         </div>
-                        <span class="ml-2 text-xs font-medium text-yellow-400 uppercase tracking-wider">Alert</span>
+                        <span class="ml-2 text-xs font-medium text-yellow-400 uppercase tracking-wider">Collectibles</span>
                     </div>
                     <div class="text-2xl font-bold text-white mb-1">₱@accountingData.OutstandingAmount.ToString("N0")</div>
                     <div class="text-sm text-slate-400">Outstanding</div>
@@ -162,7 +162,7 @@
             </a>
             <a asp-action="Payments" class="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
                 <i data-lucide="credit-card" class="w-4 h-4 mr-2"></i>
-                View All Payments
+                View Payment Reports
             </a>
             <a asp-action="Outstanding" class="w-full inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
                 <i data-lucide="alert-triangle" class="w-4 h-4 mr-2"></i>
