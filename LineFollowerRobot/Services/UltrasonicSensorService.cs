@@ -38,7 +38,7 @@ public class UltrasonicSensorService
 
     public void Start()
     {
-        _timer = new Timer(_ => MeasureDistance(), null, TimeSpan.Zero, TimeSpan.FromMilliseconds(100));
+        _timer = new Timer(_ => MeasureDistance(), null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
     }
 
     public void Stop()
