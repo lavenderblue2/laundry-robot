@@ -55,7 +55,18 @@ namespace AdministratorWeb.Models
         
         public string? ProcessedByUserId { get; set; }
         public ApplicationUser? ProcessedByUser { get; set; }
-        
+
         public string? FailureReason { get; set; }
+
+        // Refund tracking
+        public decimal? RefundAmount { get; set; }
+        public DateTime? RefundedAt { get; set; }
+        public string? RefundedByUserId { get; set; }
+        public string? RefundReason { get; set; }
+
+        // Cancellation tracking
+        public DateTime? CancelledAt { get; set; }
+        public string? CancelledByUserId { get; set; }
+        public string? CancellationReason { get; set; }
     }
 }

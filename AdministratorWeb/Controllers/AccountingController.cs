@@ -199,6 +199,172 @@ namespace AdministratorWeb.Controllers
             return RedirectToAction(nameof(Outstanding));
         }
 
+        [HttpPost]
+        public async Task<IActionResult> IssueRefund(int paymentId, decimal refundAmount, string refundReason, string? notes)
+        {
+            var payment = await _context.Payments.Include(p => p.LaundryRequest).FirstOrDefaultAsync(p => p.Id == paymentId);
+            if (payment == null || payment.Status != PaymentStatus.Completed)
+            {
+                TempData["Error"] = "Payment not found or not eligible for refund.";
+                return RedirectToAction(nameof(Payments));
+            }
+
+            if (refundAmount <= 0 || refundAmount > payment.Amount)
+            {
+                TempData["Error"] = "Invalid refund amount.";
+                return RedirectToAction(nameof(Payments));
+            }
+
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            // Update payment status
+            payment.Status = PaymentStatus.Refunded;
+            payment.RefundAmount = refundAmount;
+            payment.RefundedAt = DateTime.UtcNow;
+            payment.RefundedByUserId = userId;
+            payment.RefundReason = refundReason;
+            if (!string.IsNullOrEmpty(notes))
+            {
+                payment.Notes = (payment.Notes ?? "") + $"\nRefund: {notes}";
+            }
+
+            // If full refund, mark request as unpaid
+            if (refundAmount >= payment.Amount)
+            {
+                payment.LaundryRequest.IsPaid = false;
+            }
+
+            // Create negative adjustment for accounting
+            var adjustment = new PaymentAdjustment
+            {
+                Type = AdjustmentType.Refund,
+                Amount = -refundAmount,
+                Description = $"Refund for Payment #{payment.Id} - {refundReason}",
+                ReferenceNumber = payment.TransactionId,
+                EffectiveDate = DateTime.Today,
+                Notes = notes,
+                CreatedByUserId = userId ?? "Unknown",
+                CreatedByUserName = User.Identity?.Name,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.PaymentAdjustments.Add(adjustment);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Refund of ₱{refundAmount:N2} issued successfully.";
+            return RedirectToAction(nameof(Payments));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkAsPending(int requestId, string? notes)
+        {
+            var request = await _context.LaundryRequests.FindAsync(requestId);
+            if (request == null || request.IsPaid)
+            {
+                TempData["Error"] = "Request not found or already paid.";
+                return RedirectToAction(nameof(Outstanding));
+            }
+
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            var payment = new Payment
+            {
+                LaundryRequestId = requestId,
+                CustomerId = request.CustomerId,
+                CustomerName = request.CustomerName,
+                Amount = request.TotalCost!.Value,
+                Method = PaymentMethod.Cash,
+                Status = PaymentStatus.Pending,
+                TransactionId = $"PEND_{DateTime.UtcNow:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..8].ToUpper()}",
+                Notes = notes,
+                ProcessedByUserId = userId
+            };
+
+            _context.Payments.Add(payment);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Payment marked as pending.";
+            return RedirectToAction(nameof(Outstanding));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarkAsFailed(int paymentId, string failureReason, string? notes)
+        {
+            var payment = await _context.Payments.FindAsync(paymentId);
+            if (payment == null || payment.Status == PaymentStatus.Completed || payment.Status == PaymentStatus.Refunded)
+            {
+                TempData["Error"] = "Payment not found or cannot be marked as failed.";
+                return RedirectToAction(nameof(Payments));
+            }
+
+            payment.Status = PaymentStatus.Failed;
+            payment.FailureReason = failureReason;
+            if (!string.IsNullOrEmpty(notes))
+            {
+                payment.Notes = (payment.Notes ?? "") + $"\nFailed: {notes}";
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Warning"] = "Payment marked as failed.";
+            return RedirectToAction(nameof(Payments));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CancelPayment(int paymentId, string cancellationReason, string? notes)
+        {
+            var payment = await _context.Payments.FindAsync(paymentId);
+            if (payment == null || payment.Status == PaymentStatus.Completed || payment.Status == PaymentStatus.Refunded)
+            {
+                TempData["Error"] = "Payment not found or cannot be cancelled.";
+                return RedirectToAction(nameof(Payments));
+            }
+
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            payment.Status = PaymentStatus.Cancelled;
+            payment.CancelledAt = DateTime.UtcNow;
+            payment.CancelledByUserId = userId;
+            payment.CancellationReason = cancellationReason;
+            if (!string.IsNullOrEmpty(notes))
+            {
+                payment.Notes = (payment.Notes ?? "") + $"\nCancelled: {notes}";
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Info"] = "Payment cancelled.";
+            return RedirectToAction(nameof(Payments));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ConfirmPayment(int paymentId, string? notes)
+        {
+            var payment = await _context.Payments.Include(p => p.LaundryRequest).FirstOrDefaultAsync(p => p.Id == paymentId);
+            if (payment == null || payment.Status != PaymentStatus.Pending)
+            {
+                TempData["Error"] = "Payment not found or not in pending status.";
+                return RedirectToAction(nameof(Payments));
+            }
+
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            payment.Status = PaymentStatus.Completed;
+            payment.ProcessedAt = DateTime.UtcNow;
+            payment.ProcessedByUserId = userId;
+            if (!string.IsNullOrEmpty(notes))
+            {
+                payment.Notes = (payment.Notes ?? "") + $"\nConfirmed: {notes}";
+            }
+
+            payment.LaundryRequest.IsPaid = true;
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Payment confirmed successfully.";
+            return RedirectToAction(nameof(Payments));
+        }
+
         public async Task<IActionResult> CustomerProfile(string customerId)
         {
             var requests = await _context.LaundryRequests
