@@ -99,7 +99,7 @@ namespace AdministratorWeb.Controllers
             return View(recentPayments);
         }
 
-        public async Task<IActionResult> Payments(string? status, string? method, DateTime? from, DateTime? to)
+        public async Task<IActionResult> Payments(string? status, string? method, DateTime? from, DateTime? to, string? customerSearch, decimal? minAmount, decimal? maxAmount)
         {
             var query = _context.Payments.Include(p => p.LaundryRequest).AsQueryable();
 
@@ -123,6 +123,21 @@ namespace AdministratorWeb.Controllers
                 query = query.Where(p => p.CreatedAt <= to.Value.AddDays(1));
             }
 
+            if (!string.IsNullOrEmpty(customerSearch))
+            {
+                query = query.Where(p => p.CustomerName.Contains(customerSearch) || p.CustomerId.Contains(customerSearch));
+            }
+
+            if (minAmount.HasValue)
+            {
+                query = query.Where(p => p.Amount >= minAmount.Value);
+            }
+
+            if (maxAmount.HasValue)
+            {
+                query = query.Where(p => p.Amount <= maxAmount.Value);
+            }
+
             var payments = await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
 
             var filterDto = new PaymentsFilterDto
@@ -131,6 +146,9 @@ namespace AdministratorWeb.Controllers
                 MethodFilter = method,
                 FromFilter = from?.ToString("yyyy-MM-dd"),
                 ToFilter = to?.ToString("yyyy-MM-dd"),
+                CustomerSearch = customerSearch,
+                MinAmount = minAmount,
+                MaxAmount = maxAmount,
                 PaymentStatuses = Enum.GetNames<PaymentStatus>(),
                 PaymentMethods = Enum.GetNames<PaymentMethod>()
             };

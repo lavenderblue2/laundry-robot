@@ -6,6 +6,9 @@ public class PaymentsFilterDto
     public string? MethodFilter { get; set; }
     public string? FromFilter { get; set; }
     public string? ToFilter { get; set; }
+    public string? CustomerSearch { get; set; }
+    public decimal? MinAmount { get; set; }
+    public decimal? MaxAmount { get; set; }
     public string[] PaymentStatuses { get; set; } = Array.Empty<string>();
     public string[] PaymentMethods { get; set; } = Array.Empty<string>();
 }
