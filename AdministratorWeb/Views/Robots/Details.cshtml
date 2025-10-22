@@ -267,15 +267,30 @@ var activeRequest = ViewData["ActiveRequest"] as AdministratorWeb.Models.Laundry
             </div>
             <div class="space-y-3">
                 <!-- Toggle Line Following Button -->
-                <form asp-action="ToggleLineFollowing" method="post" class="w-full">
+                @{
+                    var confirmMessage = (Model.IsActuallyLineFollowing && activeRequest != null)
+                        ? $"return confirm('⚠️ Stopping the robot will cancel request #{activeRequest.Id} for {activeRequest.CustomerName}.\\n\\nAre you sure?');"
+                        : null;
+                }
+                <form asp-action="ToggleLineFollowing" method="post" class="w-full" onsubmit="@confirmMessage">
                     <input type="hidden" name="name" value="@Model.Name"/>
-                    @if (Model.IsFollowingLine)
+                    @if (Model.IsActuallyLineFollowing)
                     {
                         <button type="submit"
-                                class="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+                                class="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex flex-col items-center justify-center"
                                 @(Model.IsOffline ? "disabled" : "")>
-                            <i data-lucide="square" class="w-4 h-4 mr-2"></i>
-                            Stop Line Following
+                            <div class="flex items-center">
+                                <i data-lucide="square" class="w-4 h-4 mr-2"></i>
+                                Stop Line Following
+                            </div>
+                            @if (Model.IsFollowingDueToRequest)
+                            {
+                                <span class="text-xs opacity-75 mt-1">Active Request Control</span>
+                            }
+                            else
+                            {
+                                <span class="text-xs opacity-75 mt-1">Manual Control</span>
+                            }
                         </button>
                     }
                     else

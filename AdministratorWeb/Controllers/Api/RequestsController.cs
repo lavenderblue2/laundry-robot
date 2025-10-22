@@ -576,27 +576,6 @@ namespace AdministratorWeb.Controllers.Api
             }
         }
 
-        [HttpGet("timer-settings")]
-        public async Task<IActionResult> GetTimerSettings()
-        {
-            try
-            {
-                var settings = await _context.LaundrySettings.FirstOrDefaultAsync();
-                var timeoutMinutes = settings?.RoomArrivalTimeoutMinutes ?? 5; // Default to 5 minutes
-
-                return Ok(new
-                {
-                    roomArrivalTimeoutMinutes = timeoutMinutes,
-                    roomArrivalTimeoutSeconds = timeoutMinutes * 60
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting timer settings");
-                return StatusCode(500, new { error = "Failed to get timer settings" });
-            }
-        }
-
         /// <summary>
         /// Auto-accept the next pending request in queue when robot becomes available
         /// Called when robot returns to base after completing a delivery

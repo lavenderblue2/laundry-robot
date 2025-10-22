@@ -129,6 +129,11 @@ namespace AdministratorWeb.Controllers
 
             ViewData["ActiveRequest"] = activeRequest;
 
+            // Calculate actual line following state: manual flag OR has active request
+            bool hasActiveRequest = activeRequest != null;
+            robotDetailsDto.IsActuallyLineFollowing = robotDetailsDto.IsFollowingLine || hasActiveRequest;
+            robotDetailsDto.IsFollowingDueToRequest = hasActiveRequest && !robotDetailsDto.IsFollowingLine;
+
             // Get target room color if there's an active request
             Room? targetRoom = null;
             if (activeRequest != null)
@@ -219,15 +224,49 @@ namespace AdministratorWeb.Controllers
                 return RedirectToAction(nameof(Details), new { name });
             }
 
-            // Toggle the line following state
+            // Check if there's an active request
+            var activeRequest = await _context.LaundryRequests
+                .FirstOrDefaultAsync(r => r.AssignedRobotName == name &&
+                                         r.Status != RequestStatus.Completed &&
+                                         r.Status != RequestStatus.Cancelled &&
+                                         r.Status != RequestStatus.Declined);
+
+            // Determine new state
             bool newState = !robot.IsFollowingLine;
+
+            // If STOPPING and there's an active request, cancel it (mini force stop)
+            if (!newState && activeRequest != null)
+            {
+                // Cancel the active request
+                activeRequest.Status = RequestStatus.Cancelled;
+                activeRequest.ProcessedAt = DateTime.UtcNow;
+                activeRequest.DeclineReason = $"Manually stopped by admin at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogWarning("Admin manually stopped robot {RobotName}, cancelled request {RequestId} for customer {CustomerName}",
+                    name, activeRequest.Id, activeRequest.CustomerName);
+
+                // Free up the robot
+                robot.Status = RobotStatus.Available;
+                robot.CurrentTask = null;
+            }
+
+            // Toggle the line following state
             var success = await _robotService.SetLineFollowingAsync(name, newState);
 
             if (success)
             {
-                TempData["Success"] = newState
-                    ? "Robot started line following."
-                    : "Robot stopped line following.";
+                if (!newState && activeRequest != null)
+                {
+                    TempData["Success"] = $"Robot stopped and request #{activeRequest.Id} cancelled.";
+                }
+                else
+                {
+                    TempData["Success"] = newState
+                        ? "Robot started line following."
+                        : "Robot stopped line following.";
+                }
             }
             else
             {

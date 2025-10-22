@@ -24,6 +24,16 @@ namespace AdministratorWeb.Models.DTOs
         public bool IsFollowingLine { get; set; }
 
         /// <summary>
+        /// Actual line following state - true if robot is following line due to manual control OR active request
+        /// </summary>
+        public bool IsActuallyLineFollowing { get; set; }
+
+        /// <summary>
+        /// True if robot is line following due to an active request (not manual control)
+        /// </summary>
+        public bool IsFollowingDueToRequest { get; set; }
+
+        /// <summary>
         /// Line following color settings
         /// </summary>
         public byte FollowColorR { get; set; }

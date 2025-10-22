@@ -173,13 +173,8 @@ namespace AdministratorWeb.Controllers.Api
                 // Get target room floor color
                 var stopAtColor = await GetTargetRoomFloorColor(targetRoomName);
 
-                // Check if we have a cancelled request that needs to return to base
-                var cancelledRequest = await _context.LaundryRequests
-                    .FirstOrDefaultAsync(r => r.AssignedRobotName == name && r.Status == RequestStatus.Cancelled);
-
                 // FIXED: Only set navigation targets if robot has NOT reached target
-                // UNLESS there's a cancelled request (robot needs to navigate to Base)
-                if (!request.IsInTarget || cancelledRequest != null)
+                if (!request.IsInTarget)
                 {
                     if (!string.IsNullOrWhiteSpace(targetRoomName)) // if we have a target
                         await SetNavigationTargetForRoomBeacons(activeBeacons, targetRoomName);
@@ -198,54 +193,13 @@ namespace AdministratorWeb.Controllers.Api
                 // Determine if robot should be line following
                 bool isLineFollowing = false;
 
-                if (request.IsInTarget && cancelledRequest == null)
+                if (request.IsInTarget)
                 {
-                    // Robot has reached target - stop line following (unless request is cancelled)
+                    // Robot has reached target - stop line following
                     isLineFollowing = false;
                     // Clear manual line following flag to prevent re-enabling
                     await _robotService.SetLineFollowingAsync(name, false);
                     _logger.LogInformation("Robot {RobotName} is in target - stopping line following and clearing manual flag", name);
-                }
-                else if (cancelledRequest != null)
-                {
-                    // Request was cancelled - check if robot is ACTUALLY at Base beacon (not just any beacon)
-                    bool isAtBaseBeacon = false;
-
-                    // Check if robot is detecting a Base beacon with sufficient RSSI
-                    if (request.DetectedBeacons != null && request.DetectedBeacons.Any())
-                    {
-                        foreach (var detectedBeacon in request.DetectedBeacons)
-                        {
-                            var baseBeacon = activeBeacons.FirstOrDefault(b =>
-                                b.IsBase &&
-                                string.Equals(b.MacAddress, detectedBeacon.MacAddress, StringComparison.OrdinalIgnoreCase));
-
-                            if (baseBeacon != null && detectedBeacon.Rssi >= baseBeacon.RssiThreshold)
-                            {
-                                isAtBaseBeacon = true;
-                                _logger.LogInformation("Robot {RobotName} is at BASE beacon {BeaconMac} with RSSI {Rssi} >= {Threshold}",
-                                    name, baseBeacon.MacAddress, detectedBeacon.Rssi, baseBeacon.RssiThreshold);
-                                break;
-                            }
-                        }
-                    }
-
-                    if (isAtBaseBeacon && targetRoomName == "Base")
-                    {
-                        // Robot is actually at base beacon - STOP line following
-                        // NOTE: Status update will be handled in HandleRobotArrivedAtTarget
-                        isLineFollowing = false;
-                        // Clear manual line following flag to prevent re-enabling
-                        await _robotService.SetLineFollowingAsync(name, false);
-                        _logger.LogInformation("Robot {RobotName} has CANCELLED request and is now at Base - stopping line following", name);
-                    }
-                    else
-                    {
-                        // Robot is NOT at base yet - continue line following to return to base
-                        isLineFollowing = true;
-                        _logger.LogWarning("Robot {RobotName} has CANCELLED request - must return to base (IsInTarget: {IsInTarget}, IsAtBaseBeacon: {IsAtBaseBeacon})",
-                            name, request.IsInTarget, isAtBaseBeacon);
-                    }
                 }
                 else
                 {
