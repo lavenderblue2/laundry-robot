@@ -71,8 +71,8 @@ public class LineFollowerService : BackgroundService
         _ultrasonicService = ultrasonicService;
         _serviceProvider = serviceProvider;
 
-        // Subscribe to beacon detection events for real-time proximity checking
-        _beaconService.BeaconDetected += OnBeaconDetected;
+        // DISABLED: Event-based beacon detection (now using synchronous checking in main loop with grace period)
+        // _beaconService.BeaconDetected += OnBeaconDetected;
         _ultrasonicService.DistanceChanged += OnDistanceChanged;
 
         _logger.LogInformation("Line Follower Service initialized (13fps target)");
@@ -513,7 +513,7 @@ public class LineFollowerService : BackgroundService
         _logger.LogInformation("Stopping Line Follower Robot...");
 
         // Unsubscribe from events
-        _beaconService.BeaconDetected -= OnBeaconDetected;
+        // _beaconService.BeaconDetected -= OnBeaconDetected; // Event handler disabled
         _ultrasonicService.DistanceChanged -= OnDistanceChanged;
         _ultrasonicService.Stop();
 
