@@ -196,10 +196,10 @@ class RealtimeRequestsManager {
                                 </div>
                             ` : ''}
                             ${request.declineReason ? `
-                                <div class="mt-3 px-3 py-2 bg-red-900/20 border border-red-700/30 rounded-lg">
-                                    <div class="text-xs text-red-400 flex items-start">
-                                        <i data-lucide="alert-circle" class="w-3 h-3 mr-2 mt-0.5 flex-shrink-0"></i>
-                                        <span>Declined: ${request.declineReason}</span>
+                                <div class="mt-3 px-3 py-2 ${request.declineReason.startsWith("TIMEOUT:") ? "bg-orange-900/30 border border-orange-600/50 animate-pulse" : "bg-red-900/20 border border-red-700/30"} rounded-lg">
+                                    <div class="text-xs ${request.declineReason.startsWith("TIMEOUT:") ? "text-orange-300 font-semibold" : "text-red-400"} flex items-start">
+                                        <i data-lucide="${request.declineReason.startsWith("TIMEOUT:") ? "alert-triangle" : "alert-circle"}" class="w-3 h-3 mr-2 mt-0.5 flex-shrink-0"></i>
+                                        <span>${request.declineReason.startsWith("TIMEOUT:") ? "⚠️ " + request.declineReason : "Declined: " + request.declineReason}</span>
                                     </div>
                                 </div>
                             ` : ''}

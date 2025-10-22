@@ -78,6 +78,7 @@ namespace AdministratorWeb.Services
                     // Initial pickup timeout - cancel request but keep robot assigned so it returns to base
                     _logger.LogWarning("Request {RequestId} timed out - customer did not load laundry within {TimeoutMinutes} minutes - CANCELLING REQUEST", request.Id, timeoutMinutes);
                     request.Status = RequestStatus.Cancelled;
+                    request.DeclineReason = $"TIMEOUT: Customer did not load laundry within {timeoutMinutes} minutes - BOT RETURNING TO BASE";
                     request.ProcessedAt = DateTime.UtcNow;
                     // Keep AssignedRobotName so robot will return to base (will be cleared when robot arrives at base)
                     _logger.LogInformation("Request {RequestId} marked as Cancelled - robot {RobotName} will return to base",
@@ -87,6 +88,7 @@ namespace AdministratorWeb.Services
                 {
                     // Delivery timeout - cancel delivery attempt, keep robot assigned to return to base
                     _logger.LogWarning("Request {RequestId} delivery timed out - customer did not pick up laundry within {TimeoutMinutes} minutes - CANCELLING DELIVERY", request.Id, timeoutMinutes);
+                    request.DeclineReason = $"TIMEOUT: Customer did not pick up laundry within {timeoutMinutes} minutes - BOT RETURNING TO BASE WITH LAUNDRY";
                     request.Status = RequestStatus.FinishedWashingGoingToBase;
                     request.ProcessedAt = DateTime.UtcNow;
                     // Keep AssignedRobotName so robot will return to base with laundry

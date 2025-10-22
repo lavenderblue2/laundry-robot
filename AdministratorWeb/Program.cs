@@ -96,8 +96,8 @@ builder.Services.AddScoped<DbSeeder>();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IRobotManagementService, RobotManagementService>();
-// DISABLED: Auto-cleanup services that were canceling requests
-// builder.Services.AddHostedService<RequestTimeoutService>();
+// Re-enabled: Request timeout service with proper notifications
+builder.Services.AddHostedService<RequestTimeoutService>();
 // builder.Services.AddHostedService<OrphanedRequestCleanupService>();
 
 // Configure lowercase URLs
