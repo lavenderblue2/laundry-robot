@@ -28,7 +28,7 @@ public class LineFollowerService : BackgroundService
     private readonly int _mediumErrorThreshold = 80; // Python: < 80 = gentle correction
     private readonly int _extremeErrorThreshold = 150; // Python: > 150 = full turn
 
-    private readonly int _frameDelayMs = 1000 / 10;
+    private readonly int _frameDelayMs = 1000 / 13;
 
     // Line tracking state - matching Python exactly
     private bool _lineDetected = false;
@@ -71,7 +71,7 @@ public class LineFollowerService : BackgroundService
         _beaconService.BeaconDetected += OnBeaconDetected;
         _ultrasonicService.DistanceChanged += OnDistanceChanged;
 
-        _logger.LogInformation("Line Follower Service initialized (15fps target)");
+        _logger.LogInformation("Line Follower Service initialized (13fps target)");
         _logger.LogInformation("   PID: Kp={Kp}, Ki={Ki}, Kd={Kd}", _kp, _ki, _kd);
         _logger.LogInformation("   Thresholds: Small={Small}, Medium={Medium}, Extreme={Extreme}",
             _smallErrorThreshold, _mediumErrorThreshold, _extremeErrorThreshold);
