@@ -11,7 +11,7 @@ namespace AdministratorWeb.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<RequestTimeoutService> _logger;
-        private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1); // Check every minute
+        private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(10); // Check every 10 seconds for fast timeout response
         private readonly TimeSpan _startupDelay = TimeSpan.FromSeconds(30); // Wait 30 seconds on startup
 
         public RequestTimeoutService(IServiceProvider serviceProvider, ILogger<RequestTimeoutService> logger)
