@@ -50,13 +50,9 @@ public class LineFollowerService : BackgroundService
     // Beacon detection logging throttle
     private int _beaconDetectionCount = 0;
 
-    // Beacon arrival confirmation state (prevents false positives from BT fluctuations)
-    private bool _isConfirmingBeaconArrival = false;
-    private int _confirmationChecksPassed = 0;
-    private DateTime _lastConfirmationCheckTime = DateTime.MinValue;
-    private string? _targetBeaconMacForConfirmation = null;
-    private const int CONFIRMATION_CHECKS_REQUIRED = 3;
-    private const int CONFIRMATION_CHECK_INTERVAL_MS = 800;
+    // Beacon detection grace period (prevents premature detection when starting near beacon)
+    private DateTime _navigationStartTime = DateTime.MinValue;
+    private const int BEACON_DETECTION_GRACE_PERIOD_SECONDS = 10;
 
     public LineFollowerService(
         ILogger<LineFollowerService> logger,
@@ -144,11 +140,9 @@ public class LineFollowerService : BackgroundService
                     // Reset detection flags to prevent stale state from previous requests
                     _floorColorDetected = false;
                     _obstacleDetected = false;
-                    // Reset beacon confirmation state
-                    _isConfirmingBeaconArrival = false;
-                    _confirmationChecksPassed = 0;
-                    _lastConfirmationCheckTime = DateTime.MinValue;
-                    _targetBeaconMacForConfirmation = null;
+                    // Start beacon detection grace period
+                    _navigationStartTime = DateTime.UtcNow;
+                    _logger.LogInformation("Beacon detection disabled for first {Seconds} seconds (grace period)", BEACON_DETECTION_GRACE_PERIOD_SECONDS);
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
@@ -160,80 +154,15 @@ public class LineFollowerService : BackgroundService
 
                 if (shouldFollowLine)
                 {
-                    // Beacon arrival confirmation with 3 checks @ 800ms intervals (prevents BT fluctuation false positives)
-                    var serverCommService = _serviceProvider.GetService<RobotServerCommunicationService>();
-                    if (serverCommService?.ActiveBeacons != null && serverCommService.ActiveBeacons.Any())
+                    // Check beacon RSSI synchronously BEFORE camera processing (with grace period to prevent premature detection)
+                    var timeSinceNavigationStart = (DateTime.UtcNow - _navigationStartTime).TotalSeconds;
+                    var isGracePeriodOver = timeSinceNavigationStart >= BEACON_DETECTION_GRACE_PERIOD_SECONDS;
+
+                    if (isGracePeriodOver)
                     {
-                        if (_isConfirmingBeaconArrival)
+                        var serverCommService = _serviceProvider.GetService<RobotServerCommunicationService>();
+                        if (serverCommService?.ActiveBeacons != null && serverCommService.ActiveBeacons.Any())
                         {
-                            // Already confirming - check if it's time for next confirmation check
-                            var timeSinceLastCheck = (DateTime.UtcNow - _lastConfirmationCheckTime).TotalMilliseconds;
-                            if (timeSinceLastCheck >= CONFIRMATION_CHECK_INTERVAL_MS)
-                            {
-                                // Time for next confirmation check
-                                var detectedBeacons = _beaconService.GetTrackedBeacons();
-                                var confirming = detectedBeacons.Values.FirstOrDefault(b =>
-                                    string.Equals(b.MacAddress, _targetBeaconMacForConfirmation, StringComparison.OrdinalIgnoreCase));
-
-                                if (confirming != null)
-                                {
-                                    var targetBeaconConfig = serverCommService.ActiveBeacons
-                                        .FirstOrDefault(b => b.IsNavigationTarget &&
-                                                             string.Equals(b.MacAddress, confirming.MacAddress,
-                                                                 StringComparison.OrdinalIgnoreCase));
-
-                                    if (targetBeaconConfig != null && confirming.Rssi >= targetBeaconConfig.RssiThreshold)
-                                    {
-                                        // Confirmation check passed
-                                        _confirmationChecksPassed++;
-                                        _lastConfirmationCheckTime = DateTime.UtcNow;
-
-                                        _logger.LogWarning(
-                                            "BEACON CONFIRMATION CHECK #{Check}/3 PASSED: Beacon {BeaconMac} RSSI: {Rssi} dBm >= {Threshold} dBm",
-                                            _confirmationChecksPassed, confirming.MacAddress, confirming.Rssi, targetBeaconConfig.RssiThreshold);
-
-                                        if (_confirmationChecksPassed >= CONFIRMATION_CHECKS_REQUIRED)
-                                        {
-                                            // All confirmations passed - permanently stop
-                                            _logger.LogWarning(
-                                                "BEACON ARRIVAL CONFIRMED! All {Required} checks passed. STOPPING PERMANENTLY.",
-                                                CONFIRMATION_CHECKS_REQUIRED);
-
-                                            await _motorService.StopLineFollowingAsync();
-
-                                            // Reset confirmation state
-                                            _isConfirmingBeaconArrival = false;
-                                            _confirmationChecksPassed = 0;
-                                            _targetBeaconMacForConfirmation = null;
-                                            continue;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // Confirmation check failed - RSSI dropped below threshold
-                                        _logger.LogWarning(
-                                            "BEACON CONFIRMATION FAILED at check #{Check}/3: RSSI {Rssi} dBm < {Threshold} dBm. Resuming line following.",
-                                            _confirmationChecksPassed + 1, confirming?.Rssi ?? -999, targetBeaconConfig?.RssiThreshold ?? -999);
-
-                                        // Reset confirmation state and resume line following
-                                        _isConfirmingBeaconArrival = false;
-                                        _confirmationChecksPassed = 0;
-                                        _targetBeaconMacForConfirmation = null;
-
-                                        // Line following will resume in next iteration since IsLineFollowingActive is still true
-                                    }
-                                }
-                            }
-                            // If not time yet for next check, skip camera processing (motors already stopped)
-                            if (_isConfirmingBeaconArrival)
-                            {
-                                await Task.Delay(50, stoppingToken);
-                                continue;
-                            }
-                        }
-                        else
-                        {
-                            // Not confirming yet - check for initial beacon detection
                             var detectedBeacons = _beaconService.GetTrackedBeacons();
                             foreach (var kvp in detectedBeacons)
                             {
@@ -245,29 +174,13 @@ public class LineFollowerService : BackgroundService
 
                                 if (targetBeaconConfig != null && detectedBeacon.Rssi >= targetBeaconConfig.RssiThreshold)
                                 {
-                                    // Initial detection - enter confirmation mode
                                     _logger.LogWarning(
-                                        "BEACON DETECTED: Beacon {BeaconMac} RSSI: {Rssi} dBm >= {Threshold} dBm - ENTERING CONFIRMATION MODE (3 checks @ 800ms)",
+                                        "TARGET REACHED! Beacon {BeaconMac} RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING IMMEDIATELY",
                                         detectedBeacon.MacAddress, detectedBeacon.Rssi, targetBeaconConfig.RssiThreshold);
 
-                                    _isConfirmingBeaconArrival = true;
-                                    _confirmationChecksPassed = 1; // First check passed
-                                    _lastConfirmationCheckTime = DateTime.UtcNow;
-                                    _targetBeaconMacForConfirmation = detectedBeacon.MacAddress;
-
-                                    // Stop motors temporarily for confirmation
-                                    _motorService.Stop();
-
-                                    // Skip camera processing this iteration
-                                    await Task.Delay(50, stoppingToken);
-                                    break;
+                                    await _motorService.StopLineFollowingAsync();
+                                    continue; // Skip camera processing this iteration
                                 }
-                            }
-
-                            // If we entered confirmation mode, skip to next iteration
-                            if (_isConfirmingBeaconArrival)
-                            {
-                                continue;
                             }
                         }
                     }
