@@ -232,17 +232,12 @@ namespace AdministratorWeb.Controllers.Api
 
                     if (isAtBaseBeacon && targetRoomName == "Base")
                     {
-                        // Robot is actually at base beacon - STOP line following and complete the cancellation
+                        // Robot is actually at base beacon - STOP line following
+                        // NOTE: Status update will be handled in HandleRobotArrivedAtTarget
                         isLineFollowing = false;
                         // Clear manual line following flag to prevent re-enabling
                         await _robotService.SetLineFollowingAsync(name, false);
-                        _logger.LogInformation("Robot {RobotName} has CANCELLED request and is now at Base - stopping line following and clearing manual flag", name);
-
-                        // Mark the cancelled request as completed so it doesn't keep the robot moving
-                        cancelledRequest.Status = RequestStatus.Completed;
-                        cancelledRequest.CompletedAt = DateTime.UtcNow;
-                        cancelledRequest.DeclineReason = (cancelledRequest.DeclineReason ?? "") + " [Robot returned to base]";
-                        await _context.SaveChangesAsync();
+                        _logger.LogInformation("Robot {RobotName} has CANCELLED request and is now at Base - stopping line following", name);
                     }
                     else
                     {
