@@ -147,6 +147,32 @@ public class LineFollowerService : BackgroundService
 
                 if (shouldFollowLine)
                 {
+                    // QUICK FIX: Check beacon RSSI synchronously BEFORE camera processing
+                    // This reduces stop delay from ~220ms to ~50ms
+                    var serverCommService = _serviceProvider.GetService<RobotServerCommunicationService>();
+                    if (serverCommService?.ActiveBeacons != null && serverCommService.ActiveBeacons.Any())
+                    {
+                        var detectedBeacons = _beaconService.GetTrackedBeacons();
+                        foreach (var kvp in detectedBeacons)
+                        {
+                            var detectedBeacon = kvp.Value;
+                            var targetBeaconConfig = serverCommService.ActiveBeacons
+                                .FirstOrDefault(b => b.IsNavigationTarget &&
+                                                     string.Equals(b.MacAddress, detectedBeacon.MacAddress,
+                                                         StringComparison.OrdinalIgnoreCase));
+
+                            if (targetBeaconConfig != null && detectedBeacon.Rssi >= targetBeaconConfig.RssiThreshold)
+                            {
+                                _logger.LogWarning(
+                                    "SYNC BEACON CHECK: TARGET REACHED! Beacon {BeaconMac} RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING IMMEDIATELY",
+                                    detectedBeacon.MacAddress, detectedBeacon.Rssi, targetBeaconConfig.RssiThreshold);
+
+                                await _motorService.StopLineFollowingAsync();
+                                continue; // Skip camera processing this iteration
+                            }
+                        }
+                    }
+
                     // Check for obstacle
                     if (_obstacleDetected)
                     {
