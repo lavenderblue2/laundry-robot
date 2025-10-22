@@ -11,6 +11,7 @@ import { laundryService } from '../../services/laundryService';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
+import { RobotAvailability } from '../../components/RobotAvailability';
 import { Package, Clock, CheckCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useCustomAlert } from '../../components/CustomAlert';
@@ -86,6 +87,9 @@ export default function RequestScreen() {
         </View>
 
         <View style={styles.content}>
+          {/* Robot Availability */}
+          <RobotAvailability />
+
           {hasActiveRequest && (
             <View style={[styles.activeRequestAlert, { backgroundColor: primaryColor + '20', borderColor: primaryColor }]}>
               <View style={styles.alertContent}>

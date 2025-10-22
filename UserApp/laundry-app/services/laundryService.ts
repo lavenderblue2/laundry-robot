@@ -157,8 +157,19 @@ export const laundryService = {
     status: 'idle' | 'enroute' | 'arrived' | 'returning' | 'maintenance';
     lastUpdate: string;
   }> {
-    
+
     const response = await apiGet(`/requests/${requestId}/robot-status`);
+    return response.data;
+  },
+
+  async getAvailableRobots(): Promise<{
+    totalRobots: number;
+    availableRobots: number;
+    busyRobots: number;
+    offlineRobots: number;
+    timestamp: string;
+  }> {
+    const response = await apiGet('/requests/available-robots');
     return response.data;
   }
 };

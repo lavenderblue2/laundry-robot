@@ -681,5 +681,42 @@ namespace AdministratorWeb.Controllers.Api
                 return StatusCode(500, new { error = "Failed to get timer settings" });
             }
         }
+
+        /// <summary>
+        /// Get available robots count for mobile app
+        /// Shows how many robots are available for new requests
+        /// </summary>
+        [HttpGet("available-robots")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAvailableRobots()
+        {
+            try
+            {
+                var allRobots = await _robotService.GetAllRobotsAsync();
+
+                // Count active and online robots
+                var activeRobots = allRobots.Where(r => r.IsActive && !r.IsOffline).ToList();
+
+                // Count available robots (not busy)
+                var availableRobots = activeRobots.Where(r => r.Status == RobotStatus.Available).ToList();
+
+                // Count busy robots
+                var busyRobots = activeRobots.Where(r => r.Status == RobotStatus.Busy).ToList();
+
+                return Ok(new
+                {
+                    totalRobots = activeRobots.Count,
+                    availableRobots = availableRobots.Count,
+                    busyRobots = busyRobots.Count,
+                    offlineRobots = allRobots.Count(r => r.IsOffline),
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available robots count");
+                return StatusCode(500, new { error = "Failed to get robot availability" });
+            }
+        }
     }
 }

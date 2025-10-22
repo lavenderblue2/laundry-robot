@@ -12,6 +12,7 @@ import { laundryService, LaundryRequestResponse } from '../../services/laundrySe
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
+import { RobotAvailability } from '../../components/RobotAvailability';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { formatRelativeTime } from '../../utils/dateUtils';
 import { useCustomAlert } from '../../components/CustomAlert';
@@ -135,6 +136,11 @@ export default function HomeScreen() {
               📍 Room: {user.roomName}
             </ThemedText>
           )}
+        </View>
+
+        {/* Robot Availability Status */}
+        <View style={styles.section}>
+          <RobotAvailability compact />
         </View>
 
         <View style={styles.section}>
