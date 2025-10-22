@@ -209,6 +209,35 @@ namespace AdministratorWeb.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> ToggleLineFollowing([FromForm] string name)
+        {
+            // Get current robot state
+            var robot = await _robotService.GetRobotAsync(name);
+            if (robot == null)
+            {
+                TempData["Error"] = "Robot not found.";
+                return RedirectToAction(nameof(Details), new { name });
+            }
+
+            // Toggle the line following state
+            bool newState = !robot.IsFollowingLine;
+            var success = await _robotService.SetLineFollowingAsync(name, newState);
+
+            if (success)
+            {
+                TempData["Success"] = newState
+                    ? "Robot started line following."
+                    : "Robot stopped line following.";
+            }
+            else
+            {
+                TempData["Error"] = "Failed to toggle line following.";
+            }
+
+            return RedirectToAction(nameof(Details), new { name });
+        }
+
+        [HttpPost]
         public async Task<IActionResult> ForceStopAndCancelRequests([FromForm] string name)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -270,6 +299,28 @@ namespace AdministratorWeb.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Clear all navigation targets by cancelling admin navigation requests
+                var adminNavRequests = await _context.LaundryRequests
+                    .Where(r => r.AssignedRobotName == name &&
+                               r.CustomerName == "ADMIN_NAVIGATION" &&
+                               r.Status == RequestStatus.Accepted)
+                    .ToListAsync();
+
+                int navTargetsCleared = 0;
+                foreach (var navRequest in adminNavRequests)
+                {
+                    navRequest.Status = RequestStatus.Cancelled;
+                    navRequest.DeclineReason = $"Force stopped by admin at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
+                    navTargetsCleared++;
+                }
+
+                if (navTargetsCleared > 0)
+                {
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Cleared {Count} navigation targets for robot {RobotName} during force stop",
+                        navTargetsCleared, name);
+                }
+
                 // Free up the robot completely and update in-memory state
                 robot.Status = RobotStatus.Available;
                 robot.CurrentTask = null;
@@ -278,16 +329,16 @@ namespace AdministratorWeb.Controllers
                 // Commit transaction - all changes are atomic
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("Force stop executed for robot {RobotName}: stopped robot and cancelled {Count} requests",
-                    name, cancelledCount);
+                _logger.LogInformation("Force stop executed for robot {RobotName}: stopped robot, cancelled {RequestCount} requests, cleared {NavCount} navigation targets",
+                    name, cancelledCount, navTargetsCleared);
 
                 if (stopSuccess)
                 {
-                    TempData["Success"] = $"Robot stopped and {cancelledCount} request(s) cancelled.";
+                    TempData["Success"] = $"Robot stopped successfully! Cancelled {cancelledCount} request(s) and cleared {navTargetsCleared} navigation target(s).";
                 }
                 else
                 {
-                    TempData["Warning"] = $"Robot may be offline, but {cancelledCount} request(s) were cancelled.";
+                    TempData["Warning"] = $"Robot may be offline, but {cancelledCount} request(s) and {navTargetsCleared} navigation target(s) were cancelled.";
                 }
             }
             catch (Exception ex)

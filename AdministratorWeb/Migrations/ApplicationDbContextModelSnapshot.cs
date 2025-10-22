@@ -192,7 +192,7 @@ namespace AdministratorWeb.Migrations
 
                     b.HasIndex("RoomName");
 
-                    b.ToTable("BluetoothBeacons");
+                    b.ToTable("BluetoothBeacons", (string)null);
                 });
 
             modelBuilder.Entity("AdministratorWeb.Models.LaundryRequest", b =>
@@ -315,7 +315,7 @@ namespace AdministratorWeb.Migrations
 
                     b.HasIndex("HandledById");
 
-                    b.ToTable("LaundryRequests");
+                    b.ToTable("LaundryRequests", (string)null);
                 });
 
             modelBuilder.Entity("AdministratorWeb.Models.LaundrySettings", b =>
@@ -396,7 +396,7 @@ namespace AdministratorWeb.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LaundrySettings");
+                    b.ToTable("LaundrySettings", (string)null);
                 });
 
             modelBuilder.Entity("AdministratorWeb.Models.Message", b =>
@@ -462,7 +462,7 @@ namespace AdministratorWeb.Migrations
 
                     b.HasIndex("CustomerId", "SentAt");
 
-                    b.ToTable("Messages");
+                    b.ToTable("Messages", (string)null);
                 });
 
             modelBuilder.Entity("AdministratorWeb.Models.Payment", b =>
@@ -548,7 +548,7 @@ namespace AdministratorWeb.Migrations
 
                     b.HasIndex("ProcessedByUserId");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("AdministratorWeb.Models.PaymentAdjustment", b =>
@@ -599,7 +599,7 @@ namespace AdministratorWeb.Migrations
 
                     b.HasIndex("EffectiveDate");
 
-                    b.ToTable("PaymentAdjustments");
+                    b.ToTable("PaymentAdjustments", (string)null);
                 });
 
             modelBuilder.Entity("AdministratorWeb.Models.RobotState", b =>
@@ -670,7 +670,7 @@ namespace AdministratorWeb.Migrations
                     b.HasIndex("RobotName")
                         .IsUnique();
 
-                    b.ToTable("RobotStates");
+                    b.ToTable("RobotStates", (string)null);
                 });
 
             modelBuilder.Entity("AdministratorWeb.Models.Room", b =>
@@ -723,7 +723,7 @@ namespace AdministratorWeb.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Rooms");
+                    b.ToTable("Rooms", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

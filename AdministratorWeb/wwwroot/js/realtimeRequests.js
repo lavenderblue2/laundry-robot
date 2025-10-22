@@ -3,18 +3,50 @@ class RealtimeRequestsManager {
         this.refreshInterval = null;
         this.isRefreshing = false;
         this.lastUpdateTime = null;
+        this.lastRequestsData = null;
+        this.timerDurationSeconds = 300; // Default 5 minutes
+        this.timerInterval = null;
         this.init();
     }
 
-    init() {
+    async init() {
+        this.loadTimerSettings();
         this.startAutoRefresh();
+        this.startTimerUpdates();
+        this.startTimerSettingsRefresh();
         this.bindEvents();
+    }
+
+    startTimerSettingsRefresh() {
+        // Refresh timer settings every 30 seconds
+        setInterval(() => {
+            this.loadTimerSettings();
+        }, 30000);
+    }
+
+    async loadTimerSettings() {
+        try {
+            const response = await fetch('/api/requests/timer-settings');
+            if (response.ok) {
+                const data = await response.json();
+                this.timerDurationSeconds = data.roomArrivalTimeoutSeconds;
+            }
+        } catch (error) {
+            console.error('Error loading timer settings:', error);
+        }
+    }
+
+    startTimerUpdates() {
+        // Update timers every second
+        this.timerInterval = setInterval(() => {
+            this.updateTimerDisplays();
+        }, 1000);
     }
 
     startAutoRefresh() {
         // Initial load
         this.refreshRequests();
-        
+
         // Refresh every 1 second
         this.refreshInterval = setInterval(() => {
             this.refreshRequests();
@@ -30,12 +62,13 @@ class RealtimeRequestsManager {
 
     async refreshRequests() {
         if (this.isRefreshing) return;
-        
+
         this.isRefreshing = true;
         try {
             const response = await fetch('/api/requests-data');
             if (response.ok) {
                 const data = await response.json();
+                this.lastRequestsData = data;
                 this.updateRequestsDisplay(data);
                 this.updateStatsCards(data);
                 this.lastUpdateTime = new Date();
@@ -53,7 +86,6 @@ class RealtimeRequestsManager {
         const completed = data.requests.filter(r => r.status === 'Completed').length;
         const declined = data.requests.filter(r => r.status === 'Declined').length;
 
-        // Update stats display
         document.querySelectorAll('[data-stat="pending"]').forEach(el => el.textContent = pending);
         document.querySelectorAll('[data-stat="active"]').forEach(el => el.textContent = active);
         document.querySelectorAll('[data-stat="completed"]').forEach(el => el.textContent = completed);
@@ -79,9 +111,10 @@ class RealtimeRequestsManager {
         const statusColor = this.getStatusColor(request.status);
         const statusIcon = this.getStatusIcon(request.status);
         const formattedStatus = this.formatStatus(request.status);
+        const timerInfo = this.calculateTimeRemaining(request);
 
         return `
-            <div class="px-6 py-6">
+            <div class="px-6 py-6" data-request-id="${request.id}">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4 flex-1">
                         <div class="flex-shrink-0">
@@ -107,6 +140,14 @@ class RealtimeRequestsManager {
                                         <i data-lucide="map-pin" class="w-3 h-3 mr-1"></i>
                                         ${request.address}
                                     </div>
+                                    ${timerInfo.showTimer ? `
+                                        <div class="mt-3 inline-flex items-center px-3 py-2 rounded-lg ${timerInfo.isExpired ? 'bg-red-900/30 border border-red-700/50' : 'bg-yellow-900/30 border border-yellow-700/50'}">
+                                            <i data-lucide="clock" class="w-4 h-4 mr-2 ${timerInfo.isExpired ? 'text-red-400' : 'text-yellow-400'}"></i>
+                                            <span class="text-sm font-medium ${timerInfo.isExpired ? 'text-red-300' : 'text-yellow-300'}" data-timer="${request.id}">
+                                                ${timerInfo.isExpired ? '⚠️ TIMED OUT' : `⏱️ ${timerInfo.display}`}
+                                            </span>
+                                        </div>
+                                    ` : ''}
                                 </div>
                                 <div class="flex items-start space-x-6">
                                     <div class="text-right">
@@ -253,10 +294,10 @@ class RealtimeRequestsManager {
 
     getActionButtons(request) {
         let buttons = '';
-        
+
         if (request.status === 'Pending') {
             buttons += `
-                <button onclick="showAcceptModal(${request.id})" 
+                <button onclick="showAcceptModal(${request.id})"
                         class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 text-sm font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
                     <i data-lucide="check" class="w-4 h-4 mr-2 flex-shrink-0"></i>
                     <span>Accept</span>
@@ -268,7 +309,7 @@ class RealtimeRequestsManager {
                 </button>
             `;
         }
-        
+
         if (request.status === 'Washing') {
             buttons += `
                 <button onclick="showMarkForPickupDeliveryModal(${request.id})"
@@ -304,7 +345,7 @@ class RealtimeRequestsManager {
                 </form>
             `;
         }
-        
+
         buttons += `
             <a href="/Requests/Details/${request.id}"
                class="inline-flex items-center px-4 py-2 bg-slate-600 text-white hover:bg-slate-700 text-sm font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
@@ -312,8 +353,58 @@ class RealtimeRequestsManager {
                 <span>Details</span>
             </a>
         `;
-        
+
         return buttons;
+    }
+
+    calculateTimeRemaining(request) {
+        // Only show timer for ArrivedAtRoom and FinishedWashingArrivedAtRoom statuses
+        if (request.status !== 'ArrivedAtRoom' && request.status !== 'FinishedWashingArrivedAtRoom') {
+            return { showTimer: false };
+        }
+
+        if (!request.arrivedAtRoomAt) {
+            return { showTimer: false };
+        }
+
+        // Parse UTC time
+        const arrivedTime = new Date(request.arrivedAtRoomAt + (request.arrivedAtRoomAt.endsWith('Z') ? '' : 'Z'));
+        const currentTime = new Date();
+        const elapsedSeconds = Math.floor((currentTime.getTime() - arrivedTime.getTime()) / 1000);
+        const remainingSeconds = Math.max(this.timerDurationSeconds - elapsedSeconds, 0);
+
+        const isExpired = remainingSeconds === 0;
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = remainingSeconds % 60;
+        const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        return {
+            showTimer: true,
+            isExpired: isExpired,
+            remainingSeconds: remainingSeconds,
+            display: display
+        };
+    }
+
+    updateTimerDisplays() {
+        // Update all timer displays without re-rendering the entire list
+        document.querySelectorAll('[data-timer]').forEach(timerElement => {
+            const requestId = timerElement.getAttribute('data-timer');
+            const request = this.lastRequestsData?.requests.find(r => r.id === parseInt(requestId));
+
+            if (!request) return;
+
+            const timerInfo = this.calculateTimeRemaining(request);
+
+            if (timerInfo.showTimer) {
+                if (timerInfo.isExpired) {
+                    timerElement.textContent = '⚠️ TIMED OUT';
+                    timerElement.className = 'text-sm font-medium text-red-300';
+                } else {
+                    timerElement.textContent = `⏱️ ${timerInfo.display}`;
+                }
+            }
+        });
     }
 
     getEmptyStateHTML() {
@@ -348,6 +439,10 @@ class RealtimeRequestsManager {
 
     destroy() {
         this.stopAutoRefresh();
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
     }
 }
 

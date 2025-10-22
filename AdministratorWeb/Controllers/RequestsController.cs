@@ -441,7 +441,8 @@ namespace AdministratorWeb.Controllers
                         requestedAt = r.RequestedAt,
                         scheduledAt = r.ScheduledAt,
                         assignedRobotName = r.AssignedRobotName,
-                        declineReason = r.DeclineReason
+                        declineReason = r.DeclineReason,
+                        arrivedAtRoomAt = r.ArrivedAtRoomAt
                     })
                     .ToListAsync();
 

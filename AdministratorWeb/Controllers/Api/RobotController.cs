@@ -201,7 +201,9 @@ namespace AdministratorWeb.Controllers.Api
                 {
                     // Robot has reached target - stop line following (unless request is cancelled)
                     isLineFollowing = false;
-                    _logger.LogInformation("Robot {RobotName} is in target - stopping line following", name);
+                    // Clear manual line following flag to prevent re-enabling
+                    await _robotService.SetLineFollowingAsync(name, false);
+                    _logger.LogInformation("Robot {RobotName} is in target - stopping line following and clearing manual flag", name);
                 }
                 else if (cancelledRequest != null)
                 {
@@ -210,7 +212,9 @@ namespace AdministratorWeb.Controllers.Api
                     {
                         // Robot is already at base - STOP line following and complete the cancellation
                         isLineFollowing = false;
-                        _logger.LogInformation("Robot {RobotName} has CANCELLED request and is now at Base - stopping line following", name);
+                        // Clear manual line following flag to prevent re-enabling
+                        await _robotService.SetLineFollowingAsync(name, false);
+                        _logger.LogInformation("Robot {RobotName} has CANCELLED request and is now at Base - stopping line following and clearing manual flag", name);
 
                         // Mark the cancelled request as completed so it doesn't keep the robot moving
                         cancelledRequest.Status = RequestStatus.Completed;

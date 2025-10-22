@@ -266,27 +266,31 @@ var activeRequest = ViewData["ActiveRequest"] as AdministratorWeb.Models.Laundry
                 <h3 class="text-xl font-bold text-white">Robot Controls</h3>
             </div>
             <div class="space-y-3">
-                <form asp-action="StartLineFollowing" method="post" class="w-full">
+                <!-- Toggle Line Following Button -->
+                <form asp-action="ToggleLineFollowing" method="post" class="w-full">
                     <input type="hidden" name="name" value="@Model.Name"/>
-                    <button type="submit"
-                            class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
-                            @(Model.IsOffline ? "disabled" : "")>
-                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
-                        Follow Line
-                    </button>
+                    @if (Model.IsFollowingLine)
+                    {
+                        <button type="submit"
+                                class="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+                                @(Model.IsOffline ? "disabled" : "")>
+                            <i data-lucide="square" class="w-4 h-4 mr-2"></i>
+                            Stop Line Following
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit"
+                                class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
+                                @(Model.IsOffline ? "disabled" : "")>
+                            <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                            Start Line Following
+                        </button>
+                    }
                 </form>
 
-                <form asp-action="StopRobot" method="post" class="w-full">
-                    <input type="hidden" name="name" value="@Model.Name"/>
-                    <button type="submit"
-                            class="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
-                            @(Model.IsOffline ? "disabled" : "")>
-                        <i data-lucide="square" class="w-4 h-4 mr-2"></i>
-                        Stop
-                    </button>
-                </form>
-
-                <form asp-action="ForceStopAndCancelRequests" method="post" class="w-full">
+                <!-- Force Stop Button -->
+                <form asp-action="ForceStopAndCancelRequests" method="post" class="w-full" onsubmit="return confirm('⚠️ FORCE STOP will:\n• Stop the robot immediately\n• Cancel ALL active requests\n• Clear all navigation targets\n• Reset robot state completely\n\nAre you sure?');">
                     <input type="hidden" name="name" value="@Model.Name"/>
                     <button type="submit"
                             class="w-full bg-gradient-to-r from-red-800 to-rose-800 hover:from-red-900 hover:to-rose-900 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"

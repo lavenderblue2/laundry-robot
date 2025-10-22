@@ -28,7 +28,7 @@ public class LineFollowerService : BackgroundService
     private readonly int _mediumErrorThreshold = 80; // Python: < 80 = gentle correction
     private readonly int _extremeErrorThreshold = 150; // Python: > 150 = full turn
 
-    private readonly int _frameDelayMs = 1000 / 30;
+    private readonly int _frameDelayMs = 1000 / 10;
 
     // Line tracking state - matching Python exactly
     private bool _lineDetected = false;

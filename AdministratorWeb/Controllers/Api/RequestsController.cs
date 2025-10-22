@@ -676,5 +676,31 @@ namespace AdministratorWeb.Controllers.Api
                 _logger.LogError(ex, "Error processing next pending request from queue");
             }
         }
+
+        /// <summary>
+        /// Get timer settings for room arrival timeout
+        /// Used by both web admin and mobile app to dynamically fetch timeout duration
+        /// </summary>
+        [HttpGet("timer-settings")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetTimerSettings()
+        {
+            try
+            {
+                var settings = await _context.LaundrySettings.FirstOrDefaultAsync();
+                var timeoutMinutes = settings?.RoomArrivalTimeoutMinutes ?? 5;
+
+                return Ok(new
+                {
+                    roomArrivalTimeoutMinutes = timeoutMinutes,
+                    roomArrivalTimeoutSeconds = timeoutMinutes * 60
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting timer settings");
+                return StatusCode(500, new { error = "Failed to get timer settings" });
+            }
+        }
     }
 }
