@@ -173,8 +173,13 @@ namespace AdministratorWeb.Controllers.Api
                 // Get target room floor color
                 var stopAtColor = await GetTargetRoomFloorColor(targetRoomName);
 
+                // Check if we have a cancelled request that needs to return to base
+                var cancelledRequest = await _context.LaundryRequests
+                    .FirstOrDefaultAsync(r => r.AssignedRobotName == name && r.Status == RequestStatus.Cancelled);
+
                 // FIXED: Only set navigation targets if robot has NOT reached target
-                if (!request.IsInTarget)
+                // UNLESS there's a cancelled request (robot needs to navigate to Base)
+                if (!request.IsInTarget || cancelledRequest != null)
                 {
                     if (!string.IsNullOrWhiteSpace(targetRoomName)) // if we have a target
                         await SetNavigationTargetForRoomBeacons(activeBeacons, targetRoomName);
@@ -193,10 +198,6 @@ namespace AdministratorWeb.Controllers.Api
                 // Determine if robot should be line following
                 bool isLineFollowing = false;
 
-                // Check if we have a cancelled request that needs to return to base
-                var cancelledRequest = await _context.LaundryRequests
-                    .FirstOrDefaultAsync(r => r.AssignedRobotName == name && r.Status == RequestStatus.Cancelled);
-
                 if (request.IsInTarget && cancelledRequest == null)
                 {
                     // Robot has reached target - stop line following (unless request is cancelled)
@@ -207,10 +208,31 @@ namespace AdministratorWeb.Controllers.Api
                 }
                 else if (cancelledRequest != null)
                 {
-                    // Request was cancelled - check if robot needs to return to base OR is already there
-                    if (request.IsInTarget && targetRoomName == "Base")
+                    // Request was cancelled - check if robot is ACTUALLY at Base beacon (not just any beacon)
+                    bool isAtBaseBeacon = false;
+
+                    // Check if robot is detecting a Base beacon with sufficient RSSI
+                    if (request.DetectedBeacons != null && request.DetectedBeacons.Any())
                     {
-                        // Robot is already at base - STOP line following and complete the cancellation
+                        foreach (var detectedBeacon in request.DetectedBeacons)
+                        {
+                            var baseBeacon = activeBeacons.FirstOrDefault(b =>
+                                b.IsBase &&
+                                string.Equals(b.MacAddress, detectedBeacon.MacAddress, StringComparison.OrdinalIgnoreCase));
+
+                            if (baseBeacon != null && detectedBeacon.Rssi >= baseBeacon.RssiThreshold)
+                            {
+                                isAtBaseBeacon = true;
+                                _logger.LogInformation("Robot {RobotName} is at BASE beacon {BeaconMac} with RSSI {Rssi} >= {Threshold}",
+                                    name, baseBeacon.MacAddress, detectedBeacon.Rssi, baseBeacon.RssiThreshold);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isAtBaseBeacon && targetRoomName == "Base")
+                    {
+                        // Robot is actually at base beacon - STOP line following and complete the cancellation
                         isLineFollowing = false;
                         // Clear manual line following flag to prevent re-enabling
                         await _robotService.SetLineFollowingAsync(name, false);
@@ -226,8 +248,8 @@ namespace AdministratorWeb.Controllers.Api
                     {
                         // Robot is NOT at base yet - continue line following to return to base
                         isLineFollowing = true;
-                        _logger.LogWarning("Robot {RobotName} has CANCELLED request - must return to base (IsInTarget: {IsInTarget})",
-                            name, request.IsInTarget);
+                        _logger.LogWarning("Robot {RobotName} has CANCELLED request - must return to base (IsInTarget: {IsInTarget}, IsAtBaseBeacon: {IsAtBaseBeacon})",
+                            name, request.IsInTarget, isAtBaseBeacon);
                     }
                 }
                 else
@@ -837,13 +859,21 @@ namespace AdministratorWeb.Controllers.Api
                     else if (activeRequest.Status == RequestStatus.Cancelled)
                     {
                         // Robot has returned to base after request cancellation (timeout or manual cancel)
-                        // Clear robot assignment and mark robot as available
+                        // Keep status as Cancelled, just clear robot assignment
                         _logger.LogWarning(
-                            "Robot {RobotName} has returned to base with CANCELLED request #{RequestId} - clearing assignment",
+                            "Robot {RobotName} has returned to base with CANCELLED request #{RequestId} - keeping status as Cancelled",
                             robotName, activeRequest.Id);
 
+                        activeRequest.CompletedAt = DateTime.UtcNow;
                         activeRequest.AssignedRobotName = null; // Clear robot assignment
                         activeRequest.ProcessedAt = DateTime.UtcNow;
+                        // Replace "BOT RETURNING TO BASE" with "[Robot returned to base]"
+                        if (!activeRequest.DeclineReason?.Contains("[Robot returned to base]") == true)
+                        {
+                            activeRequest.DeclineReason = (activeRequest.DeclineReason ?? "")
+                                .Replace("- BOT RETURNING TO BASE", "[Robot returned to base]")
+                                .Replace("BOT RETURNING TO BASE", "[Robot returned to base]");
+                        }
 
                         var robot = await _robotService.GetRobotAsync(robotName);
                         if (robot != null)
@@ -853,7 +883,7 @@ namespace AdministratorWeb.Controllers.Api
                         }
 
                         _logger.LogInformation(
-                            "Robot {RobotName} is now available after handling cancelled request #{RequestId}",
+                            "Robot {RobotName} is now available after handling cancelled request #{RequestId} - status remains Cancelled",
                             robotName, activeRequest.Id);
 
                         // AUTO-QUEUE: Process next pending request if auto-accept is enabled
