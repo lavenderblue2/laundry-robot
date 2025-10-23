@@ -350,18 +350,18 @@
     const statusChart = new Chart(statusCtx, {
         type: 'doughnut',
         data: {
-            labels: ['Completed', 'Pending', 'Failed'],
+            labels: ['Completed', 'Pending', 'Refunded'],
             datasets: [{
                 data: [@Model.CompletedCount, @Model.PendingCount, @Model.FailedCount],
                 backgroundColor: [
                     'rgba(16, 185, 129, 0.8)',
                     'rgba(234, 179, 8, 0.8)',
-                    'rgba(239, 68, 68, 0.8)'
+                    'rgba(255, 107, 53, 0.8)'
                 ],
                 borderColor: [
                     'rgb(16, 185, 129)',
                     'rgb(234, 179, 8)',
-                    'rgb(239, 68, 68)'
+                    'rgb(255, 107, 53)'
                 ],
                 borderWidth: 2
             }]
