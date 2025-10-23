@@ -50,6 +50,52 @@
     </div>
 }
 
+<!-- Filter Section -->
+<div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 mb-8 animate-slide-up" style="animation-delay: 0.1s;">
+    <div class="px-6 py-6">
+        <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+            <i data-lucide="filter" class="w-5 h-5 mr-2 text-brand-400"></i>
+            Filter Adjustments
+        </h3>
+        <form method="get" asp-action="Adjustments" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">From Date</label>
+                <input name="from" type="date" value="@ViewData["FromDate"]" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">To Date</label>
+                <input name="to" type="date" value="@ViewData["ToDate"]" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Created By</label>
+                <select name="userId" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Users</option>
+                    @{
+                        var users = ViewData["Users"] as IEnumerable<dynamic>;
+                        var selectedUserId = ViewData["SelectedUserId"] as string;
+                        if (users != null)
+                        {
+                            foreach (var user in users)
+                            {
+                                <option value="@user.CreatedByUserId" selected="@(user.CreatedByUserId == selectedUserId)">@user.CreatedByUserName</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    <i data-lucide="search" class="w-4 h-4 inline mr-1"></i>
+                    Apply
+                </button>
+                <a asp-action="Adjustments" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    <i data-lucide="x" class="w-4 h-4 inline"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Adjustments List -->
 <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl overflow-hidden rounded-2xl border border-slate-700/50 animate-slide-up" style="animation-delay: 0.1s;">
     <div class="px-6 py-6 border-b border-slate-700/50">

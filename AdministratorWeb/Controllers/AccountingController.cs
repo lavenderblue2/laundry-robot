@@ -427,11 +427,41 @@ namespace AdministratorWeb.Controllers
             return View(payments);
         }
 
-        public async Task<IActionResult> Adjustments()
+        public async Task<IActionResult> Adjustments(DateTime? from, DateTime? to, string? userId)
         {
-            var adjustments = await _context.PaymentAdjustments
+            // Set default date range (all time if not specified)
+            var fromDate = from ?? DateTime.MinValue;
+            var toDate = to ?? DateTime.MaxValue;
+
+            var query = _context.PaymentAdjustments.AsQueryable();
+
+            // Filter by date range
+            if (from.HasValue || to.HasValue)
+            {
+                query = query.Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1));
+            }
+
+            // Filter by user
+            if (!string.IsNullOrEmpty(userId))
+            {
+                query = query.Where(a => a.CreatedByUserId == userId);
+            }
+
+            var adjustments = await query
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
+
+            // Get all users who have created adjustments for filter dropdown
+            var users = await _context.PaymentAdjustments
+                .Select(a => new { a.CreatedByUserId, a.CreatedByUserName })
+                .Distinct()
+                .OrderBy(u => u.CreatedByUserName)
+                .ToListAsync();
+
+            ViewData["Users"] = users;
+            ViewData["FromDate"] = from;
+            ViewData["ToDate"] = to;
+            ViewData["SelectedUserId"] = userId;
 
             return View(adjustments);
         }
