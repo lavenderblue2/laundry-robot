@@ -14,6 +14,7 @@ import { ThemedView } from '../../components/ThemedView';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import { userService } from '../../services/userService';
+import { notificationService } from '../../services/notificationService';
 
 export default function ProfileScreen() {
         const router = useRouter();
@@ -116,6 +117,31 @@ export default function ProfileScreen() {
                 );
         };
 
+        const handleTestNotification = async () => {
+                try {
+                        setIsLoading(true);
+
+                        // Request permissions if not granted
+                        const hasPermission = await notificationService.hasPermissions();
+                        if (!hasPermission) {
+                                const granted = await notificationService.requestPermissions();
+                                if (!granted) {
+                                        showAlert('Permission Required', 'Please enable notifications in your device settings to test notifications.');
+                                        return;
+                                }
+                        }
+
+                        // Send test notification
+                        await notificationService.sendTestNotification();
+                        showAlert('Success', 'Test notification sent! Check your notification tray.');
+                } catch (error: any) {
+                        console.error('Failed to send test notification:', error);
+                        showAlert('Error', error.message || 'Failed to send test notification');
+                } finally {
+                        setIsLoading(false);
+                }
+        };
+
         return (
                 <ThemedView style={styles.container}>
                         <ScrollView style={styles.scrollContainer}>
@@ -127,6 +153,22 @@ export default function ProfileScreen() {
                                         </View>
                                         <ThemedText style={styles.userName}>{user?.customerName || 'User'}</ThemedText>
                                         <ThemedText style={[styles.userId, { color: mutedColor }]}>ID: {user?.customerId || 'N/A'}</ThemedText>
+                                </View>
+
+                                {/* Test Notification Button */}
+                                <View style={[styles.section, { backgroundColor: cardColor }]}>
+                                        <TouchableOpacity
+                                                style={[styles.testNotificationButton, { backgroundColor: primaryColor }]}
+                                                onPress={handleTestNotification}
+                                                disabled={isLoading}
+                                        >
+                                                <Text style={styles.testNotificationButtonText}>
+                                                        {isLoading ? 'Sending...' : '🔔 Test Notification'}
+                                                </Text>
+                                        </TouchableOpacity>
+                                        <ThemedText style={[styles.testNotificationHint, { color: mutedColor }]}>
+                                                Tap to send a test notification to your device
+                                        </ThemedText>
                                 </View>
 
                                 <View style={[styles.section, { backgroundColor: cardColor }]}>
@@ -381,5 +423,20 @@ const styles = StyleSheet.create({
                 color: '#ffffff',
                 fontSize: 16,
                 fontWeight: '600',
+        },
+        testNotificationButton: {
+                borderRadius: 8,
+                padding: 16,
+                alignItems: 'center',
+                marginBottom: 8,
+        },
+        testNotificationButtonText: {
+                color: '#ffffff',
+                fontSize: 16,
+                fontWeight: '600',
+        },
+        testNotificationHint: {
+                fontSize: 14,
+                textAlign: 'center',
         },
 });
