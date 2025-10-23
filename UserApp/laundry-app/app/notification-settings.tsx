@@ -129,13 +129,13 @@ export default function NotificationSettingsScreen() {
         <View style={[styles.section, { backgroundColor: cardColor }]}>
           <ThemedText style={styles.sectionTitle}>General</ThemedText>
 
-          <View style={[styles.settingRow, { borderBottomColor: borderColor }]}>
+          <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
             <View style={styles.settingInfo}>
               <ThemedText style={[styles.settingLabel, { color: textColor }]}>
                 Enable Notifications
               </ThemedText>
               <ThemedText style={[styles.settingDescription, { color: mutedColor }]}>
-                Master switch for all notifications
+                Master switch for all notifications (silent popup only)
               </ThemedText>
             </View>
             <Switch
@@ -148,23 +148,6 @@ export default function NotificationSettingsScreen() {
                 }
               }}
               trackColor={{ false: borderColor, true: primaryColor }}
-            />
-          </View>
-
-          <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
-            <View style={styles.settingInfo}>
-              <ThemedText style={[styles.settingLabel, { color: textColor }]}>
-                Vibration
-              </ThemedText>
-              <ThemedText style={[styles.settingDescription, { color: mutedColor }]}>
-                Vibrate when receiving notifications
-              </ThemedText>
-            </View>
-            <Switch
-              value={settings.vibrationEnabled}
-              onValueChange={(value) => updateSetting('vibrationEnabled', value)}
-              trackColor={{ false: borderColor, true: primaryColor }}
-              disabled={!settings.notificationsEnabled}
             />
           </View>
         </View>
@@ -242,35 +225,6 @@ export default function NotificationSettingsScreen() {
               trackColor={{ false: borderColor, true: primaryColor }}
               disabled={!settings.notificationsEnabled}
             />
-          </View>
-        </View>
-
-        {/* Notification Sounds */}
-        <View style={[styles.section, { backgroundColor: cardColor }]}>
-          <ThemedText style={styles.sectionTitle}>Notification Sounds</ThemedText>
-
-          <View style={[styles.settingRow, { borderBottomColor: borderColor }]}>
-            <View style={styles.settingInfo}>
-              <ThemedText style={[styles.settingLabel, { color: textColor }]}>
-                Robot Arrival Sound
-              </ThemedText>
-              <ThemedText style={[styles.settingDescription, { color: mutedColor }]}>
-                {settings.robotArrivalSound === 'default' ? 'Default notification sound' : settings.robotArrivalSound}
-              </ThemedText>
-            </View>
-            <Text style={[styles.soundValue, { color: primaryColor }]}>Default</Text>
-          </View>
-
-          <View style={[styles.settingRow, { borderBottomWidth: 0 }]}>
-            <View style={styles.settingInfo}>
-              <ThemedText style={[styles.settingLabel, { color: textColor }]}>
-                Message Sound
-              </ThemedText>
-              <ThemedText style={[styles.settingDescription, { color: mutedColor }]}>
-                {settings.messageSound === 'default' ? 'Default notification sound' : settings.messageSound}
-              </ThemedText>
-            </View>
-            <Text style={[styles.soundValue, { color: primaryColor }]}>Default</Text>
           </View>
         </View>
 
