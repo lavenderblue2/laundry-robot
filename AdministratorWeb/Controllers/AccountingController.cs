@@ -616,6 +616,45 @@ namespace AdministratorWeb.Controllers
                 .Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1))
                 .ToListAsync();
 
+            // Recalculate daily revenue to include adjustments
+            var paymentDailyRevenue = revenuePayments
+                .GroupBy(p => p.CreatedAt.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = g.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount)
+                            - g.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.RefundAmount ?? p.Amount),
+                    TransactionCount = g.Count()
+                })
+                .ToList();
+
+            // Group adjustments by effective date
+            var adjustmentDailyRevenue = adjustments
+                .GroupBy(a => a.EffectiveDate.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = g.Where(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.CompletePayment).Sum(a => a.Amount)
+                            - g.Where(a => a.Type == AdjustmentType.SubtractRevenue).Sum(a => a.Amount),
+                    TransactionCount = g.Count()
+                })
+                .ToList();
+
+            // Combine payments and adjustments by date
+            var allDates = paymentDailyRevenue.Select(p => p.Date)
+                .Union(adjustmentDailyRevenue.Select(a => a.Date))
+                .Distinct()
+                .OrderBy(d => d);
+
+            dailyRevenue = allDates.Select(date => new DailyRevenueDto
+            {
+                Date = date,
+                Revenue = (paymentDailyRevenue.FirstOrDefault(p => p.Date == date)?.Revenue ?? 0)
+                        + (adjustmentDailyRevenue.FirstOrDefault(a => a.Date == date)?.Revenue ?? 0),
+                TransactionCount = (paymentDailyRevenue.FirstOrDefault(p => p.Date == date)?.TransactionCount ?? 0)
+                                 + (adjustmentDailyRevenue.FirstOrDefault(a => a.Date == date)?.TransactionCount ?? 0)
+            }).ToList();
+
             // Calculate adjustment impacts
             var addRevenueAmount = adjustments.Where(a => a.Type == AdjustmentType.AddRevenue).Sum(a => a.Amount);
             var subtractRevenueAmount = adjustments.Where(a => a.Type == AdjustmentType.SubtractRevenue).Sum(a => a.Amount);
@@ -756,6 +795,45 @@ namespace AdministratorWeb.Controllers
             var adjustments = await _context.PaymentAdjustments
                 .Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1))
                 .ToListAsync();
+
+            // Recalculate daily revenue to include adjustments
+            var paymentDailyRevenue = revenuePayments
+                .GroupBy(p => p.CreatedAt.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = g.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount)
+                            - g.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.RefundAmount ?? p.Amount),
+                    TransactionCount = g.Count()
+                })
+                .ToList();
+
+            // Group adjustments by effective date
+            var adjustmentDailyRevenue = adjustments
+                .GroupBy(a => a.EffectiveDate.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = g.Where(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.CompletePayment).Sum(a => a.Amount)
+                            - g.Where(a => a.Type == AdjustmentType.SubtractRevenue).Sum(a => a.Amount),
+                    TransactionCount = g.Count()
+                })
+                .ToList();
+
+            // Combine payments and adjustments by date
+            var allDates = paymentDailyRevenue.Select(p => p.Date)
+                .Union(adjustmentDailyRevenue.Select(a => a.Date))
+                .Distinct()
+                .OrderBy(d => d);
+
+            dailyRevenue = allDates.Select(date => new DailyRevenueDto
+            {
+                Date = date,
+                Revenue = (paymentDailyRevenue.FirstOrDefault(p => p.Date == date)?.Revenue ?? 0)
+                        + (adjustmentDailyRevenue.FirstOrDefault(a => a.Date == date)?.Revenue ?? 0),
+                TransactionCount = (paymentDailyRevenue.FirstOrDefault(p => p.Date == date)?.TransactionCount ?? 0)
+                                 + (adjustmentDailyRevenue.FirstOrDefault(a => a.Date == date)?.TransactionCount ?? 0)
+            }).ToList();
 
             // Calculate adjustment impacts
             var addRevenueAmount = adjustments.Where(a => a.Type == AdjustmentType.AddRevenue).Sum(a => a.Amount);
