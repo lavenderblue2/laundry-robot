@@ -75,9 +75,10 @@ export default function ProfileScreen() {
                                 firstName: firstName.trim(),
                                 lastName: lastName.trim(),
                                 email: email.trim(),
-                                phone: phone.trim(),
+                                phone: phone.trim() || undefined, // Don't send empty string
                         });
 
+                        await refreshProfile(); // Refresh to show updated data
                         showAlert('Success', 'Profile updated successfully');
                         setIsEditing(false);
                 } catch (error: any) {
