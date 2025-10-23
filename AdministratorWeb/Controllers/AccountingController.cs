@@ -559,50 +559,60 @@ namespace AdministratorWeb.Controllers
                 .ToListAsync();
 
             var completedPayments = payments.Where(p => p.Status == PaymentStatus.Completed).ToList();
+            var refundedPayments = payments.Where(p => p.Status == PaymentStatus.Refunded).ToList();
 
-            // Calculate summary statistics
-            var totalRevenue = completedPayments.Sum(p => p.Amount);
-            var totalTransactions = payments.Count;
-            var avgTransactionValue = totalTransactions > 0 ? totalRevenue / completedPayments.Count : 0;
+            // Calculate summary statistics - refunds subtract from revenue
+            var completedRevenue = completedPayments.Sum(p => p.Amount);
+            var refundedAmount = refundedPayments.Sum(p => p.RefundAmount ?? p.Amount);
+            var totalRevenue = completedRevenue - refundedAmount;
 
-            // Payment status breakdown
+            // All payments that count toward revenue (completed + refunded)
+            var revenuePayments = completedPayments.Concat(refundedPayments).ToList();
+            var totalTransactions = revenuePayments.Count;
+            var avgTransactionValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
+            // Payment status breakdown (removed Failed)
             var completedCount = payments.Count(p => p.Status == PaymentStatus.Completed);
             var pendingCount = payments.Count(p => p.Status == PaymentStatus.Pending);
-            var failedCount = payments.Count(p => p.Status == PaymentStatus.Failed);
+            var refundedCount = payments.Count(p => p.Status == PaymentStatus.Refunded);
 
-            // Daily revenue breakdown
-            var dailyRevenue = completedPayments
+            // Daily revenue breakdown - include refunds as negative
+            var dailyRevenue = revenuePayments
                 .GroupBy(p => p.CreatedAt.Date)
                 .Select(g => new DailyRevenueDto
                 {
                     Date = g.Key,
-                    Revenue = g.Sum(p => p.Amount),
+                    Revenue = g.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount)
+                            - g.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.RefundAmount ?? p.Amount),
                     TransactionCount = g.Count()
                 })
                 .OrderBy(d => d.Date)
                 .ToList();
 
-            // Top customers by revenue
-            var topCustomers = completedPayments
+            // Top customers by revenue - account for refunds
+            var topCustomers = revenuePayments
                 .GroupBy(p => new { p.CustomerId, p.CustomerName })
                 .Select(g => new CustomerRevenueDto
                 {
                     CustomerId = g.Key.CustomerId,
                     CustomerName = g.Key.CustomerName,
-                    TotalSpent = g.Sum(p => p.Amount),
+                    TotalSpent = g.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount)
+                               - g.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.RefundAmount ?? p.Amount),
                     TransactionCount = g.Count()
                 })
                 .OrderByDescending(c => c.TotalSpent)
                 .Take(10)
                 .ToList();
 
-            // Revenue by payment method
-            var revenueByMethod = completedPayments
+            // Revenue by payment method - account for refunds
+            var revenueByMethod = revenuePayments
                 .GroupBy(p => p.Method.ToString())
-                .ToDictionary(g => g.Key, g => g.Sum(p => p.Amount));
+                .ToDictionary(g => g.Key, g => g.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount)
+                                                 - g.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.RefundAmount ?? p.Amount));
 
-            // Transactions by status
+            // Transactions by status (exclude Failed)
             var transactionsByStatus = payments
+                .Where(p => p.Status != PaymentStatus.Failed)
                 .GroupBy(p => p.Status.ToString())
                 .ToDictionary(g => g.Key, g => g.Count());
 
@@ -613,7 +623,7 @@ namespace AdministratorWeb.Controllers
                 AverageTransactionValue = avgTransactionValue,
                 CompletedCount = completedCount,
                 PendingCount = pendingCount,
-                FailedCount = failedCount,
+                FailedCount = refundedCount, // Reusing FailedCount field for Refunded count
                 FromDate = fromDate,
                 ToDate = toDate,
                 PeriodLabel = $"{fromDate:MMM dd, yyyy} - {toDate:MMM dd, yyyy}",

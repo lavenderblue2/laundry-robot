@@ -133,7 +133,7 @@
 
         .status-card.completed .value { color: #10b981; }
         .status-card.pending .value { color: #f59e0b; }
-        .status-card.failed .value { color: #ef4444; }
+        .status-card.refunded .value { color: #ff6b35; }
 
         .footer {
             margin-top: 40px;
@@ -193,10 +193,10 @@
             <div class="value">@Model.PendingCount</div>
             <div class="description">Awaiting payment confirmation</div>
         </div>
-        <div class="status-card failed">
-            <div class="label">Failed</div>
+        <div class="status-card refunded">
+            <div class="label">Refunded</div>
             <div class="value">@Model.FailedCount</div>
-            <div class="description">Payment attempts that did not process</div>
+            <div class="description">Payments refunded to customers</div>
         </div>
     </div>
 

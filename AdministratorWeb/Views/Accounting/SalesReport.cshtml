@@ -240,12 +240,12 @@
     <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.55s;">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-400 mb-1">Failed</p>
-                <p class="text-3xl font-bold text-red-400">@Model.FailedCount</p>
-                <p class="text-xs text-gray-500 mt-1">Payment attempts that did not process</p>
+                <p class="text-sm font-medium text-gray-400 mb-1">Refunded</p>
+                <p class="text-3xl font-bold text-orange-400">@Model.FailedCount</p>
+                <p class="text-xs text-gray-500 mt-1">Payments refunded to customers</p>
             </div>
-            <div class="p-3 bg-red-500/20 rounded-xl">
-                <i data-lucide="x-circle" class="h-8 w-8 text-red-400"></i>
+            <div class="p-3 bg-orange-500/20 rounded-xl">
+                <i data-lucide="rotate-ccw" class="h-8 w-8 text-orange-400"></i>
             </div>
         </div>
     </div>
@@ -267,12 +267,8 @@
             Payment recorded but not yet confirmed. Does not count toward revenue until confirmed.
         </div>
         <div>
-            <span class="font-semibold text-red-400">Failed:</span>
-            Payment attempt failed (e.g., card declined). No revenue generated.
-        </div>
-        <div>
             <span class="font-semibold text-orange-400">Refunded:</span>
-            Payment was completed but money was returned to customer. Shows as negative adjustment in revenue.
+            Payment was completed but money was returned to customer. Refund amount subtracted from total revenue.
         </div>
     </div>
 </div>
