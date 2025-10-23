@@ -547,10 +547,10 @@ namespace AdministratorWeb.Controllers
                 }
             }
 
-            // Fetch payments for the period
+            // Fetch payments for the period (by ProcessedAt - when payment was actually completed/refunded)
             var payments = await _context.Payments
-                .Where(p => p.CreatedAt >= fromDate && p.CreatedAt <= toDate.AddDays(1))
-                .OrderBy(p => p.CreatedAt)
+                .Where(p => p.ProcessedAt != null && p.ProcessedAt >= fromDate && p.ProcessedAt <= toDate.AddDays(1))
+                .OrderBy(p => p.ProcessedAt)
                 .ToListAsync();
 
             var completedPayments = payments.Where(p => p.Status == PaymentStatus.Completed).ToList();
@@ -616,9 +616,10 @@ namespace AdministratorWeb.Controllers
                 .Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1))
                 .ToListAsync();
 
-            // Recalculate hourly revenue to include adjustments (group by date + hour)
+            // Recalculate hourly revenue to include adjustments (group by date + hour using ProcessedAt)
             var paymentHourlyRevenue = revenuePayments
-                .GroupBy(p => new DateTime(p.CreatedAt.Year, p.CreatedAt.Month, p.CreatedAt.Day, p.CreatedAt.Hour, 0, 0))
+                .Where(p => p.ProcessedAt.HasValue)
+                .GroupBy(p => new DateTime(p.ProcessedAt!.Value.Year, p.ProcessedAt.Value.Month, p.ProcessedAt.Value.Day, p.ProcessedAt.Value.Hour, 0, 0))
                 .Select(g => new
                 {
                     Date = g.Key,
@@ -739,10 +740,10 @@ namespace AdministratorWeb.Controllers
                 }
             }
 
-            // Fetch payments for the period
+            // Fetch payments for the period (by ProcessedAt - when payment was actually completed/refunded)
             var payments = await _context.Payments
-                .Where(p => p.CreatedAt >= fromDate && p.CreatedAt <= toDate.AddDays(1))
-                .OrderBy(p => p.CreatedAt)
+                .Where(p => p.ProcessedAt != null && p.ProcessedAt >= fromDate && p.ProcessedAt <= toDate.AddDays(1))
+                .OrderBy(p => p.ProcessedAt)
                 .ToListAsync();
 
             var completedPayments = payments.Where(p => p.Status == PaymentStatus.Completed).ToList();
@@ -796,9 +797,10 @@ namespace AdministratorWeb.Controllers
                 .Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1))
                 .ToListAsync();
 
-            // Recalculate hourly revenue to include adjustments (group by date + hour)
+            // Recalculate hourly revenue to include adjustments (group by date + hour using ProcessedAt)
             var paymentHourlyRevenue = revenuePayments
-                .GroupBy(p => new DateTime(p.CreatedAt.Year, p.CreatedAt.Month, p.CreatedAt.Day, p.CreatedAt.Hour, 0, 0))
+                .Where(p => p.ProcessedAt.HasValue)
+                .GroupBy(p => new DateTime(p.ProcessedAt!.Value.Year, p.ProcessedAt.Value.Month, p.ProcessedAt.Value.Day, p.ProcessedAt.Value.Hour, 0, 0))
                 .Select(g => new
                 {
                     Date = g.Key,
