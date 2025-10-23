@@ -26,18 +26,32 @@ export default function RootLayout() {
 
     // Handle notification taps when app is open
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data;
+      try {
+        const data = response.notification.request.content.data;
+        console.log('Notification tapped:', data);
 
-      // Handle different notification types
-      if (data?.type === 'robot-pickup' || data?.type === 'robot-delivery') {
-        // Navigate to history/requests
-        router.push('/(tabs)/history');
-      } else if (data?.type === 'message') {
-        // Navigate to support/messages
-        router.push('/(tabs)/support');
-      } else if (data?.type === 'status-change') {
-        // Navigate to history to see updated status
-        router.push('/(tabs)/history');
+        // Small delay to ensure router is ready
+        setTimeout(() => {
+          try {
+            // Handle different notification types
+            if (data?.type === 'robot-pickup' || data?.type === 'robot-delivery') {
+              // Navigate to history/requests
+              router.push('/(tabs)/history');
+            } else if (data?.type === 'message') {
+              // Navigate to support/messages
+              router.push('/(tabs)/support');
+            } else if (data?.type === 'status-change') {
+              // Navigate to history to see updated status
+              router.push('/(tabs)/history');
+            }
+          } catch (navError) {
+            console.error('Navigation error:', navError);
+            // Don't crash the app if navigation fails
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Notification response error:', error);
+        // Don't crash the app
       }
     });
 
