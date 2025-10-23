@@ -27,22 +27,38 @@ namespace AdministratorWeb.Controllers
             var thisMonth = new DateTime(today.Year, today.Month, 1);
             var thisYear = new DateTime(today.Year, 1, 1);
 
-            // Financial overview with adjustments
-            var totalRevenue = await _context.Payments
+            // Financial overview with adjustments - subtract refunds!
+            var totalCompleted = await _context.Payments
                 .Where(p => p.Status == PaymentStatus.Completed)
                 .SumAsync(p => p.Amount);
+            var totalRefunded = await _context.Payments
+                .Where(p => p.Status == PaymentStatus.Refunded)
+                .SumAsync(p => p.RefundAmount ?? p.Amount);
+            var totalRevenue = totalCompleted - totalRefunded;
 
-            var todayRevenue = await _context.Payments
+            var todayCompleted = await _context.Payments
                 .Where(p => p.Status == PaymentStatus.Completed && p.ProcessedAt!.Value.Date == today)
                 .SumAsync(p => p.Amount);
+            var todayRefunded = await _context.Payments
+                .Where(p => p.Status == PaymentStatus.Refunded && p.ProcessedAt!.Value.Date == today)
+                .SumAsync(p => p.RefundAmount ?? p.Amount);
+            var todayRevenue = todayCompleted - todayRefunded;
 
-            var monthRevenue = await _context.Payments
+            var monthCompleted = await _context.Payments
                 .Where(p => p.Status == PaymentStatus.Completed && p.ProcessedAt >= thisMonth)
                 .SumAsync(p => p.Amount);
+            var monthRefunded = await _context.Payments
+                .Where(p => p.Status == PaymentStatus.Refunded && p.ProcessedAt >= thisMonth)
+                .SumAsync(p => p.RefundAmount ?? p.Amount);
+            var monthRevenue = monthCompleted - monthRefunded;
 
-            var yearRevenue = await _context.Payments
+            var yearCompleted = await _context.Payments
                 .Where(p => p.Status == PaymentStatus.Completed && p.ProcessedAt >= thisYear)
                 .SumAsync(p => p.Amount);
+            var yearRefunded = await _context.Payments
+                .Where(p => p.Status == PaymentStatus.Refunded && p.ProcessedAt >= thisYear)
+                .SumAsync(p => p.RefundAmount ?? p.Amount);
+            var yearRevenue = yearCompleted - yearRefunded;
 
             // Apply adjustments
             var totalAdjustments = await _context.PaymentAdjustments
@@ -59,9 +75,15 @@ namespace AdministratorWeb.Controllers
                 .SumAsync(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.CompletePayment ? a.Amount :
                               (a.Type == AdjustmentType.SubtractRevenue ? -a.Amount : 0));
 
+            var yearAdjustments = await _context.PaymentAdjustments
+                .Where(a => a.EffectiveDate >= thisYear)
+                .SumAsync(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.CompletePayment ? a.Amount :
+                              (a.Type == AdjustmentType.SubtractRevenue ? -a.Amount : 0));
+
             totalRevenue += totalAdjustments;
             todayRevenue += todayAdjustments;
             monthRevenue += monthAdjustments;
+            yearRevenue += yearAdjustments;
 
             // Payment statistics
             var totalPayments = await _context.Payments.CountAsync();
