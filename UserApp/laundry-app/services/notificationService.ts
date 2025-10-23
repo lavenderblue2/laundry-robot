@@ -157,11 +157,10 @@ class NotificationService {
       content: {
         title,
         body,
-        sound: this.settings.robotArrivalSound === 'default' ? 'default' : this.settings.robotArrivalSound,
-        vibrate: this.settings.vibrationEnabled ? [0, 250, 250, 250] : undefined,
+        sound: this.settings.robotArrivalSound !== 'default' ? this.settings.robotArrivalSound : undefined,
         data: { type: isPickup ? 'robot-pickup' : 'robot-delivery', location },
       },
-      trigger: null, // Send immediately
+      trigger: Platform.OS === 'android' ? { channelId: 'robot-arrival' } : null,
     });
   }
 
@@ -173,11 +172,10 @@ class NotificationService {
       content: {
         title: `💬 New message from ${senderName}`,
         body: message.length > 100 ? message.substring(0, 100) + '...' : message,
-        sound: this.settings.messageSound === 'default' ? 'default' : this.settings.messageSound,
-        vibrate: this.settings.vibrationEnabled ? [0, 250, 250, 250] : undefined,
+        sound: this.settings.messageSound !== 'default' ? this.settings.messageSound : undefined,
         data: { type: 'message', senderName },
       },
-      trigger: null,
+      trigger: Platform.OS === 'android' ? { channelId: 'messages' } : null,
     });
   }
 
@@ -201,11 +199,9 @@ class NotificationService {
       content: {
         title,
         body: details || 'Your laundry request status has been updated.',
-        sound: 'default',
-        vibrate: this.settings.vibrationEnabled ? [0, 250] : undefined,
         data: { type: 'status-change', status },
       },
-      trigger: null,
+      trigger: Platform.OS === 'android' ? { channelId: 'status' } : null,
     });
   }
 
