@@ -2,12 +2,12 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Configure notification behavior
+// Configure notification behavior - NO SOUNDS OR VIBRATIONS TO PREVENT CRASHES
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
   }),
 });
 
@@ -49,31 +49,31 @@ class NotificationService {
   }
 
   private async setupAndroidChannels() {
-    // Robot arrival channel
+    // Robot arrival channel - SILENT (no sound, no vibration)
     await Notifications.setNotificationChannelAsync('robot-arrival', {
       name: 'Robot Arrival',
       importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      sound: 'default',
-      enableVibrate: true,
+      sound: null,
+      enableVibrate: false,
+      vibrationPattern: [],
     });
 
-    // Messages channel
+    // Messages channel - SILENT
     await Notifications.setNotificationChannelAsync('messages', {
       name: 'Messages',
       importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      sound: 'default',
-      enableVibrate: true,
+      sound: null,
+      enableVibrate: false,
+      vibrationPattern: [],
     });
 
-    // Status changes channel
+    // Status changes channel - SILENT
     await Notifications.setNotificationChannelAsync('status', {
       name: 'Status Updates',
       importance: Notifications.AndroidImportance.DEFAULT,
-      vibrationPattern: [0, 250],
-      sound: 'default',
-      enableVibrate: true,
+      sound: null,
+      enableVibrate: false,
+      vibrationPattern: [],
     });
   }
 
@@ -120,22 +120,21 @@ class NotificationService {
   }
 
   private async updateAndroidChannels() {
-    const vibrationPattern = this.settings.vibrationEnabled ? [0, 250, 250, 250] : undefined;
-
+    // ALWAYS SILENT - no sounds or vibrations to prevent crashes
     await Notifications.setNotificationChannelAsync('robot-arrival', {
       name: 'Robot Arrival',
       importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern,
-      sound: this.settings.robotArrivalSound === 'default' ? 'default' : this.settings.robotArrivalSound,
-      enableVibrate: this.settings.vibrationEnabled,
+      sound: null,
+      enableVibrate: false,
+      vibrationPattern: [],
     });
 
     await Notifications.setNotificationChannelAsync('messages', {
       name: 'Messages',
       importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern,
-      sound: this.settings.messageSound === 'default' ? 'default' : this.settings.messageSound,
-      enableVibrate: this.settings.vibrationEnabled,
+      sound: null,
+      enableVibrate: false,
+      vibrationPattern: [],
     });
   }
 
@@ -153,30 +152,36 @@ class NotificationService {
       ? `The robot has arrived at ${location} to collect your laundry.`
       : `The robot has delivered your clean laundry to ${location}.`;
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        sound: this.settings.robotArrivalSound !== 'default' ? this.settings.robotArrivalSound : undefined,
-        data: { type: isPickup ? 'robot-pickup' : 'robot-delivery', location },
-      },
-      trigger: Platform.OS === 'android' ? { channelId: 'robot-arrival' } : null,
-    });
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: { type: isPickup ? 'robot-pickup' : 'robot-delivery', location },
+        },
+        trigger: Platform.OS === 'android' ? { channelId: 'robot-arrival' } : null,
+      });
+    } catch (error) {
+      console.error('Failed to send robot arrival notification:', error);
+    }
   }
 
   async sendMessageNotification(senderName: string, message: string): Promise<void> {
     if (!this.settings.notificationsEnabled) return;
     if (!this.settings.messagesEnabled) return;
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: `💬 New message from ${senderName}`,
-        body: message.length > 100 ? message.substring(0, 100) + '...' : message,
-        sound: this.settings.messageSound !== 'default' ? this.settings.messageSound : undefined,
-        data: { type: 'message', senderName },
-      },
-      trigger: Platform.OS === 'android' ? { channelId: 'messages' } : null,
-    });
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `💬 New message from ${senderName}`,
+          body: message.length > 100 ? message.substring(0, 100) + '...' : message,
+          data: { type: 'message', senderName },
+        },
+        trigger: Platform.OS === 'android' ? { channelId: 'messages' } : null,
+      });
+    } catch (error) {
+      console.error('Failed to send message notification:', error);
+    }
   }
 
   async sendStatusChangeNotification(status: string, details?: string): Promise<void> {
@@ -195,14 +200,18 @@ class NotificationService {
 
     const title = statusMessages[status] || `Status Update: ${status}`;
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body: details || 'Your laundry request status has been updated.',
-        data: { type: 'status-change', status },
-      },
-      trigger: Platform.OS === 'android' ? { channelId: 'status' } : null,
-    });
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body: details || 'Your laundry request status has been updated.',
+          data: { type: 'status-change', status },
+        },
+        trigger: Platform.OS === 'android' ? { channelId: 'status' } : null,
+      });
+    } catch (error) {
+      console.error('Failed to send status notification:', error);
+    }
   }
 
   async testNotification(type: 'robot' | 'message'): Promise<void> {
