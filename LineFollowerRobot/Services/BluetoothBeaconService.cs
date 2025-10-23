@@ -207,7 +207,7 @@ namespace LineFollowerRobot.Services
                         {
                             await ProcessBeaconDeviceAsync(device, address, name);
                         }
-                        await Task.Delay(70);
+                        await Task.Delay(20); // Reduced from 70ms for faster RSSI updates
                     }
                     catch (Exception deviceEx)
                     {
