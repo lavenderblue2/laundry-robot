@@ -40,19 +40,14 @@
             </div>
 
             <!-- Custom Date Range -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">From Date</label>
-                    <input name="from" type="date" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <input name="from" type="date" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">To Date</label>
-                    <input name="to" type="date" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div class="flex items-end">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                        Generate Report
-                    </button>
+                    <input name="to" type="date" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()" />
                 </div>
             </div>
         </form>
@@ -221,6 +216,7 @@
             <div>
                 <p class="text-sm font-medium text-gray-400 mb-1">Completed</p>
                 <p class="text-3xl font-bold text-emerald-400">@Model.CompletedCount</p>
+                <p class="text-xs text-gray-500 mt-1">Payments received and confirmed</p>
             </div>
             <div class="p-3 bg-emerald-500/20 rounded-xl">
                 <i data-lucide="check-circle" class="h-8 w-8 text-emerald-400"></i>
@@ -233,6 +229,7 @@
             <div>
                 <p class="text-sm font-medium text-gray-400 mb-1">Pending</p>
                 <p class="text-3xl font-bold text-yellow-400">@Model.PendingCount</p>
+                <p class="text-xs text-gray-500 mt-1">Awaiting payment confirmation</p>
             </div>
             <div class="p-3 bg-yellow-500/20 rounded-xl">
                 <i data-lucide="clock" class="h-8 w-8 text-yellow-400"></i>
@@ -245,10 +242,37 @@
             <div>
                 <p class="text-sm font-medium text-gray-400 mb-1">Failed</p>
                 <p class="text-3xl font-bold text-red-400">@Model.FailedCount</p>
+                <p class="text-xs text-gray-500 mt-1">Payment attempts that did not process</p>
             </div>
             <div class="p-3 bg-red-500/20 rounded-xl">
                 <i data-lucide="x-circle" class="h-8 w-8 text-red-400"></i>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Status Explanation -->
+<div class="bg-blue-900/20 border border-blue-700/50 rounded-2xl p-6 mb-8 animate-slide-up no-print" style="animation-delay: 0.6s;">
+    <h3 class="text-lg font-semibold text-blue-300 mb-3 flex items-center">
+        <i data-lucide="info" class="w-5 h-5 mr-2"></i>
+        Payment Status Guide
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+        <div>
+            <span class="font-semibold text-emerald-400">Completed:</span>
+            Payment received and confirmed. Counts toward total revenue.
+        </div>
+        <div>
+            <span class="font-semibold text-yellow-400">Pending:</span>
+            Payment recorded but not yet confirmed. Does not count toward revenue until confirmed.
+        </div>
+        <div>
+            <span class="font-semibold text-red-400">Failed:</span>
+            Payment attempt failed (e.g., card declined). No revenue generated.
+        </div>
+        <div>
+            <span class="font-semibold text-orange-400">Refunded:</span>
+            Payment was completed but money was returned to customer. Shows as negative adjustment in revenue.
         </div>
     </div>
 </div>
@@ -376,21 +400,100 @@
 <!-- Print Styles -->
 <style>
     @@media print {
+        /* Hide interactive elements */
         .no-print {
             display: none !important;
         }
+
+        /* Reset page settings */
+        @@page {
+            size: A4;
+            margin: 1cm;
+        }
+
+        /* Body and background */
         body {
             background: white !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
-        .bg-slate-800, .bg-gray-800 {
+
+        /* Container backgrounds */
+        .bg-slate-800, .bg-gray-800, .bg-slate-800\/50 {
             background: white !important;
             border: 1px solid #e5e7eb !important;
         }
+
+        /* Text colors */
         .text-white {
             color: black !important;
         }
-        .text-gray-400, .text-slate-400 {
+        .text-gray-400, .text-slate-400, .text-gray-300, .text-slate-300 {
             color: #6b7280 !important;
+        }
+        .text-emerald-400, .text-green-400 {
+            color: #10b981 !important;
+        }
+        .text-yellow-400 {
+            color: #f59e0b !important;
+        }
+        .text-red-400 {
+            color: #ef4444 !important;
+        }
+
+        /* Card gradients - print as solid colors */
+        .bg-gradient-to-br {
+            background: #f3f4f6 !important;
+            border: 2px solid #e5e7eb !important;
+        }
+
+        /* Page breaks */
+        .mb-8 {
+            page-break-inside: avoid;
+        }
+
+        table {
+            page-break-inside: auto;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        /* Hide charts - they don't print well */
+        canvas, #revenueChart, #statusChart {
+            display: none !important;
+        }
+
+        /* Adjust spacing for print */
+        .p-6 {
+            padding: 12px !important;
+        }
+
+        .mb-8 {
+            margin-bottom: 16px !important;
+        }
+
+        /* Ensure tables fit */
+        table {
+            width: 100% !important;
+            font-size: 10pt !important;
+        }
+
+        th, td {
+            padding: 6px !important;
+        }
+
+        /* Header */
+        h1 {
+            font-size: 24pt !important;
+            margin-bottom: 8px !important;
+        }
+
+        h3 {
+            font-size: 14pt !important;
         }
     }
 

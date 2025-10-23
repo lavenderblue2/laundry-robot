@@ -176,21 +176,44 @@ namespace AdministratorWeb.Controllers
                 return NotFound();
             }
 
-            var payment = new Payment
-            {
-                LaundryRequestId = requestId,
-                CustomerId = request.CustomerId,
-                CustomerName = request.CustomerName,
-                Amount = request.TotalCost!.Value,
-                Method = paymentMethod,
-                Status = PaymentStatus.Completed,
-                TransactionId = $"ADMIN_{DateTime.UtcNow:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..8].ToUpper()}",
-                Notes = notes,
-                ProcessedAt = DateTime.UtcNow,
-                ProcessedByUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            };
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            _context.Payments.Add(payment);
+            // Check if there's an existing pending payment for this request
+            var existingPayment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.LaundryRequestId == requestId && p.Status == PaymentStatus.Pending);
+
+            if (existingPayment != null)
+            {
+                // Update existing pending payment to completed
+                existingPayment.Status = PaymentStatus.Completed;
+                existingPayment.Method = paymentMethod;
+                existingPayment.ProcessedAt = DateTime.UtcNow;
+                existingPayment.ProcessedByUserId = userId;
+                if (!string.IsNullOrEmpty(notes))
+                {
+                    existingPayment.Notes = (existingPayment.Notes ?? "") + $"\nPayment confirmed: {notes}";
+                }
+            }
+            else
+            {
+                // Create new completed payment (for older requests without pending payments)
+                var payment = new Payment
+                {
+                    LaundryRequestId = requestId,
+                    CustomerId = request.CustomerId,
+                    CustomerName = request.CustomerName,
+                    Amount = request.TotalCost!.Value,
+                    Method = paymentMethod,
+                    Status = PaymentStatus.Completed,
+                    TransactionId = $"ADMIN_{DateTime.UtcNow:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..8].ToUpper()}",
+                    Notes = notes,
+                    ProcessedAt = DateTime.UtcNow,
+                    ProcessedByUserId = userId
+                };
+
+                _context.Payments.Add(payment);
+            }
+
             request.IsPaid = true;
 
             await _context.SaveChangesAsync();

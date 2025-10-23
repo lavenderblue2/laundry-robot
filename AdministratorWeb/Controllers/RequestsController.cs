@@ -178,12 +178,34 @@ namespace AdministratorWeb.Controllers
                     }
                 }
 
+                // Auto-create pending payment record
+                if (request.TotalCost.HasValue && request.TotalCost.Value > 0)
+                {
+                    var payment = new Payment
+                    {
+                        LaundryRequestId = requestId,
+                        CustomerId = request.CustomerId,
+                        CustomerName = request.CustomerName,
+                        Amount = request.TotalCost.Value,
+                        Method = PaymentMethod.Cash,
+                        Status = PaymentStatus.Pending,
+                        TransactionId = $"PEND_{DateTime.UtcNow:yyyyMMdd}_{Guid.NewGuid().ToString("N")[..8].ToUpper()}",
+                        Notes = "Auto-created pending payment on request completion",
+                        ProcessedByUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    };
+
+                    _context.Payments.Add(payment);
+
+                    _logger.LogInformation("Created pending payment for request {RequestId} with amount {Amount}",
+                        requestId, request.TotalCost.Value);
+                }
+
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Request {RequestId} completed by user {UserId}",
                     requestId, User.Identity?.Name);
 
-                TempData["Success"] = $"Request #{requestId} marked as completed.";
+                TempData["Success"] = $"Request #{requestId} marked as completed and pending payment created.";
             }
             catch (Exception ex)
             {
