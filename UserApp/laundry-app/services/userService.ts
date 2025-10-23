@@ -78,7 +78,15 @@ export const userService = {
   },
 
   async updateProfile(data: UpdateProfileRequest): Promise<{ success: boolean; message: string }> {
-    const response = await apiPut('/user/profile', data);
+    // Transform to PascalCase for ASP.NET API
+    const payload = {
+      FirstName: data.firstName,
+      LastName: data.lastName,
+      Email: data.email,
+      Phone: data.phone,
+    };
+
+    const response = await apiPut('/user/profile', payload);
     if (!response) {
       throw new Error('Failed to update profile - no response');
     }
