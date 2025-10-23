@@ -307,13 +307,13 @@
         <p style="text-align: center; color: #999; padding: 20px;">No customer data available for this period.</p>
     }
 
-    <h2 class="section-title">Daily Revenue Breakdown</h2>
+    <h2 class="section-title">Hourly Revenue Breakdown</h2>
     @if (Model.DailyRevenue.Any())
     {
         <table>
             <thead>
                 <tr>
-                    <th>Date</th>
+                    <th>Date & Time</th>
                     <th style="text-align: right;">Revenue</th>
                     <th style="text-align: center;">Transactions</th>
                 </tr>
@@ -322,7 +322,7 @@
                 @foreach (var daily in Model.DailyRevenue)
                 {
                     <tr>
-                        <td>@daily.Date.ToString("MMM dd, yyyy")</td>
+                        <td>@daily.Date.ToString("MMM dd, yyyy hh:mm tt")</td>
                         <td style="text-align: right; font-weight: bold;">₱@daily.Revenue.ToString("N2")</td>
                         <td style="text-align: center;">@daily.TransactionCount</td>
                     </tr>

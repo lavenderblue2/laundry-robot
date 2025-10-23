@@ -616,9 +616,9 @@ namespace AdministratorWeb.Controllers
                 .Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1))
                 .ToListAsync();
 
-            // Recalculate daily revenue to include adjustments
-            var paymentDailyRevenue = revenuePayments
-                .GroupBy(p => p.CreatedAt.Date)
+            // Recalculate hourly revenue to include adjustments (group by date + hour)
+            var paymentHourlyRevenue = revenuePayments
+                .GroupBy(p => new DateTime(p.CreatedAt.Year, p.CreatedAt.Month, p.CreatedAt.Day, p.CreatedAt.Hour, 0, 0))
                 .Select(g => new
                 {
                     Date = g.Key,
@@ -628,9 +628,9 @@ namespace AdministratorWeb.Controllers
                 })
                 .ToList();
 
-            // Group adjustments by effective date
-            var adjustmentDailyRevenue = adjustments
-                .GroupBy(a => a.EffectiveDate.Date)
+            // Group adjustments by effective date + hour
+            var adjustmentHourlyRevenue = adjustments
+                .GroupBy(a => new DateTime(a.EffectiveDate.Year, a.EffectiveDate.Month, a.EffectiveDate.Day, a.EffectiveDate.Hour, 0, 0))
                 .Select(g => new
                 {
                     Date = g.Key,
@@ -640,19 +640,19 @@ namespace AdministratorWeb.Controllers
                 })
                 .ToList();
 
-            // Combine payments and adjustments by date
-            var allDates = paymentDailyRevenue.Select(p => p.Date)
-                .Union(adjustmentDailyRevenue.Select(a => a.Date))
+            // Combine payments and adjustments by date+hour
+            var allDateHours = paymentHourlyRevenue.Select(p => p.Date)
+                .Union(adjustmentHourlyRevenue.Select(a => a.Date))
                 .Distinct()
                 .OrderBy(d => d);
 
-            dailyRevenue = allDates.Select(date => new DailyRevenueDto
+            dailyRevenue = allDateHours.Select(dateHour => new DailyRevenueDto
             {
-                Date = date,
-                Revenue = (paymentDailyRevenue.FirstOrDefault(p => p.Date == date)?.Revenue ?? 0)
-                        + (adjustmentDailyRevenue.FirstOrDefault(a => a.Date == date)?.Revenue ?? 0),
-                TransactionCount = (paymentDailyRevenue.FirstOrDefault(p => p.Date == date)?.TransactionCount ?? 0)
-                                 + (adjustmentDailyRevenue.FirstOrDefault(a => a.Date == date)?.TransactionCount ?? 0)
+                Date = dateHour,
+                Revenue = (paymentHourlyRevenue.FirstOrDefault(p => p.Date == dateHour)?.Revenue ?? 0)
+                        + (adjustmentHourlyRevenue.FirstOrDefault(a => a.Date == dateHour)?.Revenue ?? 0),
+                TransactionCount = (paymentHourlyRevenue.FirstOrDefault(p => p.Date == dateHour)?.TransactionCount ?? 0)
+                                 + (adjustmentHourlyRevenue.FirstOrDefault(a => a.Date == dateHour)?.TransactionCount ?? 0)
             }).ToList();
 
             // Calculate adjustment impacts
@@ -796,9 +796,9 @@ namespace AdministratorWeb.Controllers
                 .Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1))
                 .ToListAsync();
 
-            // Recalculate daily revenue to include adjustments
-            var paymentDailyRevenue = revenuePayments
-                .GroupBy(p => p.CreatedAt.Date)
+            // Recalculate hourly revenue to include adjustments (group by date + hour)
+            var paymentHourlyRevenue = revenuePayments
+                .GroupBy(p => new DateTime(p.CreatedAt.Year, p.CreatedAt.Month, p.CreatedAt.Day, p.CreatedAt.Hour, 0, 0))
                 .Select(g => new
                 {
                     Date = g.Key,
@@ -808,9 +808,9 @@ namespace AdministratorWeb.Controllers
                 })
                 .ToList();
 
-            // Group adjustments by effective date
-            var adjustmentDailyRevenue = adjustments
-                .GroupBy(a => a.EffectiveDate.Date)
+            // Group adjustments by effective date + hour
+            var adjustmentHourlyRevenue = adjustments
+                .GroupBy(a => new DateTime(a.EffectiveDate.Year, a.EffectiveDate.Month, a.EffectiveDate.Day, a.EffectiveDate.Hour, 0, 0))
                 .Select(g => new
                 {
                     Date = g.Key,
@@ -820,19 +820,19 @@ namespace AdministratorWeb.Controllers
                 })
                 .ToList();
 
-            // Combine payments and adjustments by date
-            var allDates = paymentDailyRevenue.Select(p => p.Date)
-                .Union(adjustmentDailyRevenue.Select(a => a.Date))
+            // Combine payments and adjustments by date+hour
+            var allDateHours = paymentHourlyRevenue.Select(p => p.Date)
+                .Union(adjustmentHourlyRevenue.Select(a => a.Date))
                 .Distinct()
                 .OrderBy(d => d);
 
-            dailyRevenue = allDates.Select(date => new DailyRevenueDto
+            dailyRevenue = allDateHours.Select(dateHour => new DailyRevenueDto
             {
-                Date = date,
-                Revenue = (paymentDailyRevenue.FirstOrDefault(p => p.Date == date)?.Revenue ?? 0)
-                        + (adjustmentDailyRevenue.FirstOrDefault(a => a.Date == date)?.Revenue ?? 0),
-                TransactionCount = (paymentDailyRevenue.FirstOrDefault(p => p.Date == date)?.TransactionCount ?? 0)
-                                 + (adjustmentDailyRevenue.FirstOrDefault(a => a.Date == date)?.TransactionCount ?? 0)
+                Date = dateHour,
+                Revenue = (paymentHourlyRevenue.FirstOrDefault(p => p.Date == dateHour)?.Revenue ?? 0)
+                        + (adjustmentHourlyRevenue.FirstOrDefault(a => a.Date == dateHour)?.Revenue ?? 0),
+                TransactionCount = (paymentHourlyRevenue.FirstOrDefault(p => p.Date == dateHour)?.TransactionCount ?? 0)
+                                 + (adjustmentHourlyRevenue.FirstOrDefault(a => a.Date == dateHour)?.TransactionCount ?? 0)
             }).ToList();
 
             // Calculate adjustment impacts
