@@ -67,20 +67,16 @@
                 <input name="to" type="date" value="@ViewData["ToDate"]" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">Created By</label>
-                <select name="userId" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    <option value="">All Users</option>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Adjustment Type</label>
+                <select name="type" class="bg-gray-700 border border-gray-600 rounded-lg w-full py-2 px-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="">All Types</option>
                     @{
-                        var users = ViewData["Users"] as IEnumerable<dynamic>;
-                        var selectedUserId = ViewData["SelectedUserId"] as string;
-                        if (users != null)
-                        {
-                            foreach (var user in users)
-                            {
-                                <option value="@user.CreatedByUserId" selected="@(user.CreatedByUserId == selectedUserId)">@user.CreatedByUserName</option>
-                            }
-                        }
+                        var selectedType = ViewData["SelectedType"] as AdministratorWeb.Models.AdjustmentType?;
                     }
+                    <option value="0" selected="@(selectedType == AdministratorWeb.Models.AdjustmentType.AddRevenue)">Add Revenue</option>
+                    <option value="1" selected="@(selectedType == AdministratorWeb.Models.AdjustmentType.SubtractRevenue)">Subtract Revenue</option>
+                    <option value="2" selected="@(selectedType == AdministratorWeb.Models.AdjustmentType.CompletePayment)">Complete Payment</option>
+                    <option value="3" selected="@(selectedType == AdministratorWeb.Models.AdjustmentType.SupplyExpense)">Supply Expense</option>
                 </select>
             </div>
             <div class="flex items-end space-x-2">
@@ -114,24 +110,38 @@
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-4 flex-1">
                             <div class="flex-shrink-0">
-                                <div class="h-12 w-12 rounded-xl @(adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue ? "bg-emerald-500/20" : "bg-red-500/20") flex items-center justify-center">
-                                    <i data-lucide="@(adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue ? "plus" : "minus")" class="h-5 w-5 @(adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue ? "text-emerald-400" : "text-red-400")"></i>
+                                @{
+                                    var iconBg = adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue || adjustment.Type == AdministratorWeb.Models.AdjustmentType.CompletePayment ? "bg-emerald-500/20" :
+                                                 adjustment.Type == AdministratorWeb.Models.AdjustmentType.SubtractRevenue ? "bg-red-500/20" : "bg-orange-500/20";
+                                    var iconName = adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue ? "plus" :
+                                                   adjustment.Type == AdministratorWeb.Models.AdjustmentType.SubtractRevenue ? "minus" :
+                                                   adjustment.Type == AdministratorWeb.Models.AdjustmentType.CompletePayment ? "check" : "shopping-cart";
+                                    var iconColor = adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue || adjustment.Type == AdministratorWeb.Models.AdjustmentType.CompletePayment ? "text-emerald-400" :
+                                                    adjustment.Type == AdministratorWeb.Models.AdjustmentType.SubtractRevenue ? "text-red-400" : "text-orange-400";
+                                }
+                                <div class="h-12 w-12 rounded-xl @iconBg flex items-center justify-center">
+                                    <i data-lucide="@iconName" class="h-5 w-5 @iconColor"></i>
                                 </div>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center space-x-3">
                                     <div class="text-sm font-semibold text-white">@adjustment.Description</div>
-                                    <div class="text-sm font-medium @(adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue ? "text-emerald-400" : "text-red-400")">
-                                        @(adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue ? "+" : "-")₱@adjustment.Amount.ToString("N2")
+                                    @{
+                                        var amountColor = adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue || adjustment.Type == AdministratorWeb.Models.AdjustmentType.CompletePayment ? "text-emerald-400" :
+                                                         adjustment.Type == AdministratorWeb.Models.AdjustmentType.SubtractRevenue ? "text-red-400" : "text-orange-400";
+                                        var amountSign = adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue || adjustment.Type == AdministratorWeb.Models.AdjustmentType.CompletePayment ? "+" : "-";
+                                    }
+                                    <div class="text-sm font-medium @amountColor">
+                                        @amountSign₱@adjustment.Amount.ToString("N2")
                                     </div>
                                 </div>
                                 <div class="flex items-center mt-1 space-x-4">
                                     <span class="text-xs px-2 py-1 rounded-lg @(
                                         adjustment.Type == AdministratorWeb.Models.AdjustmentType.AddRevenue ? "bg-emerald-900/50 text-emerald-300 border border-emerald-700/50" :
                                         adjustment.Type == AdministratorWeb.Models.AdjustmentType.SubtractRevenue ? "bg-red-900/50 text-red-300 border border-red-700/50" :
-                                        adjustment.Type == AdministratorWeb.Models.AdjustmentType.Refund ? "bg-yellow-900/50 text-yellow-300 border border-yellow-700/50" :
-                                        "bg-slate-700 text-slate-300 border border-slate-600")">
-                                        @adjustment.Type.ToString().Replace("AddRevenue", "Add Revenue").Replace("SubtractRevenue", "Subtract Revenue")
+                                        adjustment.Type == AdministratorWeb.Models.AdjustmentType.CompletePayment ? "bg-blue-900/50 text-blue-300 border border-blue-700/50" :
+                                        "bg-orange-900/50 text-orange-300 border border-orange-700/50")">
+                                        @adjustment.Type.ToString().Replace("AddRevenue", "Add Revenue").Replace("SubtractRevenue", "Subtract Revenue").Replace("CompletePayment", "Complete Payment").Replace("SupplyExpense", "Supply Expense")
                                     </span>
                                     @if (!string.IsNullOrEmpty(adjustment.ReferenceNumber))
                                     {
@@ -195,9 +205,8 @@
                 <select name="Type" required class="w-full px-4 py-3 bg-slate-600/50 border border-slate-500/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200">
                     <option value="0">Add Revenue</option>
                     <option value="1">Subtract Revenue</option>
-                    <option value="2">Correction</option>
-                    <option value="3">Refund</option>
-                    <option value="4">Other</option>
+                    <option value="2">Complete Payment</option>
+                    <option value="3">Supply Expense</option>
                 </select>
             </div>
 

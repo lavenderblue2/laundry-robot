@@ -53,13 +53,10 @@ namespace AdministratorWeb.Models
         [Display(Name = "Subtract Revenue")]
         SubtractRevenue = 1,
 
-        [Display(Name = "Correction")]
-        Correction = 2,
+        [Display(Name = "Complete Payment")]
+        CompletePayment = 2,
 
-        [Display(Name = "Refund")]
-        Refund = 3,
-
-        [Display(Name = "Other")]
-        Other = 4
+        [Display(Name = "Supply Expense")]
+        SupplyExpense = 3
     }
 }

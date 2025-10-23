@@ -181,6 +181,34 @@
         </div>
     </div>
 
+    <h2 class="section-title">Revenue Breakdown</h2>
+    <div class="status-grid">
+        <div class="status-card">
+            <div class="label">Payment Revenue</div>
+            <div class="value" style="color: #3b82f6;">₱@Model.PaymentRevenue.ToString("N2")</div>
+            <div class="description">From completed payments minus refunds</div>
+        </div>
+        <div class="status-card">
+            <div class="label">Adjustment Revenue</div>
+            <div class="value" style="color: #a855f7;">₱@Model.AdjustmentRevenue.ToString("N2")</div>
+            <div class="description">Manual adjustments to revenue</div>
+        </div>
+    </div>
+
+    <h2 class="section-title">Expenses & Profit</h2>
+    <div class="status-grid">
+        <div class="status-card">
+            <div class="label">Supply Expenses</div>
+            <div class="value" style="color: #ef4444;">₱@Model.SupplyExpenses.ToString("N2")</div>
+            <div class="description">Business operating expenses</div>
+        </div>
+        <div class="status-card">
+            <div class="label">Net Profit</div>
+            <div class="value" style="color: #10b981;">₱@Model.NetProfit.ToString("N2")</div>
+            <div class="description">Total revenue minus expenses</div>
+        </div>
+    </div>
+
     <h2 class="section-title">Payment Status Summary</h2>
     <div class="status-grid">
         <div class="status-card completed">
@@ -199,6 +227,46 @@
             <div class="description">Payments refunded to customers</div>
         </div>
     </div>
+
+    <h2 class="section-title">Adjustment Breakdown</h2>
+    @if (Model.AddRevenueCount > 0 || Model.SubtractRevenueCount > 0 || Model.CompletePaymentCount > 0 || Model.SupplyExpenseCount > 0)
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th style="text-align: center;">Count</th>
+                    <th style="text-align: right;">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong style="color: #10b981;">Add Revenue</strong></td>
+                    <td style="text-align: center;">@Model.AddRevenueCount</td>
+                    <td style="text-align: right; font-weight: bold;">₱@Model.AddRevenueAmount.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <td><strong style="color: #ef4444;">Subtract Revenue</strong></td>
+                    <td style="text-align: center;">@Model.SubtractRevenueCount</td>
+                    <td style="text-align: right; font-weight: bold;">-₱@Model.SubtractRevenueAmount.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <td><strong style="color: #3b82f6;">Complete Payment</strong></td>
+                    <td style="text-align: center;">@Model.CompletePaymentCount</td>
+                    <td style="text-align: right; font-weight: bold;">₱@Model.CompletePaymentAmount.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <td><strong style="color: #ff6b35;">Supply Expense</strong></td>
+                    <td style="text-align: center;">@Model.SupplyExpenseCount</td>
+                    <td style="text-align: right; font-weight: bold;">₱@Model.SupplyExpenseAmount.ToString("N2")</td>
+                </tr>
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p style="text-align: center; color: #999; padding: 20px;">No adjustments for this period.</p>
+    }
 
     <h2 class="section-title">Top 10 Customers by Revenue</h2>
     @if (Model.TopCustomers.Any())

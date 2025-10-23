@@ -46,15 +46,18 @@ namespace AdministratorWeb.Controllers
 
             // Apply adjustments
             var totalAdjustments = await _context.PaymentAdjustments
-                .SumAsync(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.Correction || a.Type == AdjustmentType.Other ? a.Amount : -a.Amount);
+                .SumAsync(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.CompletePayment ? a.Amount :
+                              (a.Type == AdjustmentType.SubtractRevenue ? -a.Amount : 0));
 
             var todayAdjustments = await _context.PaymentAdjustments
                 .Where(a => a.EffectiveDate.Date == today)
-                .SumAsync(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.Correction || a.Type == AdjustmentType.Other ? a.Amount : -a.Amount);
+                .SumAsync(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.CompletePayment ? a.Amount :
+                              (a.Type == AdjustmentType.SubtractRevenue ? -a.Amount : 0));
 
             var monthAdjustments = await _context.PaymentAdjustments
                 .Where(a => a.EffectiveDate >= thisMonth)
-                .SumAsync(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.Correction || a.Type == AdjustmentType.Other ? a.Amount : -a.Amount);
+                .SumAsync(a => a.Type == AdjustmentType.AddRevenue || a.Type == AdjustmentType.CompletePayment ? a.Amount :
+                              (a.Type == AdjustmentType.SubtractRevenue ? -a.Amount : 0));
 
             totalRevenue += totalAdjustments;
             todayRevenue += todayAdjustments;
@@ -260,8 +263,8 @@ namespace AdministratorWeb.Controllers
             // Create negative adjustment for accounting
             var adjustment = new PaymentAdjustment
             {
-                Type = AdjustmentType.Refund,
-                Amount = -refundAmount,
+                Type = AdjustmentType.SubtractRevenue,
+                Amount = refundAmount,
                 Description = $"Refund for Payment #{payment.Id} - {refundReason}",
                 ReferenceNumber = payment.TransactionId,
                 EffectiveDate = DateTime.Today,
@@ -427,7 +430,7 @@ namespace AdministratorWeb.Controllers
             return View(payments);
         }
 
-        public async Task<IActionResult> Adjustments(DateTime? from, DateTime? to, string? userId)
+        public async Task<IActionResult> Adjustments(DateTime? from, DateTime? to, AdjustmentType? type)
         {
             // Set default date range (all time if not specified)
             var fromDate = from ?? DateTime.MinValue;
@@ -441,27 +444,19 @@ namespace AdministratorWeb.Controllers
                 query = query.Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1));
             }
 
-            // Filter by user
-            if (!string.IsNullOrEmpty(userId))
+            // Filter by adjustment type
+            if (type.HasValue)
             {
-                query = query.Where(a => a.CreatedByUserId == userId);
+                query = query.Where(a => a.Type == type.Value);
             }
 
             var adjustments = await query
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
-            // Get all users who have created adjustments for filter dropdown
-            var users = await _context.PaymentAdjustments
-                .Select(a => new { a.CreatedByUserId, a.CreatedByUserName })
-                .Distinct()
-                .OrderBy(u => u.CreatedByUserName)
-                .ToListAsync();
-
-            ViewData["Users"] = users;
             ViewData["FromDate"] = from;
             ViewData["ToDate"] = to;
-            ViewData["SelectedUserId"] = userId;
+            ViewData["SelectedType"] = type;
 
             return View(adjustments);
         }
@@ -616,14 +611,51 @@ namespace AdministratorWeb.Controllers
                 .GroupBy(p => p.Status.ToString())
                 .ToDictionary(g => g.Key, g => g.Count());
 
+            // Fetch adjustments for the period (by EffectiveDate)
+            var adjustments = await _context.PaymentAdjustments
+                .Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1))
+                .ToListAsync();
+
+            // Calculate adjustment impacts
+            var addRevenueAmount = adjustments.Where(a => a.Type == AdjustmentType.AddRevenue).Sum(a => a.Amount);
+            var subtractRevenueAmount = adjustments.Where(a => a.Type == AdjustmentType.SubtractRevenue).Sum(a => a.Amount);
+            var completePaymentAmount = adjustments.Where(a => a.Type == AdjustmentType.CompletePayment).Sum(a => a.Amount);
+            var supplyExpenseAmount = adjustments.Where(a => a.Type == AdjustmentType.SupplyExpense).Sum(a => a.Amount);
+
+            // Calculate revenue components
+            var paymentRevenue = totalRevenue; // This is already completedRevenue - refundedAmount
+            var adjustmentRevenue = addRevenueAmount - subtractRevenueAmount + completePaymentAmount;
+            var finalTotalRevenue = paymentRevenue + adjustmentRevenue;
+            var netProfit = finalTotalRevenue - supplyExpenseAmount;
+
             var reportDto = new SalesReportDto
             {
-                TotalRevenue = totalRevenue,
+                TotalRevenue = finalTotalRevenue,
                 TotalTransactions = totalTransactions,
                 AverageTransactionValue = avgTransactionValue,
                 CompletedCount = completedCount,
                 PendingCount = pendingCount,
                 FailedCount = refundedCount, // Reusing FailedCount field for Refunded count
+
+                // Revenue breakdown
+                PaymentRevenue = paymentRevenue,
+                AdjustmentRevenue = adjustmentRevenue,
+
+                // Expenses & profit
+                SupplyExpenses = supplyExpenseAmount,
+                NetProfit = netProfit,
+
+                // Adjustment breakdown
+                AddRevenueCount = adjustments.Count(a => a.Type == AdjustmentType.AddRevenue),
+                SubtractRevenueCount = adjustments.Count(a => a.Type == AdjustmentType.SubtractRevenue),
+                CompletePaymentCount = adjustments.Count(a => a.Type == AdjustmentType.CompletePayment),
+                SupplyExpenseCount = adjustments.Count(a => a.Type == AdjustmentType.SupplyExpense),
+
+                AddRevenueAmount = addRevenueAmount,
+                SubtractRevenueAmount = subtractRevenueAmount,
+                CompletePaymentAmount = completePaymentAmount,
+                SupplyExpenseAmount = supplyExpenseAmount,
+
                 FromDate = fromDate,
                 ToDate = toDate,
                 PeriodLabel = $"{fromDate:MMM dd, yyyy} - {toDate:MMM dd, yyyy}",
@@ -720,14 +752,51 @@ namespace AdministratorWeb.Controllers
                 .Take(10)
                 .ToList();
 
+            // Fetch adjustments for the period (by EffectiveDate)
+            var adjustments = await _context.PaymentAdjustments
+                .Where(a => a.EffectiveDate >= fromDate && a.EffectiveDate <= toDate.AddDays(1))
+                .ToListAsync();
+
+            // Calculate adjustment impacts
+            var addRevenueAmount = adjustments.Where(a => a.Type == AdjustmentType.AddRevenue).Sum(a => a.Amount);
+            var subtractRevenueAmount = adjustments.Where(a => a.Type == AdjustmentType.SubtractRevenue).Sum(a => a.Amount);
+            var completePaymentAmount = adjustments.Where(a => a.Type == AdjustmentType.CompletePayment).Sum(a => a.Amount);
+            var supplyExpenseAmount = adjustments.Where(a => a.Type == AdjustmentType.SupplyExpense).Sum(a => a.Amount);
+
+            // Calculate revenue components
+            var paymentRevenue = totalRevenue; // This is already completedRevenue - refundedAmount
+            var adjustmentRevenue = addRevenueAmount - subtractRevenueAmount + completePaymentAmount;
+            var finalTotalRevenue = paymentRevenue + adjustmentRevenue;
+            var netProfit = finalTotalRevenue - supplyExpenseAmount;
+
             var reportDto = new SalesReportDto
             {
-                TotalRevenue = totalRevenue,
+                TotalRevenue = finalTotalRevenue,
                 TotalTransactions = totalTransactions,
                 AverageTransactionValue = avgTransactionValue,
                 CompletedCount = completedCount,
                 PendingCount = pendingCount,
                 FailedCount = refundedCount, // Reusing FailedCount field for Refunded count
+
+                // Revenue breakdown
+                PaymentRevenue = paymentRevenue,
+                AdjustmentRevenue = adjustmentRevenue,
+
+                // Expenses & profit
+                SupplyExpenses = supplyExpenseAmount,
+                NetProfit = netProfit,
+
+                // Adjustment breakdown
+                AddRevenueCount = adjustments.Count(a => a.Type == AdjustmentType.AddRevenue),
+                SubtractRevenueCount = adjustments.Count(a => a.Type == AdjustmentType.SubtractRevenue),
+                CompletePaymentCount = adjustments.Count(a => a.Type == AdjustmentType.CompletePayment),
+                SupplyExpenseCount = adjustments.Count(a => a.Type == AdjustmentType.SupplyExpense),
+
+                AddRevenueAmount = addRevenueAmount,
+                SubtractRevenueAmount = subtractRevenueAmount,
+                CompletePaymentAmount = completePaymentAmount,
+                SupplyExpenseAmount = supplyExpenseAmount,
+
                 FromDate = fromDate,
                 ToDate = toDate,
                 PeriodLabel = $"{fromDate:MMM dd, yyyy} - {toDate:MMM dd, yyyy}",

@@ -8,7 +8,26 @@ public class SalesReportDto
     public decimal AverageTransactionValue { get; set; }
     public int CompletedCount { get; set; }
     public int PendingCount { get; set; }
-    public int FailedCount { get; set; }
+    public int FailedCount { get; set; } // Reused for Refunded count
+
+    // Revenue Breakdown
+    public decimal PaymentRevenue { get; set; }
+    public decimal AdjustmentRevenue { get; set; }
+
+    // Expenses & Profit
+    public decimal SupplyExpenses { get; set; }
+    public decimal NetProfit { get; set; }
+
+    // Adjustment Breakdown
+    public int AddRevenueCount { get; set; }
+    public int SubtractRevenueCount { get; set; }
+    public int CompletePaymentCount { get; set; }
+    public int SupplyExpenseCount { get; set; }
+
+    public decimal AddRevenueAmount { get; set; }
+    public decimal SubtractRevenueAmount { get; set; }
+    public decimal CompletePaymentAmount { get; set; }
+    public decimal SupplyExpenseAmount { get; set; }
 
     // Period Information
     public DateTime FromDate { get; set; }

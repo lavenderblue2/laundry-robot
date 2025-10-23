@@ -122,7 +122,7 @@
 </div>
 
 <!-- Charts Section -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
     <!-- Revenue Trend Chart -->
     <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.3s;">
         <h3 class="text-xl font-bold text-white mb-4 flex items-center">
@@ -142,6 +142,17 @@
         </h3>
         <div style="position: relative; height: 300px; max-height: 300px;">
             <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Adjustment Breakdown Chart -->
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.4s;">
+        <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+            <i data-lucide="bar-chart-3" class="w-5 h-5 mr-2 text-brand-400"></i>
+            Adjustment Breakdown
+        </h3>
+        <div style="position: relative; height: 300px; max-height: 300px;">
+            <canvas id="adjustmentChart"></canvas>
         </div>
     </div>
 </div>
@@ -251,8 +262,66 @@
     </div>
 </div>
 
+<!-- Revenue Breakdown -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.6s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Payment Revenue</p>
+                <p class="text-3xl font-bold text-blue-400">₱@Model.PaymentRevenue.ToString("N2")</p>
+                <p class="text-xs text-gray-500 mt-1">From completed payments minus refunds</p>
+            </div>
+            <div class="p-3 bg-blue-500/20 rounded-xl">
+                <i data-lucide="credit-card" class="h-8 w-8 text-blue-400"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.65s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Adjustment Revenue</p>
+                <p class="text-3xl font-bold text-purple-400">₱@Model.AdjustmentRevenue.ToString("N2")</p>
+                <p class="text-xs text-gray-500 mt-1">Manual adjustments to revenue</p>
+            </div>
+            <div class="p-3 bg-purple-500/20 rounded-xl">
+                <i data-lucide="edit-3" class="h-8 w-8 text-purple-400"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Expenses & Profit -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.7s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Supply Expenses</p>
+                <p class="text-3xl font-bold text-red-400">₱@Model.SupplyExpenses.ToString("N2")</p>
+                <p class="text-xs text-gray-500 mt-1">Business operating expenses</p>
+            </div>
+            <div class="p-3 bg-red-500/20 rounded-xl">
+                <i data-lucide="shopping-cart" class="h-8 w-8 text-red-400"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-slate-800/50 backdrop-blur-xl shadow-xl rounded-2xl border border-slate-700/50 p-6 animate-slide-up" style="animation-delay: 0.75s;">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-400 mb-1">Net Profit</p>
+                <p class="text-3xl font-bold text-emerald-400">₱@Model.NetProfit.ToString("N2")</p>
+                <p class="text-xs text-gray-500 mt-1">Total revenue minus expenses</p>
+            </div>
+            <div class="p-3 bg-emerald-500/20 rounded-xl">
+                <i data-lucide="trending-up" class="h-8 w-8 text-emerald-400"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Payment Status Explanation -->
-<div class="bg-blue-900/20 border border-blue-700/50 rounded-2xl p-6 mb-8 animate-slide-up no-print" style="animation-delay: 0.6s;">
+<div class="bg-blue-900/20 border border-blue-700/50 rounded-2xl p-6 mb-8 animate-slide-up no-print" style="animation-delay: 0.8s;">
     <h3 class="text-lg font-semibold text-blue-300 mb-3 flex items-center">
         <i data-lucide="info" class="w-5 h-5 mr-2"></i>
         Payment Status Guide
@@ -387,6 +456,61 @@
                     borderColor: 'rgba(59, 130, 246, 0.3)',
                     borderWidth: 1,
                     padding: 12
+                }
+            }
+        }
+    });
+
+    // Adjustment Breakdown Chart
+    const adjustmentCtx = document.getElementById('adjustmentChart').getContext('2d');
+    const adjustmentChart = new Chart(adjustmentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Add Revenue', 'Subtract Revenue', 'Complete Payment', 'Supply Expense'],
+            datasets: [{
+                data: [@Model.AddRevenueCount, @Model.SubtractRevenueCount, @Model.CompletePaymentCount, @Model.SupplyExpenseCount],
+                backgroundColor: [
+                    'rgba(16, 185, 129, 0.8)',      // green
+                    'rgba(239, 68, 68, 0.8)',       // red
+                    'rgba(59, 130, 246, 0.8)',      // blue
+                    'rgba(255, 107, 53, 0.8)'       // orange
+                ],
+                borderColor: [
+                    'rgb(16, 185, 129)',
+                    'rgb(239, 68, 68)',
+                    'rgb(59, 130, 246)',
+                    'rgb(255, 107, 53)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#cbd5e1',
+                        padding: 20,
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#cbd5e1',
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    borderWidth: 1,
+                    padding: 12,
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const amounts = [@Model.AddRevenueAmount, @Model.SubtractRevenueAmount, @Model.CompletePaymentAmount, @Model.SupplyExpenseAmount];
+                            return '₱' + amounts[context.dataIndex].toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        }
+                    }
                 }
             }
         }
