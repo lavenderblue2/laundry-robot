@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
         ScrollView,
@@ -16,6 +16,7 @@ import { useThemeColor } from '../../hooks/useThemeColor';
 import { userService } from '../../services/api';
 
 export default function ProfileScreen() {
+        const router = useRouter();
         const { user, logout, refreshProfile } = useAuth();
         const { showAlert, AlertComponent } = useCustomAlert();
         const [isEditing, setIsEditing] = useState(false);
@@ -244,21 +245,12 @@ export default function ProfileScreen() {
                                 </View>
 
                                 <View style={[styles.section, { backgroundColor: cardColor }]}>
-                                        <ThemedText style={styles.sectionTitle}>Account</ThemedText>
-                                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]}>
+                                        <ThemedText style={styles.sectionTitle}>Settings</ThemedText>
+                                        <TouchableOpacity
+                                                style={[styles.menuItem, { borderBottomColor: borderColor }]}
+                                                onPress={() => router.push('/notification-settings')}
+                                        >
                                                 <ThemedText style={[styles.menuItemText, { color: textColor }]}>Notification Settings</ThemedText>
-                                                <ThemedText style={[styles.menuItemArrow, { color: mutedColor }]}>›</ThemedText>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]}>
-                                                <ThemedText style={[styles.menuItemText, { color: textColor }]}>Payment Methods</ThemedText>
-                                                <ThemedText style={[styles.menuItemArrow, { color: mutedColor }]}>›</ThemedText>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]}>
-                                                <ThemedText style={[styles.menuItemText, { color: textColor }]}>Privacy Policy</ThemedText>
-                                                <ThemedText style={[styles.menuItemArrow, { color: mutedColor }]}>›</ThemedText>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: borderColor }]}>
-                                                <ThemedText style={[styles.menuItemText, { color: textColor }]}>Terms of Service</ThemedText>
                                                 <ThemedText style={[styles.menuItemArrow, { color: mutedColor }]}>›</ThemedText>
                                         </TouchableOpacity>
                                 </View>

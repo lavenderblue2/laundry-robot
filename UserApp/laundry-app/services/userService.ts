@@ -32,11 +32,14 @@ export interface UpdateProfileRequest {
 }
 
 export interface NotificationSettings {
-  pushNotifications: boolean;
-  emailNotifications: boolean;
-  smsNotifications: boolean;
-  requestUpdates: boolean;
-  promotions: boolean;
+  notificationsEnabled: boolean;
+  vibrationEnabled: boolean;
+  robotArrivalEnabled: boolean;
+  robotDeliveryEnabled: boolean;
+  messagesEnabled: boolean;
+  statusChangesEnabled: boolean;
+  robotArrivalSound: string;
+  messageSound: string;
 }
 
 /**
