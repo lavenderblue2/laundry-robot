@@ -1,0 +1,282 @@
+@model AdministratorWeb.Models.DTOs.SalesReportDto
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sales Report - @Model.PeriodLabel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+            padding: 20px;
+        }
+
+        .report-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .report-header h1 {
+            font-size: 24pt;
+            margin-bottom: 5px;
+        }
+
+        .report-header .period {
+            font-size: 12pt;
+            color: #666;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+
+        .summary-card .label {
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .summary-card .value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .section-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 25px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        table th {
+            background: #333;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 10pt;
+        }
+
+        table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .status-card .label {
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .status-card .value {
+            font-size: 20pt;
+            font-weight: bold;
+        }
+
+        .status-card .description {
+            font-size: 8pt;
+            color: #999;
+            margin-top: 3px;
+        }
+
+        .status-card.completed .value { color: #10b981; }
+        .status-card.pending .value { color: #f59e0b; }
+        .status-card.failed .value { color: #ef4444; }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 9pt;
+            color: #999;
+        }
+
+        @@media print {
+            body {
+                padding: 10px;
+            }
+
+            @@page {
+                size: A4;
+                margin: 1cm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <h1>Sales Report</h1>
+        <div class="period">@Model.PeriodLabel</div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="label">Total Revenue</div>
+            <div class="value">₱@Model.TotalRevenue.ToString("N2")</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Total Transactions</div>
+            <div class="value">@Model.TotalTransactions</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Average Transaction</div>
+            <div class="value">₱@Model.AverageTransactionValue.ToString("N2")</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Completed Payments</div>
+            <div class="value">@Model.CompletedCount</div>
+        </div>
+    </div>
+
+    <h2 class="section-title">Payment Status Summary</h2>
+    <div class="status-grid">
+        <div class="status-card completed">
+            <div class="label">Completed</div>
+            <div class="value">@Model.CompletedCount</div>
+            <div class="description">Payments received and confirmed</div>
+        </div>
+        <div class="status-card pending">
+            <div class="label">Pending</div>
+            <div class="value">@Model.PendingCount</div>
+            <div class="description">Awaiting payment confirmation</div>
+        </div>
+        <div class="status-card failed">
+            <div class="label">Failed</div>
+            <div class="value">@Model.FailedCount</div>
+            <div class="description">Payment attempts that did not process</div>
+        </div>
+    </div>
+
+    <h2 class="section-title">Top 10 Customers by Revenue</h2>
+    @if (Model.TopCustomers.Any())
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px;">Rank</th>
+                    <th>Customer Name</th>
+                    <th>Customer ID</th>
+                    <th style="text-align: right;">Total Spent</th>
+                    <th style="text-align: center;">Transactions</th>
+                    <th style="text-align: right;">Avg per Transaction</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var rank = 1;
+                    foreach (var customer in Model.TopCustomers)
+                    {
+                        var avgPerTransaction = customer.TransactionCount > 0 ? customer.TotalSpent / customer.TransactionCount : 0;
+                        <tr>
+                            <td style="font-weight: bold; text-align: center;">@rank</td>
+                            <td>@customer.CustomerName</td>
+                            <td style="color: #666;">@customer.CustomerId</td>
+                            <td style="text-align: right; font-weight: bold;">₱@customer.TotalSpent.ToString("N2")</td>
+                            <td style="text-align: center;">@customer.TransactionCount</td>
+                            <td style="text-align: right;">₱@avgPerTransaction.ToString("N2")</td>
+                        </tr>
+                        rank++;
+                    }
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p style="text-align: center; color: #999; padding: 20px;">No customer data available for this period.</p>
+    }
+
+    <h2 class="section-title">Daily Revenue Breakdown</h2>
+    @if (Model.DailyRevenue.Any())
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th style="text-align: right;">Revenue</th>
+                    <th style="text-align: center;">Transactions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var daily in Model.DailyRevenue)
+                {
+                    <tr>
+                        <td>@daily.Date.ToString("MMM dd, yyyy")</td>
+                        <td style="text-align: right; font-weight: bold;">₱@daily.Revenue.ToString("N2")</td>
+                        <td style="text-align: center;">@daily.TransactionCount</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p style="text-align: center; color: #999; padding: 20px;">No revenue data available for this period.</p>
+    }
+
+    <div class="footer">
+        <p>Generated on @DateTime.Now.ToString("MMMM dd, yyyy 'at' hh:mm tt")</p>
+        <p>Sales Report - Laundry Robot Management System</p>
+    </div>
+
+    <script>
+        // Auto-print when page loads
+        window.onload = function() {
+            window.print();
+        }
+    </script>
+</body>
+</html>

@@ -18,10 +18,10 @@
                 <i data-lucide="download" class="w-4 h-4 mr-2"></i>
                 Export CSV
             </a>
-            <button onclick="window.print()" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+            <a href="@Url.Action("SalesReportPrint", new { from = Model.FromDate.ToString("yyyy-MM-dd"), to = Model.ToDate.ToString("yyyy-MM-dd") })" target="_blank" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
                 <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
                 Save as PDF
-            </button>
+            </a>
         </div>
     </div>
 </div>
