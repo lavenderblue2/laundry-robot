@@ -59,9 +59,6 @@
                             <button onclick="openMarkPaidModal(@request.Id, '@request.CustomerName', @request.TotalCost)" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs">
                                 Mark as Paid
                             </button>
-                            <button onclick="openMarkPendingModal(@request.Id, '@request.CustomerName', @request.TotalCost)" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs">
-                                Mark as Pending
-                            </button>
                             <a asp-action="CustomerProfile" asp-route-customerId="@request.CustomerId" class="text-blue-400 hover:text-blue-300 text-xs">
                                 Profile
                             </a>
@@ -122,57 +119,8 @@
         document.getElementById('paymentAmount').textContent = '₱' + parseFloat(amount).toFixed(2);
         document.getElementById('markPaidModal').classList.remove('hidden');
     }
-    
+
     function closeMarkPaidModal() {
         document.getElementById('markPaidModal').classList.add('hidden');
     }
-
-    // Mark as Pending Modal
-    function openMarkPendingModal(requestId, customerName, amount) {
-        document.getElementById('pendingRequestId').value = requestId;
-        document.getElementById('pendingCustomerName').textContent = customerName;
-        document.getElementById('pendingAmount').textContent = '₱' + parseFloat(amount).toFixed(2);
-        document.getElementById('markPendingModal').classList.remove('hidden');
-    }
-
-    function closeMarkPendingModal() {
-        document.getElementById('markPendingModal').classList.add('hidden');
-    }
 </script>
-
-<!-- Mark as Pending Modal -->
-<div id="markPendingModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden">
-    <div class="relative top-20 mx-auto p-5 border border-gray-600 w-96 shadow-lg rounded-md bg-gray-800">
-        <div class="mt-3">
-            <h3 class="text-lg font-medium text-white mb-4">Mark as Pending Payment</h3>
-            <form id="markPendingForm" asp-action="MarkAsPending" method="post">
-                <input type="hidden" id="pendingRequestId" name="requestId" />
-                <div class="mb-4">
-                    <label class="block text-gray-300 text-sm font-bold mb-2">Customer:</label>
-                    <div id="pendingCustomerName" class="text-white bg-gray-700 px-3 py-2 rounded"></div>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-300 text-sm font-bold mb-2">Amount:</label>
-                    <div id="pendingAmount" class="text-white bg-gray-700 px-3 py-2 rounded font-semibold"></div>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-300 text-sm font-bold mb-2">Notes (Optional):</label>
-                    <textarea name="notes" rows="2" class="bg-gray-700 border border-gray-600 rounded w-full py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-yellow-500" placeholder="Reason for pending status..."></textarea>
-                </div>
-                <div class="bg-yellow-900/30 border border-yellow-700/50 rounded p-3 mb-4">
-                    <p class="text-yellow-200 text-sm">
-                        <strong>Note:</strong> This will create a pending payment record. Customer can pay later.
-                    </p>
-                </div>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" onclick="closeMarkPendingModal()" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">
-                        Cancel
-                    </button>
-                    <button type="submit" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
-                        Mark as Pending
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
