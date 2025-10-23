@@ -13,7 +13,7 @@ import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeColor } from '../../hooks/useThemeColor';
-import { userService } from '../../services/api';
+import { userService } from '../../services/userService';
 
 export default function ProfileScreen() {
         const router = useRouter();
