@@ -260,21 +260,10 @@ namespace AdministratorWeb.Controllers
                 payment.LaundryRequest.IsPaid = false;
             }
 
-            // Create negative adjustment for accounting
-            var adjustment = new PaymentAdjustment
-            {
-                Type = AdjustmentType.SubtractRevenue,
-                Amount = refundAmount,
-                Description = $"Refund for Payment #{payment.Id} - {refundReason}",
-                ReferenceNumber = payment.TransactionId,
-                EffectiveDate = DateTime.Today,
-                Notes = notes,
-                CreatedByUserId = userId ?? "Unknown",
-                CreatedByUserName = User.Identity?.Name,
-                CreatedAt = DateTime.UtcNow
-            };
+            // NOTE: We do NOT create a SubtractRevenue adjustment here because the refunded
+            // payment itself already subtracts from revenue in the sales report calculations.
+            // Creating an adjustment would double-count the refund.
 
-            _context.PaymentAdjustments.Add(adjustment);
             await _context.SaveChangesAsync();
 
             TempData["Success"] = $"Refund of ₱{refundAmount:N2} issued successfully.";
@@ -571,19 +560,6 @@ namespace AdministratorWeb.Controllers
             var pendingCount = payments.Count(p => p.Status == PaymentStatus.Pending);
             var refundedCount = payments.Count(p => p.Status == PaymentStatus.Refunded);
 
-            // Daily revenue breakdown - include refunds as negative
-            var dailyRevenue = revenuePayments
-                .GroupBy(p => p.CreatedAt.Date)
-                .Select(g => new DailyRevenueDto
-                {
-                    Date = g.Key,
-                    Revenue = g.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount)
-                            - g.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.RefundAmount ?? p.Amount),
-                    TransactionCount = g.Count()
-                })
-                .OrderBy(d => d.Date)
-                .ToList();
-
             // Top customers by revenue - account for refunds
             var topCustomers = revenuePayments
                 .GroupBy(p => new { p.CustomerId, p.CustomerName })
@@ -647,7 +623,7 @@ namespace AdministratorWeb.Controllers
                 .Distinct()
                 .OrderBy(d => d);
 
-            dailyRevenue = allDateHours.Select(dateHour => new DailyRevenueDto
+            var dailyRevenue = allDateHours.Select(dateHour => new DailyRevenueDto
             {
                 Date = dateHour,
                 Revenue = (paymentHourlyRevenue.FirstOrDefault(p => p.Date == dateHour)?.Revenue ?? 0)
@@ -764,19 +740,6 @@ namespace AdministratorWeb.Controllers
             var pendingCount = payments.Count(p => p.Status == PaymentStatus.Pending);
             var refundedCount = payments.Count(p => p.Status == PaymentStatus.Refunded);
 
-            // Daily revenue breakdown - include refunds as negative
-            var dailyRevenue = revenuePayments
-                .GroupBy(p => p.CreatedAt.Date)
-                .Select(g => new DailyRevenueDto
-                {
-                    Date = g.Key,
-                    Revenue = g.Where(p => p.Status == PaymentStatus.Completed).Sum(p => p.Amount)
-                            - g.Where(p => p.Status == PaymentStatus.Refunded).Sum(p => p.RefundAmount ?? p.Amount),
-                    TransactionCount = g.Count()
-                })
-                .OrderBy(d => d.Date)
-                .ToList();
-
             // Top customers by revenue - account for refunds
             var topCustomers = revenuePayments
                 .GroupBy(p => new { p.CustomerId, p.CustomerName })
@@ -828,7 +791,7 @@ namespace AdministratorWeb.Controllers
                 .Distinct()
                 .OrderBy(d => d);
 
-            dailyRevenue = allDateHours.Select(dateHour => new DailyRevenueDto
+            var dailyRevenue = allDateHours.Select(dateHour => new DailyRevenueDto
             {
                 Date = dateHour,
                 Revenue = (paymentHourlyRevenue.FirstOrDefault(p => p.Date == dateHour)?.Revenue ?? 0)
