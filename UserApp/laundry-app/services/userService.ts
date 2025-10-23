@@ -81,8 +81,13 @@ export const userService = {
   },
 
   async updateProfile(data: UpdateProfileRequest): Promise<{ success: boolean; message: string }> {
-    
+    console.log('📝 Updating profile with data:', data);
     const response = await apiPut('/user/profile', data);
+    if (!response) {
+      console.error('❌ updateProfile: No response from apiPut');
+      throw new Error('Failed to update profile - no response');
+    }
+    console.log('✅ Profile updated successfully:', response.data);
     return response.data;
   },
 

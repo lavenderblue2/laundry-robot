@@ -245,17 +245,6 @@ export default function ProfileScreen() {
                                 </View>
 
                                 <View style={[styles.section, { backgroundColor: cardColor }]}>
-                                        <ThemedText style={styles.sectionTitle}>Settings</ThemedText>
-                                        <TouchableOpacity
-                                                style={[styles.menuItem, { borderBottomColor: borderColor }]}
-                                                onPress={() => router.push('/notification-settings')}
-                                        >
-                                                <ThemedText style={[styles.menuItemText, { color: textColor }]}>Notification Settings</ThemedText>
-                                                <ThemedText style={[styles.menuItemArrow, { color: mutedColor }]}>›</ThemedText>
-                                        </TouchableOpacity>
-                                </View>
-
-                                <View style={[styles.section, { backgroundColor: cardColor }]}>
                                         <TouchableOpacity style={[styles.logoutButton, { backgroundColor: dangerColor }]} onPress={handleLogout}>
                                                 <Text style={styles.logoutButtonText}>Logout</Text>
                                         </TouchableOpacity>

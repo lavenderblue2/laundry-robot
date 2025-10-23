@@ -81,16 +81,21 @@ export const apiPost = async (endpoint: string, data?: any, config?: any) => {
 };
 
 export const apiPut = async (endpoint: string, data?: any, config?: any) => {
+        console.log(`📡 apiPut CALLED: ${endpoint}`, data);
         try {
                 const headers = await getAuthHeaders();
+                console.log(`📡 Making PUT request to: ${API_BASE_URL}${endpoint}`);
                 const response = await axios.put(`${API_BASE_URL}${endpoint}`, data, {
                         ...config,
                         headers: { ...headers, ...(config?.headers || {}) },
                         timeout: 10000
                 });
+                console.log(`✅ apiPut SUCCESS: ${endpoint}`, response.data);
                 return response;
         } catch (error: any) {
+                console.log(`❌ apiPut ERROR: ${endpoint}`, error.response?.status, error.response?.data);
                 if (error.response?.status === 401) {
+                        console.log(`🚨 401 detected in apiPut: ${endpoint}`);
                         await handle401();
                         return null; // Return null for 401 errors after handling
                 }
