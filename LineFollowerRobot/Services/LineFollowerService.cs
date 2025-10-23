@@ -53,6 +53,7 @@ public class LineFollowerService : BackgroundService
     // Beacon detection grace period (prevents premature detection when starting near beacon)
     private DateTime _navigationStartTime = DateTime.MinValue;
     private const int BEACON_DETECTION_GRACE_PERIOD_SECONDS = 10;
+    private bool _beaconDetectionEnabled = false; // Disabled after arrival, re-enabled after grace period
 
     public LineFollowerService(
         ILogger<LineFollowerService> logger,
@@ -140,9 +141,10 @@ public class LineFollowerService : BackgroundService
                     // Reset detection flags to prevent stale state from previous requests
                     _floorColorDetected = false;
                     _obstacleDetected = false;
-                    // Start beacon detection grace period
+                    // Start beacon detection grace period (will be enabled after grace period expires)
                     _navigationStartTime = DateTime.UtcNow;
-                    _logger.LogInformation("Beacon detection disabled for first {Seconds} seconds (grace period)", BEACON_DETECTION_GRACE_PERIOD_SECONDS);
+                    _beaconDetectionEnabled = false; // Disabled during grace period
+                    _logger.LogInformation("Beacon detection DISABLED for first {Seconds} seconds (grace period)", BEACON_DETECTION_GRACE_PERIOD_SECONDS);
                     wasFollowingLine = true;
                 }
                 else if (!shouldFollowLine && wasFollowingLine)
@@ -154,11 +156,19 @@ public class LineFollowerService : BackgroundService
 
                 if (shouldFollowLine)
                 {
-                    // Check beacon RSSI synchronously BEFORE camera processing (with grace period to prevent premature detection)
+                    // Check beacon RSSI synchronously BEFORE camera processing (THREE-PHASE SYSTEM)
                     var timeSinceNavigationStart = (DateTime.UtcNow - _navigationStartTime).TotalSeconds;
                     var isGracePeriodOver = timeSinceNavigationStart >= BEACON_DETECTION_GRACE_PERIOD_SECONDS;
 
-                    if (isGracePeriodOver)
+                    // Enable beacon detection after grace period expires
+                    if (isGracePeriodOver && !_beaconDetectionEnabled)
+                    {
+                        _beaconDetectionEnabled = true;
+                        _logger.LogInformation("✅ Beacon detection ENABLED after grace period");
+                    }
+
+                    // Only check beacons if detection is enabled (PHASE 2: Active Detection)
+                    if (_beaconDetectionEnabled)
                     {
                         var serverCommService = _serviceProvider.GetService<RobotServerCommunicationService>();
                         if (serverCommService?.ActiveBeacons != null && serverCommService.ActiveBeacons.Any())
@@ -175,8 +185,12 @@ public class LineFollowerService : BackgroundService
                                 if (targetBeaconConfig != null && detectedBeacon.Rssi >= targetBeaconConfig.RssiThreshold)
                                 {
                                     _logger.LogWarning(
-                                        "TARGET REACHED! Beacon {BeaconMac} RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING IMMEDIATELY",
+                                        "🎯 TARGET REACHED! Beacon {BeaconMac} RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING",
                                         detectedBeacon.MacAddress, detectedBeacon.Rssi, targetBeaconConfig.RssiThreshold);
+
+                                    // PHASE 3: Disable beacon detection after arrival
+                                    _beaconDetectionEnabled = false;
+                                    _logger.LogInformation("🛑 Beacon detection DISABLED after arrival (will re-enable on next journey)");
 
                                     await _motorService.StopLineFollowingAsync();
                                     continue; // Skip camera processing this iteration
