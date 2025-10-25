@@ -4,7 +4,7 @@ namespace LineFollowerRobot.Services;
 
 public class UltrasonicSensorService
 {
-    public const double STOP_DISTANCE = 0.5; // meters
+    public const double STOP_DISTANCE = 0.15; // meters (15cm - half a ruler)
 
     private readonly ILogger<UltrasonicSensorService> _logger;
     private readonly IConfiguration _config;
