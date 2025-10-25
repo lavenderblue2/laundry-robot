@@ -19,9 +19,9 @@ public class LineFollowerService : BackgroundService
     // PID control variables - matching Python exactly
     private double _previousError = 0;
     private double _integral = 0;
-    private readonly double _kp = 0.2; // Exact match to Python
-    private readonly double _ki = 0.0; // Exact match to Python  
-    private readonly double _kd = 0.05; // Exact match to Python
+    private readonly double _kp;
+    private readonly double _ki;
+    private readonly double _kd;
 
     // Movement thresholds - matching Python exactly
     private readonly int _smallErrorThreshold = 30; // Python: < 30 = go straight
@@ -72,6 +72,10 @@ public class LineFollowerService : BackgroundService
         _beaconService = beaconService;
         _ultrasonicService = ultrasonicService;
         _serviceProvider = serviceProvider;
+        // Load PID parameters from configuration (with defaults matching original Python values)
+        _kp = _config.GetValue<double>("LineFollower:PID:Kp", 0.2);
+        _ki = _config.GetValue<double>("LineFollower:PID:Ki", 0.0);
+        _kd = _config.GetValue<double>("LineFollower:PID:Kd", 0.05);
 
         // DISABLED: Event-based beacon detection (now using synchronous checking in main loop with grace period)
         // _beaconService.BeaconDetected += OnBeaconDetected;
