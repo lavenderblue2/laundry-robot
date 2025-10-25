@@ -455,66 +455,6 @@ public class LineFollowerService : BackgroundService
         }
     }
 
-    /// <summary>
-    /// Handle beacon detection events for real-time proximity checking
-    /// SIMPLIFIED: Only check if we should stop based on IsNavigationTarget beacons
-    /// ORIGINAL WORKING ALGORITHM - IMMEDIATE STOP when RSSI >= threshold
-    /// </summary>
-    private async void OnBeaconDetected(object? sender, BeaconInfo beacon)
-    {
-        try
-        {
-            var isLineFollowing = _motorService.IsLineFollowingActive;
-
-            // Only care about beacons if we're line following
-            if (!isLineFollowing)
-            {
-                return;
-            }
-
-            // Get active beacons from server communication service
-            var serverCommService = _serviceProvider.GetService<RobotServerCommunicationService>();
-            if (serverCommService?.ActiveBeacons == null || !serverCommService.ActiveBeacons.Any())
-            {
-                return;
-            }
-
-            // Find if this beacon is a navigation target
-            var targetBeaconConfig = serverCommService.ActiveBeacons
-                .FirstOrDefault(b => b.IsNavigationTarget &&
-                                     string.Equals(b.MacAddress, beacon.MacAddress,
-                                         StringComparison.OrdinalIgnoreCase));
-
-            if (targetBeaconConfig == null)
-            {
-                return; // Not a navigation target, ignore
-            }
-
-            _logger.LogInformation(
-                "TARGET BEACON DETECTED: {BeaconMac} ({Name}) RSSI: {Rssi} dBm (threshold: {Threshold} dBm)",
-                beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
-
-            // Check if we've reached the target (within RSSI threshold)
-            if (beacon.Rssi >= targetBeaconConfig.RssiThreshold)
-            {
-                _logger.LogWarning(
-                    "TARGET REACHED! Beacon {BeaconMac} ({Name}) RSSI: {Rssi} dBm >= {Threshold} dBm - STOPPING LINE FOLLOWING",
-                    beacon.MacAddress, beacon.Name ?? "Unknown", beacon.Rssi, targetBeaconConfig.RssiThreshold);
-
-                await _motorService.StopLineFollowingAsync();
-            }
-            else
-            {
-                _logger.LogInformation(
-                    "Target beacon in range but not close enough: RSSI {Rssi} dBm < {Threshold} dBm threshold",
-                    beacon.Rssi, targetBeaconConfig.RssiThreshold);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in OnBeaconDetected for beacon {BeaconMac}", beacon?.MacAddress ?? "Unknown");
-        }
-    }
 
     private void OnDistanceChanged(object? sender, double distance)
     {
