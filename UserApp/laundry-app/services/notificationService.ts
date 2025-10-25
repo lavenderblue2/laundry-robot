@@ -115,6 +115,148 @@ class NotificationService {
       throw error;
     }
   }
+
+  /**
+   * Send status change notification
+   * Shows notification for important laundry status updates
+   */
+  async sendStatusNotification(
+    status: string,
+    requestId: number,
+    additionalData?: { weight?: number; totalCost?: number }
+  ): Promise<void> {
+    try {
+      // Check permissions first
+      const hasPermission = await this.hasPermissions();
+      if (!hasPermission) {
+        console.log('⚠️ Notification permission not granted - skipping notification');
+        return;
+      }
+
+      // Get notification content based on status
+      const notificationContent = this.getNotificationContent(status, requestId, additionalData);
+
+      // Only send if this is a critical status
+      if (!notificationContent) {
+        console.log(`ℹ️ Status "${status}" is not configured for notifications - skipping`);
+        return;
+      }
+
+      // Schedule notification immediately
+      await Notifications.scheduleNotificationAsync({
+        content: notificationContent,
+        trigger: null, // Show immediately
+      });
+
+      console.log(`✅ Notification sent for status: ${status}`);
+    } catch (error) {
+      console.error(`❌ Failed to send notification for status "${status}":`, error);
+      // Don't throw - notifications should be non-blocking
+    }
+  }
+
+  /**
+   * Get notification title and body for a given status
+   * Returns null for non-critical statuses
+   */
+  private getNotificationContent(
+    status: string,
+    requestId: number,
+    additionalData?: { weight?: number; totalCost?: number }
+  ): { title: string; body: string } | null {
+    const statusLower = status.toLowerCase();
+
+    // Map status to notification content
+    switch (statusLower) {
+      case 'accepted':
+        return {
+          title: '✅ Request Approved',
+          body: `Your laundry request #${requestId} has been approved! Robot will be dispatched soon.`
+        };
+
+      case 'robotenroute':
+        return {
+          title: '🤖 Robot On The Way',
+          body: `Robot is heading to your room for request #${requestId}. Please be ready!`
+        };
+
+      case 'arrivedatroom':
+        return {
+          title: '📍 Robot Has Arrived!',
+          body: `The robot is at your door for request #${requestId}. Please load your laundry.`
+        };
+
+      case 'laundryloaded':
+        return {
+          title: '📦 Laundry Picked Up',
+          body: `Your laundry has been loaded! Robot is returning to base for request #${requestId}.`
+        };
+
+      case 'weighingcomplete':
+        const weightMsg = additionalData?.weight
+          ? ` Weight: ${additionalData.weight}kg`
+          : '';
+        return {
+          title: '⚖️ Weighing Complete',
+          body: `Your laundry has been weighed for request #${requestId}.${weightMsg}`
+        };
+
+      case 'paymentpending':
+        const costMsg = additionalData?.totalCost
+          ? ` Amount: ₱${additionalData.totalCost.toFixed(2)}`
+          : '';
+        return {
+          title: '💳 Payment Required',
+          body: `Please complete payment for request #${requestId}.${costMsg}`
+        };
+
+      case 'washing':
+        return {
+          title: '🌊 Washing In Progress',
+          body: `Your laundry is now being washed for request #${requestId}.`
+        };
+
+      case 'finishedwashing':
+        return {
+          title: '✨ Washing Complete!',
+          body: `Your laundry is clean and ready for request #${requestId}! Choose delivery or pickup.`
+        };
+
+      case 'finishedwashinggoingtoroom':
+        return {
+          title: '🚚 Clean Laundry Delivery',
+          body: `Robot is delivering your clean laundry for request #${requestId}. Please be ready!`
+        };
+
+      case 'finishedwashingarrivedatroom':
+        return {
+          title: '📍 Delivery Arrived!',
+          body: `Your clean laundry has arrived for request #${requestId}. Please retrieve it from the robot.`
+        };
+
+      case 'completed':
+        return {
+          title: '🎉 Service Complete',
+          body: `Your laundry service #${requestId} is complete. Thank you!`
+        };
+
+      case 'declined':
+        return {
+          title: '❌ Request Declined',
+          body: `Sorry, your laundry request #${requestId} has been declined by the admin.`
+        };
+
+      case 'cancelled':
+        return {
+          title: '🚫 Request Cancelled',
+          body: `Your laundry request #${requestId} has been cancelled.`
+        };
+
+      // Non-critical statuses - no notification
+      default:
+        return null;
+    }
+  }
 }
 
 // Export singleton instance

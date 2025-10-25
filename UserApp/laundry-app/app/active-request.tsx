@@ -1,6 +1,6 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { CheckCircle, Clock, MapPin, Package, Truck } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
         RefreshControl,
         ScrollView,
@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { apiGet } from '../services/api';
 import { laundryService } from '../services/laundryService';
+import { notificationService } from '../services/notificationService';
 import { formatRelativeTime } from '../utils/dateUtils';
 
 interface ActiveRequest {
@@ -51,6 +52,9 @@ export default function ActiveRequestScreen() {
         const borderColor = useThemeColor({}, 'border');
         const mutedColor = useThemeColor({}, 'muted');
         const warningColor = useThemeColor({}, 'warning');
+
+        // Track previous status for change detection
+        const previousStatusRef = useRef<string | null>(null);
 
         const loadActiveRequest = async () => {
                 try {
@@ -243,6 +247,36 @@ export default function ActiveRequestScreen() {
                         if (timer) clearInterval(timer);
                 };
         }, [activeRequest, timerDurationSeconds]);
+
+        // Status change detection for notifications
+        useEffect(() => {
+                if (!activeRequest) {
+                        previousStatusRef.current = null;
+                        return;
+                }
+
+                const currentStatus = getStatusString(activeRequest.status);
+                const previousStatus = previousStatusRef.current;
+
+                // Only send notification if status actually changed
+                if (previousStatus && previousStatus !== currentStatus) {
+                        console.log(`Status changed: ${previousStatus} -> ${currentStatus}`);
+                        
+                        // Send notification for the new status
+                        notificationService.sendStatusNotification(
+                                currentStatus,
+                                activeRequest.id,
+                                {
+                                        weight: activeRequest.weight,
+                                        totalCost: activeRequest.totalCost
+                                }
+                        );
+                }
+
+                // Update the ref to current status
+                previousStatusRef.current = currentStatus;
+        }, [activeRequest]);
+
 
         // Refresh data when screen comes into focus
         useFocusEffect(
@@ -514,7 +548,7 @@ export default function ActiveRequestScreen() {
                                                         <View style={styles.detailRow}>
                                                                 <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Total Cost:</ThemedText>
                                                                 <ThemedText style={[styles.detailValue, { color: secondaryColor }]}>
-                                                                        ${activeRequest.totalCost}
+                                                                        ₱{activeRequest.totalCost}
                                                                 </ThemedText>
                                                         </View>
                                                 )}

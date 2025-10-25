@@ -58,23 +58,84 @@ namespace AdministratorWeb.Services
         {
             try
             {
-                _logger.LogInformation(
+                // Check if this is a critical status that triggers mobile notifications
+                bool isCriticalStatus = IsCriticalStatusForNotification(request.Status);
+
+                var logLevel = isCriticalStatus ? LogLevel.Warning : LogLevel.Information;
+
+                _logger.Log(
+                    logLevel,
                     "NOTIFICATION: Request {RequestId} status update for customer {CustomerName} ({CustomerPhone}). " +
-                    "Status: {Status}, Message: {Message}",
+                    "Status: {Status} ({StatusEnum}), Message: {Message}, Critical: {IsCritical}",
                     request.Id,
                     request.CustomerName,
                     request.CustomerPhone,
-                    request.Status,
-                    statusMessage
+                    request.Status.ToString(),
+                    (int)request.Status,
+                    statusMessage,
+                    isCriticalStatus
                 );
 
-                // TODO: Implement actual notification mechanism
+                // Log additional context for critical statuses
+                if (isCriticalStatus)
+                {
+                    _logger.LogWarning(
+                        "📱 CRITICAL STATUS - Mobile app will send local notification to customer. " +
+                        "Request #{RequestId}, Status: {Status}, Weight: {Weight}kg, Cost: ₱{Cost}",
+                        request.Id,
+                        request.Status,
+                        request.Weight ?? 0,
+                        request.TotalCost ?? 0
+                    );
+                }
+
+                // TODO: Implement server-side push notification mechanism (Firebase FCM, etc.)
+                // This would send push notifications even when the app is closed
+                // For now, the mobile app handles notifications locally via status change detection
+
                 await Task.CompletedTask;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to send status change notification for request {RequestId}", request.Id);
             }
+        }
+
+        /// <summary>
+        /// Determines if a status change should trigger a notification to the customer
+        /// These statuses match the notification triggers in the mobile app (UserApp)
+        /// </summary>
+        /// <param name="status">The laundry request status</param>
+        /// <returns>True if this is a critical status that should notify the customer</returns>
+        private bool IsCriticalStatusForNotification(RequestStatus status)
+        {
+            // These 13 critical statuses trigger local notifications in the mobile app
+            // See: UserApp/laundry-app/services/notificationService.ts - getNotificationContent()
+            return status switch
+            {
+                RequestStatus.Accepted => true,                    // Request approved
+                RequestStatus.RobotEnRoute => true,                // Robot is coming
+                RequestStatus.ArrivedAtRoom => true,               // Robot arrived - action required
+                RequestStatus.LaundryLoaded => true,               // Pickup successful
+                RequestStatus.WeighingComplete => true,            // Weight confirmed
+                RequestStatus.PaymentPending => true,              // Payment required - action needed
+                RequestStatus.Washing => true,                     // Washing started
+                RequestStatus.FinishedWashing => true,             // Washing done - choose delivery/pickup
+                RequestStatus.FinishedWashingGoingToRoom => true,  // Delivery in progress
+                RequestStatus.FinishedWashingArrivedAtRoom => true,// Delivery arrived - action required
+                RequestStatus.Completed => true,                   // Service complete
+                RequestStatus.Declined => true,                    // Request declined - important to know
+                RequestStatus.Cancelled => true,                   // Request cancelled - important to know
+
+                // Non-critical statuses (no notification needed):
+                // - Pending: User just submitted, no need to notify
+                // - InProgress: Internal processing
+                // - ReturnedToBase: Internal milestone
+                // - FinishedWashingGoingToBase: Internal robot movement
+                // - FinishedWashingAwaitingPickup: Covered by FinishedWashing notification
+                // - FinishedWashingAtBase: Internal status
+                _ => false
+            };
         }
 
         // Helper methods for future implementation
