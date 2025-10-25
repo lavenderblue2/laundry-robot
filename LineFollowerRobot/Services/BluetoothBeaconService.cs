@@ -110,10 +110,10 @@ namespace LineFollowerRobot.Services
                 
                 // Set up high-frequency periodic scan for real-time beacon tracking (100ms intervals)
                 _scanTimer = new Timer(async _ => await ScanForBeaconsAsync(), null, 
-                    TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(100));
+                    TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(250));
                 
                 _isScanning = true;
-                _logger.LogInformation("✅ Bluetooth beacon scanning started with 100ms intervals");
+                _logger.LogInformation("✅ Bluetooth beacon scanning started with 250ms intervals");
             }
             catch (Exception ex)
             {

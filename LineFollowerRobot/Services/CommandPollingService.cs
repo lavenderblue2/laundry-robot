@@ -29,6 +29,7 @@ public class CommandPollingService : BackgroundService
             MaxAutomaticRedirections = 3
         };
         _httpClient = new HttpClient(handler);
+        _httpClient.Timeout = TimeSpan.FromSeconds(5); // Prevent hanging on network issues
 
         _robotName = _config.GetValue<string>("Robot:Name") ?? "Unknown";
         _apiServer = _config.GetValue<string>("Robot:ApiServer") ?? "";

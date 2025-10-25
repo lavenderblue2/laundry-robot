@@ -216,31 +216,11 @@ public class LineDetectionCameraService : IDisposable
                 using var binary = blurred.Clone();
                 binary.Mutate(x => x.BinaryThreshold(_binaryThreshold / 255f));
 
-                // Invert the binary image manually (since BinaryThresholdMode.Inverted doesn't exist)
-                for (int y = 0; y < binary.Height; y++)
-                {
-                    for (int x = 0; x < binary.Width; x++)
-                    {
-                        var pixel = binary[x, y];
-                        binary[x, y] = new L8((byte)(255 - pixel.PackedValue));
-                    }
-                }
-
                 // Method 2: Adaptive threshold - simulate with local thresholding
                 using var adaptive = blurred.Clone();
                 adaptive.Mutate(x => x.BinaryThreshold(0.3f));
 
-                // Invert the adaptive image manually
-                for (int y = 0; y < adaptive.Height; y++)
-                {
-                    for (int x = 0; x < adaptive.Width; x++)
-                    {
-                        var pixel = adaptive[x, y];
-                        adaptive[x, y] = new L8((byte)(255 - pixel.PackedValue));
-                    }
-                }
-
-                // Combine both methods by creating OR operation manually
+                // Combine inversion and OR operation in a single pixel loop (3x faster)
                 using var combined = binary.Clone();
                 for (int y = 0; y < combined.Height; y++)
                 {
@@ -248,7 +228,10 @@ public class LineDetectionCameraService : IDisposable
                     {
                         var binaryPixel = binary[x, y];
                         var adaptivePixel = adaptive[x, y];
-                        combined[x, y] = new L8((byte)Math.Max(binaryPixel.PackedValue, adaptivePixel.PackedValue));
+                        // Invert both and combine in one operation
+                        var invertedBinary = (byte)(255 - binaryPixel.PackedValue);
+                        var invertedAdaptive = (byte)(255 - adaptivePixel.PackedValue);
+                        combined[x, y] = new L8((byte)Math.Max(invertedBinary, invertedAdaptive));
                     }
                 }
 
@@ -275,7 +258,7 @@ public class LineDetectionCameraService : IDisposable
         }
         finally
         {
-            _logger.LogInformation($"took {processFramePerf.ElapsedMilliseconds}ms to process image");
+            _logger.LogDebug($"took {processFramePerf.ElapsedMilliseconds}ms to process image");
         }
     }
 

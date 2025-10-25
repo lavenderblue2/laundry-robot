@@ -40,6 +40,8 @@ public class LineFollowerService : BackgroundService
     private int _framesProcessed = 0;
     private DateTime _startTime;
     private DateTime _lastFpsReport;
+    private int _motorLogCounter = 0;
+    private const int MOTOR_LOG_INTERVAL = 100; // Log motor commands every 100 frames
 
     // Dynamic line color setting
     public byte[]? LineColor { get; set; } = null;
@@ -319,13 +321,18 @@ public class LineFollowerService : BackgroundService
     private async Task ExecuteMovement(int error)
     {
         var absError = Math.Abs(error);
+        
+        // Increment motor log counter
+        _motorLogCounter++;
+        bool shouldLog = (_motorLogCounter % MOTOR_LOG_INTERVAL == 0);
 
         // Movement logic - matching Python exactly
         if (absError < _smallErrorThreshold)
         {
             // Very small error - go straight
-            _logger.LogInformation("Motor command: MOVE_FORWARD (error={Error}, threshold<{Threshold})", error,
-                _smallErrorThreshold);
+            if (shouldLog)
+                _logger.LogInformation("Motor command: MOVE_FORWARD (error={Error}, threshold<{Threshold})", error,
+                    _smallErrorThreshold);
             _motorService.MoveForward();
         }
         else if (absError < _mediumErrorThreshold)
@@ -333,12 +340,14 @@ public class LineFollowerService : BackgroundService
             // Small-medium error - gentle correction
             if (error > 0)
             {
-                _logger.LogInformation("Motor command: LEFT_FORWARD (error={Error}, left correction)", error);
+                if (shouldLog)
+                    _logger.LogInformation("Motor command: LEFT_FORWARD (error={Error}, left correction)", error);
                 _motorService.LeftForward();
             }
             else
             {
-                _logger.LogInformation("Motor command: RIGHT_FORWARD (error={Error}, right correction)", error);
+                if (shouldLog)
+                    _logger.LogInformation("Motor command: RIGHT_FORWARD (error={Error}, right correction)", error);
                 _motorService.RightForward();
             }
         }
@@ -347,12 +356,14 @@ public class LineFollowerService : BackgroundService
             // Large error - stronger correction
             if (error > 0)
             {
-                _logger.LogInformation("Motor command: LEFT_FORWARD_STRONG (error={Error})", error);
+                if (shouldLog)
+                    _logger.LogInformation("Motor command: LEFT_FORWARD_STRONG (error={Error})", error);
                 _motorService.LeftForward();
             }
             else
             {
-                _logger.LogInformation("Motor command: RIGHT_FORWARD_STRONG (error={Error})", error);
+                if (shouldLog)
+                    _logger.LogInformation("Motor command: RIGHT_FORWARD_STRONG (error={Error})", error);
                 _motorService.RightForward();
             }
         }
@@ -361,12 +372,14 @@ public class LineFollowerService : BackgroundService
             // Extreme error - full turn
             if (error > 0)
             {
-                _logger.LogInformation("Motor command: TURN_LEFT (error={Error})", error);
+                if (shouldLog)
+                    _logger.LogInformation("Motor command: TURN_LEFT (error={Error})", error);
                 _motorService.TurnLeft();
             }
             else
             {
-                _logger.LogInformation("Motor command: TURN_RIGHT (error={Error})", error);
+                if (shouldLog)
+                    _logger.LogInformation("Motor command: TURN_RIGHT (error={Error})", error);
                 _motorService.TurnRight();
             }
         }
