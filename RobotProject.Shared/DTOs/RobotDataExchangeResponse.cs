@@ -83,12 +83,6 @@ namespace RobotProject.Shared.DTOs
         public byte[]? FollowColor { get; set; } = null;
 
         /// <summary>
-        /// RGB color bytes for floor color detection [R, G, B] or null for beacon-only navigation
-        /// When set, robot stops when this floor color is detected near the line
-        /// </summary>
-        public byte[]? StopAtColor { get; set; } = null;
-
-        /// <summary>
         /// Maximum weight allowed per request in kilograms
         /// Robot will alert and stop if weight exceeds this value
         /// </summary>

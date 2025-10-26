@@ -45,9 +45,6 @@ public class LineFollowerService : BackgroundService
 
     // Dynamic line color setting
     public byte[]? LineColor { get; set; } = null;
-    public byte[]? StopAtColor { get; set; } = null;
-    public bool FloorColorDetected => _floorColorDetected;
-    private bool _floorColorDetected = false;
 
     // Beacon detection logging throttle
     private int _beaconDetectionCount = 0;
@@ -144,7 +141,6 @@ public class LineFollowerService : BackgroundService
                     _integral = 0;
                     _lineLostCounter = 0;
                     // Reset detection flags to prevent stale state from previous requests
-                    _floorColorDetected = false;
                     _obstacleDetected = false;
                     // Start beacon detection grace period
                     _navigationStartTime = DateTime.UtcNow;

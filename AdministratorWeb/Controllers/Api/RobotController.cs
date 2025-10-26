@@ -170,9 +170,6 @@ namespace AdministratorWeb.Controllers.Api
                 // Get robot follow color from in-memory storage
                 var followColor = await GetRobotFollowColor(name);
 
-                // Get target room floor color
-                var stopAtColor = await GetTargetRoomFloorColor(targetRoomName);
-
                 // Check if we have a cancelled request that needs to return to base
                 var cancelledRequest = await _context.LaundryRequests
                     .FirstOrDefaultAsync(r => r.AssignedRobotName == name && r.Status == RequestStatus.Cancelled);
@@ -300,7 +297,6 @@ namespace AdministratorWeb.Controllers.Api
                     RobotStatus = robotStatus,
                     AtUserRoom = atUserRoom,
                     FollowColor = followColor,
-                    StopAtColor = stopAtColor,
                     MaxWeightKg = laundrySettings?.MaxWeightPerRequest,
                     MinWeightKg = laundrySettings?.MinWeightPerRequest,
                     Success = true,
@@ -1036,45 +1032,6 @@ namespace AdministratorWeb.Controllers.Api
             {
                 _logger.LogError(ex, "Error getting follow color for robot '{RobotName}', using default", robotName);
                 return new byte[] { 0, 0, 0 }; // Default to black
-            }
-        }
-
-        /// <summary>
-        /// Get target room's floor color from database
-        /// </summary>
-        private async Task<byte[]?> GetTargetRoomFloorColor(string? targetRoomName)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(targetRoomName))
-                {
-                    return null;
-                }
-
-                var room = await _context.Rooms.FirstOrDefaultAsync(r => r.Name == targetRoomName);
-                if (room == null)
-                {
-                    _logger.LogDebug("Target room '{RoomName}' not found in database", targetRoomName);
-                    return null;
-                }
-
-                var floorColor = room.FloorColorRgb;
-                if (floorColor != null)
-                {
-                    _logger.LogDebug("Target room '{RoomName}' floor color: RGB({R},{G},{B})",
-                        targetRoomName, floorColor[0], floorColor[1], floorColor[2]);
-                }
-                else
-                {
-                    _logger.LogDebug("Target room '{RoomName}' has no floor color set (beacon-only navigation)", targetRoomName);
-                }
-
-                return floorColor;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting floor color for room '{RoomName}'", targetRoomName);
-                return null;
             }
         }
 
