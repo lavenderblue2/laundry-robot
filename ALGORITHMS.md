@@ -834,7 +834,7 @@ flowchart TD
     ReturnToken --> StoreToken[Store Token Locally<br/>Mobile: SecureStorage<br/>Web: Cookie/LocalStorage]
 
     EnterRegInfo --> ValidateReg{Registration<br/>Valid?}
-    ValidateReg -->|No| RegFail[Show Validation Errors:<br/>- Email already exists<br/>- Password mismatch<br/>- Missing fields]
+    ValidateReg -->|No| RegFail[Show Validation Errors:<br/>Email already exists<br/>Password mismatch<br/>Missing fields]
     RegFail --> EnterRegInfo
 
     ValidateReg -->|Yes| CreateUser[Create User Account<br/>Hash Password<br/>Assign Member Role]
@@ -892,7 +892,7 @@ flowchart TD
     CreatePayment --> PaymentDashboard[Admin: Accounting Dashboard]
     GetPayment --> PaymentDashboard
 
-    PaymentDashboard --> ShowMetrics[Display Metrics:<br/>- Total Revenue<br/>- Outstanding Amounts<br/>- Payment Breakdown]
+    PaymentDashboard --> ShowMetrics[Display Metrics:<br/>Total Revenue<br/>Outstanding Amounts<br/>Payment Breakdown]
 
     ShowMetrics --> AdminAction{Admin<br/>Action?}
 
@@ -936,7 +936,7 @@ flowchart TD
     SelectPeriod -->|This Year| ReportYear[Filter: Current Year]
     SelectPeriod -->|Custom| ReportCustom[Filter: Date Range]
 
-    ReportToday --> GenerateReport[Generate Sales Report:<br/>- Revenue by Method<br/>- Top Customers<br/>- Transaction Counts<br/>- Daily/Hourly Trends]
+    ReportToday --> GenerateReport[Generate Sales Report:<br/>Revenue by Method<br/>Top Customers<br/>Transaction Counts<br/>Daily/Hourly Trends]
     ReportWeek --> GenerateReport
     ReportMonth --> GenerateReport
     ReportYear --> GenerateReport
@@ -995,11 +995,11 @@ flowchart TD
     ValidateRobot --> RouteAPI
     CheckRole --> RouteWeb{Web<br/>Endpoint?}
 
-    RouteAPI -->|/api/requests| RequestAPI[Request Management API:<br/>- Create Request<br/>- Get Status<br/>- Confirm Actions]
-    RouteAPI -->|/api/messages| MessageAPI[Messaging API:<br/>- Send/Receive<br/>- Mark Read<br/>- Get Unread Count]
-    RouteAPI -->|/api/payment| PaymentAPI[Payment API:<br/>- Process Payment<br/>- Get History<br/>- Check Status]
+    RouteAPI -->|/api/requests| RequestAPI[Request Management API:<br/>Create Request<br/>Get Status<br/>Confirm Actions]
+    RouteAPI -->|/api/messages| MessageAPI[Messaging API:<br/>Send/Receive<br/>Mark Read<br/>Get Unread Count]
+    RouteAPI -->|/api/payment| PaymentAPI[Payment API:<br/>Process Payment<br/>Get History<br/>Check Status]
     RouteAPI -->|/api/robot/data-exchange| DataExchange[Robot Data Exchange:<br/>Robot → Server: Beacons, Weight, Status<br/>Server → Robot: Targets, Commands]
-    RouteAPI -->|/api/user| UserAPI[User API:<br/>- Get Profile<br/>- Update Profile<br/>- Get Admins]
+    RouteAPI -->|/api/user| UserAPI[User API:<br/>Get Profile<br/>Update Profile<br/>Get Admins]
 
     RouteWeb -->|/dashboard| DashboardMVC[Dashboard Controller:<br/>Overview, Settings]
     RouteWeb -->|/requests| RequestMVC[Request Controller:<br/>Accept, Decline, Manage]
@@ -1025,8 +1025,8 @@ flowchart TD
 
     ProcessRequest --> DatabaseOp{Database<br/>Operation?}
 
-    DatabaseOp -->|Read| QueryDB[EF Core Query:<br/>- Get Entities<br/>- Apply Filters<br/>- Include Relations]
-    DatabaseOp -->|Write| WriteDB[EF Core Write:<br/>- Add/Update/Delete<br/>- SaveChanges<br/>- Transaction]
+    DatabaseOp -->|Read| QueryDB[EF Core Query:<br/>Get Entities<br/>Apply Filters<br/>Include Relations]
+    DatabaseOp -->|Write| WriteDB[EF Core Write:<br/>Add/Update/Delete<br/>SaveChanges<br/>Transaction]
 
     QueryDB --> MapToDTO[Map Entity to DTO:<br/>Exclude Sensitive Data<br/>Format for Client]
     WriteDB --> MapToDTO
@@ -1068,7 +1068,7 @@ Administrator workflow for accepting, declining, and managing laundry requests.
 flowchart TD
     Start([Admin Opens Request Dashboard]) --> LoadRequests[Load All Requests<br/>with Filters:<br/>Status, Date, Customer]
 
-    LoadRequests --> DisplayRequests[Display Request List:<br/>- Pending Requests (Top)<br/>- Active Requests<br/>- Completed Requests<br/>- Available Robots Count]
+    LoadRequests --> DisplayRequests[Display Request List:<br/>Pending Requests Top<br/>Active Requests<br/>Completed Requests<br/>Available Robots Count]
 
     DisplayRequests --> AdminSelect{Admin<br/>Selects Request?}
 
@@ -1077,11 +1077,11 @@ flowchart TD
 
     AdminSelect -->|Yes| CheckReqStatus{Request<br/>Status?}
 
-    CheckReqStatus -->|Pending| ShowActions[Show Actions:<br/>- Accept<br/>- Decline]
-    CheckReqStatus -->|Accepted/InProgress| ShowMonitor[Show Monitoring:<br/>- Robot Status<br/>- Location<br/>- Cancel Option]
-    CheckReqStatus -->|ArrivedAtRoom| ShowWaiting[Waiting for Customer<br/>to Load Laundry<br/>- Cancel Option]
-    CheckReqStatus -->|Washing| ShowWashing[Laundry Washing<br/>- Mark Done<br/>- Start Delivery]
-    CheckReqStatus -->|Completed| ShowPayment[Payment Processing<br/>- Mark as Paid<br/>- Issue Refund]
+    CheckReqStatus -->|Pending| ShowActions[Show Actions:<br/>Accept<br/>Decline]
+    CheckReqStatus -->|Accepted/InProgress| ShowMonitor[Show Monitoring:<br/>Robot Status<br/>Location<br/>Cancel Option]
+    CheckReqStatus -->|ArrivedAtRoom| ShowWaiting[Waiting for Customer<br/>to Load Laundry<br/>Cancel Option]
+    CheckReqStatus -->|Washing| ShowWashing[Laundry Washing<br/>Mark Done<br/>Start Delivery]
+    CheckReqStatus -->|Completed| ShowPayment[Payment Processing<br/>Mark as Paid<br/>Issue Refund]
 
     ShowActions --> AdminChoice{Admin<br/>Action?}
 
@@ -1094,12 +1094,12 @@ flowchart TD
 
     AnyRobots -->|Yes| SelectAvailable[Select First Available Robot]
 
-    SelectAvailable --> AssignRobot[Assign Robot to Request:<br/>- Set AssignedRobotName<br/>- Update Robot Status = Busy<br/>- Set Robot Task]
+    SelectAvailable --> AssignRobot[Assign Robot to Request:<br/>Set AssignedRobotName<br/>Update Robot Status = Busy<br/>Set Robot Task]
     SelectLRU --> AssignRobot
 
     AssignRobot --> UpdateStatus[Update Request Status:<br/>Status = Accepted<br/>AcceptedAt = Now<br/>AcceptedBy = Admin]
 
-    UpdateStatus --> ConfigureNav[Configure Navigation:<br/>- Get Customer Beacon<br/>- Set as NavigationTarget<br/>- Start Line Following]
+    UpdateStatus --> ConfigureNav[Configure Navigation:<br/>Get Customer Beacon<br/>Set as NavigationTarget<br/>Start Line Following]
 
     ConfigureNav --> NotifyCustomer[Send Notification:<br/>Robot on the way!]
 
