@@ -837,7 +837,7 @@ flowchart TD
     ValidateReg -->|No| RegFail[Show Validation Errors:<br/>- Email already exists<br/>- Password mismatch<br/>- Missing fields]
     RegFail --> EnterRegInfo
 
-    ValidateReg -->|Yes| CreateUser[Create User Account<br/>Hash Password<br/>Assign "Member" Role]
+    ValidateReg -->|Yes| CreateUser[Create User Account<br/>Hash Password<br/>Assign Member Role]
 
     CreateUser --> RegSuccess[Registration Successful<br/>Auto-login User]
     RegSuccess --> GenerateToken
@@ -1101,11 +1101,11 @@ flowchart TD
 
     UpdateStatus --> ConfigureNav[Configure Navigation:<br/>- Get Customer Beacon<br/>- Set as NavigationTarget<br/>- Start Line Following]
 
-    ConfigureNav --> NotifyCustomer[Send Notification:<br/>"Robot on the way!"]
+    ConfigureNav --> NotifyCustomer[Send Notification:<br/>Robot on the way!]
 
     EnterReason --> DeclineRequest[Update Request:<br/>Status = Declined<br/>DeclineReason<br/>DeclinedAt = Now]
 
-    DeclineRequest --> NotifyDecline[Send Notification:<br/>"Request Declined"]
+    DeclineRequest --> NotifyDecline[Send Notification:<br/>Request Declined]
 
     ShowMonitor --> MonitorAction{Admin<br/>Action?}
     MonitorAction -->|Cancel| ConfirmCancel{Confirm<br/>Cancellation?}
@@ -1116,8 +1116,8 @@ flowchart TD
     WashAction -->|Mark Done| MarkFinished[Update Status:<br/>FinishedWashing]
     WashAction -->|Start Delivery| StartDelivery[Update Status:<br/>FinishedWashingGoingToRoom<br/>Robot Delivers to Customer]
 
-    MarkFinished --> NotifyReady[Notify Customer:<br/>"Laundry Ready for Pickup"]
-    StartDelivery --> NotifyDelivering[Notify Customer:<br/>"Robot Delivering Clean Laundry"]
+    MarkFinished --> NotifyReady[Notify Customer:<br/>Laundry Ready for Pickup]
+    StartDelivery --> NotifyDelivering[Notify Customer:<br/>Robot Delivering Clean Laundry]
 
     ShowWaiting --> WaitTimeout{Timeout<br/>Reached?}
     WaitTimeout -->|Yes| AutoCancel[Auto-cancel Request<br/>Robot Returns to Base]
