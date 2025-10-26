@@ -262,14 +262,11 @@ flowchart TD
     GetRoomBeacons --> SetTargets[Set IsNavigationTarget=true<br/>for Room Beacons]
     GetBaseBeacons --> SetTargets
 
-    SetTargets --> GetFloorColor{Room Has<br/>Floor Color?}
-    GetFloorColor -->|Yes| SendWithColor[Send Active Beacons<br/>+ Navigation Targets<br/>+ Floor Color DISABLED]
-    GetFloorColor -->|No| SendBeaconOnly[Send Active Beacons<br/>+ Navigation Targets<br/>Beacon-Only Mode]
+    SetTargets --> SendBeacons[Send Active Beacons<br/>+ Navigation Targets<br/>Beacon-Only Mode]
 
     NoTarget --> SendEmpty[Send Active Beacons<br/>All IsNavigationTarget=false]
 
-    SendWithColor --> RobotNavigates[Robot Checks Beacon RSSI<br/>Reports When RSSI >= Threshold]
-    SendBeaconOnly --> RobotNavigates
+    SendBeacons --> RobotNavigates[Robot Checks Beacon RSSI<br/>Reports When RSSI >= Threshold]
     SendEmpty --> RobotIdle[Robot Idles<br/>No Navigation Target]
 
     RobotNavigates --> End([Navigation Config Sent])
