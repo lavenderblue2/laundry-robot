@@ -360,18 +360,6 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
                 {
                     _logger.LogInformation("Reset line color to default (black)");
                 }
-
-                // Floor color detection disabled - using beacon-only navigation
-                // lineFollowerService.StopAtColor = serverResponse.StopAtColor;
-                // if (serverResponse.StopAtColor != null && serverResponse.StopAtColor.Length >= 3)
-                // {
-                //     _logger.LogInformation("Updated stop-at floor color to RGB({R},{G},{B})",
-                //         serverResponse.StopAtColor[0], serverResponse.StopAtColor[1], serverResponse.StopAtColor[2]);
-                // }
-                // else
-                // {
-                //     _logger.LogInformation("No floor color set (beacon-only navigation)");
-                // }
             }
 
             // Update data exchange interval if changed
