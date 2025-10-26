@@ -355,7 +355,7 @@ flowchart TD
 
     CheckUUID -->|Yes| ParseData[Parse Beacon Data:<br/>MAC Address<br/>RSSI<br/>UUID]
 
-    ParseData --> CalcDistance[Calculate Distance<br/>from RSSI<br/>d = 10^((TxPower - RSSI) / 20)]
+    ParseData --> CalcDistance[Calculate Distance<br/>from RSSI<br/>Using TxPower Formula]
 
     CalcDistance --> CheckTracked{Already<br/>Tracking?}
 
