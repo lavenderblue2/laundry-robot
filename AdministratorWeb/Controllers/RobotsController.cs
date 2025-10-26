@@ -182,96 +182,34 @@ namespace AdministratorWeb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> StartLineFollowing([FromForm] string name)
+        public async Task<IActionResult> CancelRequestReturnToBase([FromForm] string name)
         {
-            var success = await _robotService.SetLineFollowingAsync(name, true);
-            if (success)
-            {
-                TempData["Success"] = "Robot started line following.";
-            }
-            else
-            {
-                TempData["Error"] = "Robot not found.";
-            }
+            // Find active request for this robot
+            var activeRequest = await _context.LaundryRequests
+                .FirstOrDefaultAsync(r => r.AssignedRobotName == name &&
+                                         (r.Status == RequestStatus.Accepted ||
+                                          r.Status == RequestStatus.LaundryLoaded ||
+                                          r.Status == RequestStatus.ArrivedAtRoom ||
+                                          r.Status == RequestStatus.FinishedWashingGoingToRoom ||
+                                          r.Status == RequestStatus.FinishedWashingGoingToBase));
 
-            return RedirectToAction(nameof(Details), new { name });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> StopRobot([FromForm] string name)
-        {
-            var success = await _robotService.SetLineFollowingAsync(name, false);
-            if (success)
+            if (activeRequest == null)
             {
-                TempData["Success"] = "Robot stopped.";
-            }
-            else
-            {
-                TempData["Error"] = "Robot not found.";
-            }
-
-            return RedirectToAction(nameof(Details), new { name });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> ToggleLineFollowing([FromForm] string name)
-        {
-            // Get current robot state
-            var robot = await _robotService.GetRobotAsync(name);
-            if (robot == null)
-            {
-                TempData["Error"] = "Robot not found.";
+                TempData["Error"] = "No active request found for this robot.";
                 return RedirectToAction(nameof(Details), new { name });
             }
 
-            // Check if there's an active request
-            var activeRequest = await _context.LaundryRequests
-                .FirstOrDefaultAsync(r => r.AssignedRobotName == name &&
-                                         r.Status != RequestStatus.Completed &&
-                                         r.Status != RequestStatus.Cancelled &&
-                                         r.Status != RequestStatus.Declined);
+            // Cancel the request
+            activeRequest.Status = RequestStatus.Cancelled;
+            activeRequest.ProcessedAt = DateTime.UtcNow;
+            activeRequest.DeclineReason = $"Cancelled by admin at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} - robot returning to base";
 
-            // Determine new state
-            bool newState = !robot.IsFollowingLine;
+            await _context.SaveChangesAsync();
 
-            // If STOPPING and there's an active request, cancel it (mini force stop)
-            if (!newState && activeRequest != null)
-            {
-                // Cancel the active request
-                activeRequest.Status = RequestStatus.Cancelled;
-                activeRequest.ProcessedAt = DateTime.UtcNow;
-                activeRequest.DeclineReason = $"Manually stopped by admin at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
+            _logger.LogWarning("Admin cancelled request {RequestId} for customer {CustomerName} - robot {RobotName} returning to base",
+                activeRequest.Id, activeRequest.CustomerName, name);
 
-                await _context.SaveChangesAsync();
-
-                _logger.LogWarning("Admin manually stopped robot {RobotName}, cancelled request {RequestId} for customer {CustomerName}",
-                    name, activeRequest.Id, activeRequest.CustomerName);
-
-                // Free up the robot
-                robot.Status = RobotStatus.Available;
-                robot.CurrentTask = null;
-            }
-
-            // Toggle the line following state
-            var success = await _robotService.SetLineFollowingAsync(name, newState);
-
-            if (success)
-            {
-                if (!newState && activeRequest != null)
-                {
-                    TempData["Success"] = $"Robot stopped and request #{activeRequest.Id} cancelled.";
-                }
-                else
-                {
-                    TempData["Success"] = newState
-                        ? "Robot started line following."
-                        : "Robot stopped line following.";
-                }
-            }
-            else
-            {
-                TempData["Error"] = "Failed to toggle line following.";
-            }
+            TempData["Success"] = $"Request #{activeRequest.Id} cancelled. Robot returning to base.";
 
             return RedirectToAction(nameof(Details), new { name });
         }

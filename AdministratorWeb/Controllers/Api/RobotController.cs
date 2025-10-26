@@ -148,15 +148,15 @@ namespace AdministratorWeb.Controllers.Api
                 // Update robot ultrasonic sensor data
                 await UpdateRobotUltrasonicData(name, request.USSensor1ObstacleDistance);
 
+                // Get current active beacons for robot (needed for HandleRobotArrivedAtTarget)
+                var activeBeacons = await GetActiveBeaconsForRobot();
+
                 // Handle robot arrival at target
                 if (request.IsInTarget)
                 {
                     _logger.LogInformation("ROBOT IS AT TARGET!");
-                    await HandleRobotArrivedAtTarget(name);
+                    await HandleRobotArrivedAtTarget(name, request.DetectedBeacons, activeBeacons);
                 }
-
-                // Get current active beacons for robot
-                var activeBeacons = await GetActiveBeaconsForRobot();
 
                 // Get current server configuration
                 var serverConfig = await GetServerConfiguration();
@@ -770,7 +770,7 @@ namespace AdministratorWeb.Controllers.Api
         /// Handle robot arrival at target destination
         /// Updates request status to ArrivedAtRoom and stops navigation
         /// </summary>
-        private async Task HandleRobotArrivedAtTarget(string robotName)
+        private async Task HandleRobotArrivedAtTarget(string robotName, List<RobotProject.Shared.DTOs.BeaconInfo>? detectedBeacons, List<BeaconConfigurationDto> activeBeacons)
         {
             try
             {
@@ -804,24 +804,57 @@ namespace AdministratorWeb.Controllers.Api
                     }
                     else if (activeRequest.Status == RequestStatus.LaundryLoaded)
                     {
-                        // Robot has returned to base, laundry is now washing
-                        activeRequest.Status = RequestStatus.Washing;
-                        activeRequest.ReturnedToBaseAt = DateTime.UtcNow;
+                        // Robot has laundry loaded - verify it's ACTUALLY at BASE beacon (not still at user room)
+                        bool isAtBaseBeacon = false;
 
-                        // Update robot status - now available for new requests
-                        var robot = await _robotService.GetRobotAsync(robotName);
-                        if (robot != null)
+                        // Check if robot is detecting a Base beacon with sufficient RSSI
+                        if (detectedBeacons != null && detectedBeacons.Any())
                         {
-                            robot.CurrentTask = "Returned to base - laundry is washing";
-                            robot.Status = RobotStatus.Available; // Now available
+                            foreach (var detectedBeacon in detectedBeacons)
+                            {
+                                var baseBeacon = activeBeacons.FirstOrDefault(b =>
+                                    b.IsBase &&
+                                    string.Equals(b.MacAddress, detectedBeacon.MacAddress, StringComparison.OrdinalIgnoreCase));
+
+                                if (baseBeacon != null && detectedBeacon.Rssi >= baseBeacon.RssiThreshold)
+                                {
+                                    isAtBaseBeacon = true;
+                                    _logger.LogInformation("Robot {RobotName} CONFIRMED at BASE beacon {BeaconMac} with RSSI {Rssi} >= {Threshold}",
+                                        robotName, baseBeacon.MacAddress, detectedBeacon.Rssi, baseBeacon.RssiThreshold);
+                                    break;
+                                }
+                            }
                         }
 
-                        _logger.LogInformation(
-                            "Robot {RobotName} has returned to base for request {RequestId} - laundry is washing",
-                            robotName, activeRequest.Id);
+                        if (isAtBaseBeacon)
+                        {
+                            // Robot has ACTUALLY returned to base, laundry is now washing
+                            activeRequest.Status = RequestStatus.Washing;
+                            activeRequest.ReturnedToBaseAt = DateTime.UtcNow;
 
-                        // AUTO-QUEUE: Process next pending request if auto-accept is enabled
-                        await ProcessNextPendingRequestInQueueAsync(robot);
+                            // Update robot status - now available for new requests
+                            var robot = await _robotService.GetRobotAsync(robotName);
+                            if (robot != null)
+                            {
+                                robot.CurrentTask = "Returned to base - laundry is washing";
+                                robot.Status = RobotStatus.Available; // Now available
+                            }
+
+                            _logger.LogInformation(
+                                "Robot {RobotName} has returned to base for request {RequestId} - laundry is washing",
+                                robotName, activeRequest.Id);
+
+                            // AUTO-QUEUE: Process next pending request if auto-accept is enabled
+                            await ProcessNextPendingRequestInQueueAsync(robot);
+                        }
+                        else
+                        {
+                            // Robot has LaundryLoaded status but NOT at base yet (still at user room or traveling)
+                            // This is NORMAL right after user confirms - robot is still near user room beacon
+                            _logger.LogInformation(
+                                "Robot {RobotName} has LaundryLoaded status but not at base yet (IsInTarget detected non-base beacon) - robot still traveling",
+                                robotName);
+                        }
                     }
                     else if (activeRequest.Status == RequestStatus.FinishedWashingGoingToRoom)
                     {

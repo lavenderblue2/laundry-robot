@@ -266,43 +266,22 @@ var activeRequest = ViewData["ActiveRequest"] as AdministratorWeb.Models.Laundry
                 <h3 class="text-xl font-bold text-white">Robot Controls</h3>
             </div>
             <div class="space-y-3">
-                <!-- Toggle Line Following Button -->
-                @{
-                    var confirmMessage = (Model.IsActuallyLineFollowing && activeRequest != null)
-                        ? $"return confirm('⚠️ Stopping the robot will cancel request #{activeRequest.Id} for {activeRequest.CustomerName}.\\n\\nAre you sure?');"
-                        : null;
-                }
-                <form asp-action="ToggleLineFollowing" method="post" class="w-full" onsubmit="@confirmMessage">
-                    <input type="hidden" name="name" value="@Model.Name"/>
-                    @if (Model.IsActuallyLineFollowing)
-                    {
+                <!-- Cancel Request & Return to Base Button -->
+                @if (activeRequest != null)
+                {
+                    <form asp-action="CancelRequestReturnToBase" method="post" class="w-full" onsubmit="return confirm('⚠️ This will cancel request #@activeRequest.Id for @activeRequest.CustomerName.\n\nThe robot will return to base.\n\nAre you sure?');">
+                        <input type="hidden" name="name" value="@Model.Name"/>
                         <button type="submit"
-                                class="w-full bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex flex-col items-center justify-center"
+                                class="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex flex-col items-center justify-center"
                                 @(Model.IsOffline ? "disabled" : "")>
                             <div class="flex items-center">
-                                <i data-lucide="square" class="w-4 h-4 mr-2"></i>
-                                Stop Line Following
+                                <i data-lucide="x-circle" class="w-4 h-4 mr-2"></i>
+                                Cancel Request & Return to Base
                             </div>
-                            @if (Model.IsFollowingDueToRequest)
-                            {
-                                <span class="text-xs opacity-75 mt-1">Active Request Control</span>
-                            }
-                            else
-                            {
-                                <span class="text-xs opacity-75 mt-1">Manual Control</span>
-                            }
+                            <span class="text-xs opacity-75 mt-1">Request #@activeRequest.Id - @activeRequest.CustomerName</span>
                         </button>
-                    }
-                    else
-                    {
-                        <button type="submit"
-                                class="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 disabled:from-slate-600 disabled:to-slate-600 text-white px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
-                                @(Model.IsOffline ? "disabled" : "")>
-                            <i data-lucide="play" class="w-4 h-4 mr-2"></i>
-                            Start Line Following
-                        </button>
-                    }
-                </form>
+                    </form>
+                }
 
                 <!-- Force Stop Button -->
                 <form asp-action="ForceStopAndCancelRequests" method="post" class="w-full" onsubmit="return confirm('⚠️ FORCE STOP will:\n• Stop the robot immediately\n• Cancel ALL active requests\n• Clear all navigation targets\n• Reset robot state completely\n\nAre you sure?');">
@@ -521,29 +500,6 @@ var activeRequest = ViewData["ActiveRequest"] as AdministratorWeb.Models.Laundry
                         Disconnect Robot
                     </button>
                 </form>
-
-                <div class="pt-4 border-t border-slate-700/50">
-                    <label class="block text-sm font-medium text-slate-300 mb-3 flex items-center">
-                        <i data-lucide="palette" class="w-4 h-4 mr-2"></i>
-                        Line Following Color
-                    </label>
-                    <div class="flex space-x-2 mb-3">
-                        <input type="color" id="followColorPicker" value="@Model.FollowColorHex"
-                               class="w-full h-10 rounded-xl border-2 border-slate-600/50 bg-slate-700/50 cursor-pointer"/>
-                        <button onclick="updateFollowColor()"
-                                class="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl">
-                            Apply Color
-                        </button>
-                    </div>
-                    <div class="flex space-x-1">
-                        <input type="number" id="colorR" min="0" max="255" value="@Model.FollowColorR" placeholder="R"
-                               class="flex-1 bg-slate-700/50 border border-slate-600/50 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500/50"/>
-                        <input type="number" id="colorG" min="0" max="255" value="@Model.FollowColorG" placeholder="G"
-                               class="flex-1 bg-slate-700/50 border border-slate-600/50 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500/50"/>
-                        <input type="number" id="colorB" min="0" max="255" value="@Model.FollowColorB" placeholder="B"
-                               class="flex-1 bg-slate-700/50 border border-slate-600/50 text-white text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500/50"/>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -841,78 +797,5 @@ _ => "bg-slate-700/50 text-slate-300 border border-slate-600/50"
         document.body.appendChild(form);
         form.submit();
     }
-
-    async function updateFollowColor() {
-        const picker = document.getElementById('followColorPicker');
-        const rInput = document.getElementById('colorR');
-        const gInput = document.getElementById('colorG');
-        const bInput = document.getElementById('colorB');
-
-        let r, g, b;
-
-        if (rInput.value && gInput.value && bInput.value) {
-            // Use manual RGB input
-            r = parseInt(rInput.value);
-            g = parseInt(gInput.value);
-            b = parseInt(bInput.value);
-        } else {
-            // Use color picker
-            const hex = picker.value;
-            r = parseInt(hex.substr(1, 2), 16);
-            g = parseInt(hex.substr(3, 2), 16);
-            b = parseInt(hex.substr(5, 2), 16);
-        }
-
-        // Update both inputs
-        rInput.value = r;
-        gInput.value = g;
-        bInput.value = b;
-        picker.value = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-
-        // Send POST request to backend
-        try {
-            const formData = new FormData();
-            formData.append('robotName', '@Model.Name');
-            formData.append('r', r.toString());
-            formData.append('g', g.toString());
-            formData.append('b', b.toString());
-
-            const response = await fetch('@Url.Action("UpdateRobotColor", "Robots")', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                alert(result.message);
-            } else {
-                alert(`Error: ${result.message}`);
-            }
-        } catch (error) {
-            console.error('Error updating robot color:', error);
-            alert('Failed to update robot color. Please try again.');
-        }
-    }
-
-    // Sync color picker and RGB inputs
-    document.getElementById('followColorPicker').addEventListener('change', function() {
-        const hex = this.value;
-        document.getElementById('colorR').value = parseInt(hex.substr(1, 2), 16);
-        document.getElementById('colorG').value = parseInt(hex.substr(3, 2), 16);
-        document.getElementById('colorB').value = parseInt(hex.substr(5, 2), 16);
-    });
-
-    // Sync RGB inputs to color picker
-    ['colorR', 'colorG', 'colorB'].forEach(id => {
-        document.getElementById(id).addEventListener('input', function() {
-            const r = parseInt(document.getElementById('colorR').value) || 0;
-            const g = parseInt(document.getElementById('colorG').value) || 0;
-            const b = parseInt(document.getElementById('colorB').value) || 0;
-
-            const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-            document.getElementById('followColorPicker').value = hex;
-        });
-    });
 </script>
 }
