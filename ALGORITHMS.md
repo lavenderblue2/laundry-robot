@@ -55,18 +55,18 @@ flowchart TD
     Complete --> Payment[Customer Pays]
     Payment --> End([Request Finished])
 
-    style Start fill:#90EE90
-    style End fill:#87CEEB
-    style Reject fill:#FFB6C1
-    style NoRobot fill:#FFB6C1
-    style Declined fill:#FFB6C1
-    style Timeout1 fill:#FFB6C1
-    style Timeout2 fill:#FFB6C1
-    style Accept fill:#FFD700
-    style Loaded fill:#FFD700
-    style Washing fill:#DDA0DD
-    style Delivery fill:#FFD700
-    style Complete fill:#87CEEB
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style Reject fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style NoRobot fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Declined fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Timeout1 fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Timeout2 fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Accept fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style Loaded fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style Washing fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style Delivery fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style Complete fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
 ```
 
 ---
@@ -170,12 +170,12 @@ flowchart TD
 
     AssignAccepted --> End([Robot Dispatched])
 
-    style Start fill:#90EE90
-    style End fill:#87CEEB
-    style NoRobots fill:#FFB6C1
-    style AssignAccepted fill:#FFD700
-    style WaitInQueue fill:#FFA500
-    style AutoProcess fill:#DDA0DD
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style NoRobots fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style AssignAccepted fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style WaitInQueue fill:#F5B895,stroke:#D49470,stroke-width:2px,color:#6B4830
+    style AutoProcess fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
 ```
 
 ---
@@ -216,15 +216,15 @@ flowchart TD
     CancelComplete --> End
     Ignore --> End
 
-    style Start fill:#90EE90
-    style End fill:#87CEEB
-    style AtBase fill:#FFD700
-    style ArrivedUser fill:#FFD700
-    style ArrivedDelivery fill:#FFD700
-    style ArrivedAfterDelivery fill:#87CEEB
-    style CancelComplete fill:#DDA0DD
-    style StillTraveling fill:#FFA500
-    style NotCloseEnough fill:#FFA500
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style AtBase fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style ArrivedUser fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style ArrivedDelivery fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style ArrivedAfterDelivery fill:#6B9AC4,stroke:#3D5A80,stroke-width:2px,color:#1E3A5F
+    style CancelComplete fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style StillTraveling fill:#F5B895,stroke:#D49470,stroke-width:2px,color:#6B4830
+    style NotCloseEnough fill:#F5B895,stroke:#D49470,stroke-width:2px,color:#6B4830
 ```
 
 ---
@@ -275,27 +275,28 @@ flowchart TD
     RobotNavigates --> End([Navigation Config Sent])
     RobotIdle --> End
 
-    style Start fill:#90EE90
-    style End fill:#87CEEB
-    style CustomerRoom fill:#FFD700
-    style CustomerRoom2 fill:#FFD700
-    style BaseRoom1 fill:#DDA0DD
-    style BaseRoom2 fill:#DDA0DD
-    style BaseRoom3 fill:#FFA500
-    style SetTargets fill:#98FB98
-    style RobotNavigates fill:#87CEEB
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style CustomerRoom fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style CustomerRoom2 fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style BaseRoom1 fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style BaseRoom2 fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style BaseRoom3 fill:#F5B895,stroke:#D49470,stroke-width:2px,color:#6B4830
+    style SetTargets fill:#A4C5A8,stroke:#7A9E7F,stroke-width:2px,color:#3A5A3F
+    style RobotNavigates fill:#6B9AC4,stroke:#3D5A80,stroke-width:2px,color:#1E3A5F
 ```
 
 ---
 
 ## Color Legend
 
-- 🟢 **Green** - Start/Entry points
-- 🔵 **Blue** - Completion/Success states
-- 🟡 **Yellow** - Active/In-progress states
-- 🟣 **Purple** - Processing/Washing states
-- 🟠 **Orange** - Waiting/Queued states
-- 🔴 **Pink** - Errors/Rejections/Cancellations
+- 🟢 **Soft Green** - Start/Entry points
+- 🔵 **Muted Blue** - Completion/Success states
+- 🔴 **Soft Coral** - Errors/Rejections/Cancellations
+- 🟡 **Soft Amber** - Active/In-progress states
+- 🟣 **Soft Lavender** - Processing/Washing states
+- 🟠 **Soft Peach** - Waiting/Queued states
+- 🌿 **Muted Mint** - Information/Configuration states
 
 ---
 
