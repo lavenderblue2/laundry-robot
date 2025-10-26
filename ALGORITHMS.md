@@ -735,6 +735,429 @@ flowchart TD
 
 ---
 
+## 14. Message & Notification System
+
+Two-way communication between customers and administrators with real-time updates.
+
+```mermaid
+flowchart TD
+    Start([Customer/Admin Opens Messages]) --> CheckRole{User<br/>Role?}
+
+    CheckRole -->|Customer| CustomerView[Mobile App: Message List]
+    CheckRole -->|Admin| AdminView[Web: Conversations Dashboard]
+
+    AdminView --> ShowConversations[Display All Conversations<br/>with Unread Counts]
+    ShowConversations --> SelectConvo{Admin Selects<br/>Customer?}
+
+    SelectConvo -->|Yes| LoadThread[Load Conversation Thread<br/>Mark Admin Messages as Read]
+    SelectConvo -->|No| PollUnread[AJAX Polling:<br/>Check for New Messages]
+
+    CustomerView --> LoadMessages[Fetch Message History<br/>Paginated by lastMessageId]
+    LoadMessages --> DisplayMessages[Display Messages<br/>Admin and Customer]
+
+    DisplayMessages --> MarkRead[Mark Admin Messages<br/>as Read Automatically]
+
+    LoadThread --> AdminCompose{Admin Sends<br/>Message?}
+    MarkRead --> CustomerCompose{Customer Sends<br/>Message?}
+
+    AdminCompose -->|Yes| ValidateAdmin[Validate Content<br/>Check Image if Attached]
+    CustomerCompose -->|Yes| ValidateCustomer[Validate Content<br/>Check Image if Attached]
+
+    ValidateAdmin --> CheckImage{Image<br/>Attached?}
+    ValidateCustomer --> CheckImage
+
+    CheckImage -->|Yes| ValidateImage{Valid Image?<br/>JPEG/PNG/GIF<br/>Max 5MB}
+    ValidateImage -->|No| RejectImage[Reject: Invalid Image]
+    ValidateImage -->|Yes| SaveImage[Save to File System<br/>UUID-based Filename]
+
+    CheckImage -->|No| SaveMessage[Save Message to Database<br/>Link to Request if Provided]
+    SaveImage --> SaveMessage
+
+    SaveMessage --> NotifyRecipient[Trigger Notification<br/>to Recipient]
+
+    NotifyRecipient --> UpdateUI[Real-time UI Update<br/>Show New Message]
+
+    UpdateUI --> PollNew{Continue<br/>Polling?}
+    PollUnread --> PollNew
+
+    PollNew -->|Yes| WaitPoll[Wait 2-3 Seconds]
+    WaitPoll --> CheckNewMessages[GET /api/messages/new<br/>Since Last ID]
+
+    CheckNewMessages --> HasNew{New Messages<br/>Found?}
+    HasNew -->|Yes| UpdateUI
+    HasNew -->|No| PollNew
+
+    PollNew -->|No| End([Exit Messages])
+    RejectImage --> End
+
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style RejectImage fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style SaveMessage fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style NotifyRecipient fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style PollUnread fill:#F5B895,stroke:#D49470,stroke-width:2px,color:#6B4830
+```
+
+---
+
+## 15. User Authentication & Management
+
+Customer registration, login, and profile management with JWT token authentication.
+
+```mermaid
+flowchart TD
+    Start([User Opens App/Web]) --> CheckAuth{Already<br/>Authenticated?}
+
+    CheckAuth -->|Yes| ValidateToken{Token<br/>Valid?}
+    ValidateToken -->|Yes| Dashboard([Enter Dashboard])
+    ValidateToken -->|No| LoginScreen[Show Login Screen]
+
+    CheckAuth -->|No| LoginScreen
+
+    LoginScreen --> UserChoice{User<br/>Action?}
+
+    UserChoice -->|Login| EnterCreds[Enter Email/Username<br/>and Password]
+    UserChoice -->|Register| EnterRegInfo[Enter Registration Info:<br/>FirstName, LastName<br/>Email, Password]
+
+    EnterCreds --> SubmitLogin[POST /api/auth/login]
+
+    SubmitLogin --> ValidateCreds{Credentials<br/>Valid?}
+    ValidateCreds -->|No| LoginFail[Show Error Message]
+    LoginFail --> LoginScreen
+
+    ValidateCreds -->|Yes| CheckEmailConfirmed{Email<br/>Confirmed?}
+    CheckEmailConfirmed -->|No| RequireConfirm[Request Email Confirmation]
+    CheckEmailConfirmed -->|Yes| GenerateToken[Generate JWT Token<br/>24-hour Expiration]
+
+    GenerateToken --> ReturnToken[Return Token with:<br/>CustomerId, CustomerName<br/>Token, Expiration]
+
+    ReturnToken --> StoreToken[Store Token Locally<br/>Mobile: SecureStorage<br/>Web: Cookie/LocalStorage]
+
+    EnterRegInfo --> ValidateReg{Registration<br/>Valid?}
+    ValidateReg -->|No| RegFail[Show Validation Errors:<br/>- Email already exists<br/>- Password mismatch<br/>- Missing fields]
+    RegFail --> EnterRegInfo
+
+    ValidateReg -->|Yes| CreateUser[Create User Account<br/>Hash Password<br/>Assign "Member" Role]
+
+    CreateUser --> RegSuccess[Registration Successful<br/>Auto-login User]
+    RegSuccess --> GenerateToken
+
+    StoreToken --> CheckRole{User<br/>Role?}
+
+    CheckRole -->|Administrator| AdminDashboard[Redirect to Admin Dashboard<br/>Full System Access]
+    CheckRole -->|Member| CustomerDashboard[Redirect to Customer Dashboard<br/>Request Management]
+
+    AdminDashboard --> AdminFeatures{Admin<br/>Action?}
+    CustomerDashboard --> CustomerFeatures{Customer<br/>Action?}
+
+    AdminFeatures -->|Manage Users| UserCRUD[Create/Edit/Delete Users<br/>Assign Roles<br/>Assign Beacons]
+    AdminFeatures -->|Manage Requests| ReqMgmt[Accept/Decline Requests<br/>Monitor Status]
+    AdminFeatures -->|View Accounting| ViewAcct[Revenue Reports<br/>Payment Processing]
+
+    CustomerFeatures -->|View Profile| GetProfile[GET /api/user/profile]
+    CustomerFeatures -->|Edit Profile| UpdateProfile[PUT /api/user/profile<br/>Update Name, Email, Phone]
+    CustomerFeatures -->|Create Request| CreateReq[POST /api/requests]
+
+    RequireConfirm --> LoginScreen
+    UserCRUD --> Dashboard
+    ReqMgmt --> Dashboard
+    ViewAcct --> Dashboard
+    GetProfile --> Dashboard
+    UpdateProfile --> Dashboard
+    CreateReq --> Dashboard
+
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style Dashboard fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style LoginFail fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style RegFail fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style GenerateToken fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style StoreToken fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style AdminDashboard fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style CustomerDashboard fill:#A4C5A8,stroke:#7A9E7F,stroke-width:2px,color:#3A5A3F
+```
+
+---
+
+## 16. Payment & Accounting Workflow
+
+Complete financial management from payment processing to revenue reporting.
+
+```mermaid
+flowchart TD
+    Start([Request Completed]) --> CheckPayment{Payment<br/>Exists?}
+
+    CheckPayment -->|No| CreatePayment[Create Payment Record<br/>Amount = Weight × RatePerKg<br/>Status = Pending]
+    CheckPayment -->|Yes| GetPayment[Get Existing Payment]
+
+    CreatePayment --> PaymentDashboard[Admin: Accounting Dashboard]
+    GetPayment --> PaymentDashboard
+
+    PaymentDashboard --> ShowMetrics[Display Metrics:<br/>- Total Revenue<br/>- Outstanding Amounts<br/>- Payment Breakdown]
+
+    ShowMetrics --> AdminAction{Admin<br/>Action?}
+
+    AdminAction -->|Mark as Paid| SelectMethod[Select Payment Method:<br/>Cash, Card, PayPal, etc.]
+    SelectMethod --> RecordPayment[Update Payment:<br/>Status = Completed<br/>CompletedAt = Now<br/>Method = Selected]
+
+    AdminAction -->|Issue Refund| EnterRefund[Enter Refund Amount<br/>and Reason]
+    EnterRefund --> ValidateRefund{Amount <=<br/>Paid Amount?}
+    ValidateRefund -->|No| RefundError[Show Error:<br/>Exceeds Payment]
+    ValidateRefund -->|Yes| ProcessRefund[Update Payment:<br/>Status = Refunded<br/>RefundAmount<br/>RefundReason<br/>RefundedAt = Now]
+
+    AdminAction -->|Mark as Failed| EnterFailReason[Enter Failure Reason]
+    EnterFailReason --> MarkFailed[Update Payment:<br/>Status = Failed<br/>FailureReason]
+
+    AdminAction -->|Cancel Payment| EnterCancelReason[Enter Cancellation Reason]
+    EnterCancelReason --> MarkCancelled[Update Payment:<br/>Status = Cancelled<br/>CancellationReason<br/>CancelledAt = Now]
+
+    AdminAction -->|Create Adjustment| SelectAdjType{Adjustment<br/>Type?}
+    SelectAdjType -->|Add Revenue| AddRevenue[Create PaymentAdjustment:<br/>Type = AddRevenue<br/>Amount = +Amount]
+    SelectAdjType -->|Subtract Revenue| SubRevenue[Create PaymentAdjustment:<br/>Type = SubtractRevenue<br/>Amount = -Amount]
+    SelectAdjType -->|Supply Expense| AddExpense[Create PaymentAdjustment:<br/>Type = SupplyExpense<br/>Amount = -Amount]
+    SelectAdjType -->|Complete Payment| CompleteAdjustment[Create PaymentAdjustment:<br/>Type = CompletePayment<br/>Link to RequestId]
+
+    RecordPayment --> UpdateRevenue[Calculate Total Revenue:<br/>Completed - Refunded]
+    ProcessRefund --> UpdateRevenue
+    MarkFailed --> UpdateRevenue
+    MarkCancelled --> UpdateRevenue
+    AddRevenue --> UpdateRevenue
+    SubRevenue --> UpdateRevenue
+    AddExpense --> UpdateRevenue
+    CompleteAdjustment --> UpdateRevenue
+
+    UpdateRevenue --> CalcProfit[Calculate Net Profit:<br/>Total Revenue - Expenses]
+
+    CalcProfit --> AdminReport{Generate<br/>Report?}
+
+    AdminReport -->|Yes| SelectPeriod{Report<br/>Period?}
+    SelectPeriod -->|Today| ReportToday[Filter: Created Today]
+    SelectPeriod -->|This Week| ReportWeek[Filter: Last 7 Days]
+    SelectPeriod -->|This Month| ReportMonth[Filter: Current Month]
+    SelectPeriod -->|This Year| ReportYear[Filter: Current Year]
+    SelectPeriod -->|Custom| ReportCustom[Filter: Date Range]
+
+    ReportToday --> GenerateReport[Generate Sales Report:<br/>- Revenue by Method<br/>- Top Customers<br/>- Transaction Counts<br/>- Daily/Hourly Trends]
+    ReportWeek --> GenerateReport
+    ReportMonth --> GenerateReport
+    ReportYear --> GenerateReport
+    ReportCustom --> GenerateReport
+
+    GenerateReport --> ExportChoice{Export<br/>Format?}
+    ExportChoice -->|View| DisplayReport[Display Report in Browser]
+    ExportChoice -->|Print| PrintReport[Print-Friendly View]
+    ExportChoice -->|CSV| ExportCSV[Download CSV File]
+    ExportChoice -->|PDF| ExportPDF[Generate PDF Report]
+
+    DisplayReport --> End([Accounting Dashboard])
+    PrintReport --> End
+    ExportCSV --> End
+    ExportPDF --> End
+    RefundError --> AdminAction
+    AdminReport -->|No| End
+
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style RefundError fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style RecordPayment fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style ProcessRefund fill:#F5B895,stroke:#D49470,stroke-width:2px,color:#6B4830
+    style GenerateReport fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style UpdateRevenue fill:#A4C5A8,stroke:#7A9E7F,stroke-width:2px,color:#3A5A3F
+```
+
+---
+
+## 17. API Architecture & Data Exchange
+
+Bidirectional communication between mobile app, robot, and web server.
+
+```mermaid
+flowchart TD
+    Start([Client Initiates Request]) --> IdentifyClient{Client<br/>Type?}
+
+    IdentifyClient -->|Mobile App| MobileAuth[Authorization Header:<br/>Bearer JWT Token]
+    IdentifyClient -->|Robot| RobotAuth[URL Parameter:<br/>Robot Name]
+    IdentifyClient -->|Web Browser| WebAuth[Cookie-based Session:<br/>ASP.NET Identity]
+
+    MobileAuth --> ValidateJWT{Token<br/>Valid?}
+    ValidateJWT -->|No| Unauthorized([401 Unauthorized])
+    ValidateJWT -->|Yes| ExtractClaims[Extract Claims:<br/>CustomerId<br/>CustomerName]
+
+    RobotAuth --> CheckRobotReg{Robot<br/>Registered?}
+    CheckRobotReg -->|No| RegisterRobot[POST /api/robot/register<br/>Capture IP Address]
+    CheckRobotReg -->|Yes| ValidateRobot[Load Robot State<br/>from Memory]
+    RegisterRobot --> ValidateRobot
+
+    WebAuth --> ValidateSession{Session<br/>Valid?}
+    ValidateSession -->|No| RedirectLogin[Redirect to Login Page]
+    ValidateSession -->|Yes| CheckRole[Check User Role<br/>Administrator/Member]
+
+    ExtractClaims --> RouteAPI{API<br/>Endpoint?}
+    ValidateRobot --> RouteAPI
+    CheckRole --> RouteWeb{Web<br/>Endpoint?}
+
+    RouteAPI -->|/api/requests| RequestAPI[Request Management API:<br/>- Create Request<br/>- Get Status<br/>- Confirm Actions]
+    RouteAPI -->|/api/messages| MessageAPI[Messaging API:<br/>- Send/Receive<br/>- Mark Read<br/>- Get Unread Count]
+    RouteAPI -->|/api/payment| PaymentAPI[Payment API:<br/>- Process Payment<br/>- Get History<br/>- Check Status]
+    RouteAPI -->|/api/robot/data-exchange| DataExchange[Robot Data Exchange:<br/>Robot → Server: Beacons, Weight, Status<br/>Server → Robot: Targets, Commands]
+    RouteAPI -->|/api/user| UserAPI[User API:<br/>- Get Profile<br/>- Update Profile<br/>- Get Admins]
+
+    RouteWeb -->|/dashboard| DashboardMVC[Dashboard Controller:<br/>Overview, Settings]
+    RouteWeb -->|/requests| RequestMVC[Request Controller:<br/>Accept, Decline, Manage]
+    RouteWeb -->|/accounting| AccountingMVC[Accounting Controller:<br/>Payments, Reports, Adjustments]
+    RouteWeb -->|/robots| RobotMVC[Robot Controller:<br/>Status, Control, Camera]
+    RouteWeb -->|/messages| MessageMVC[Message Controller:<br/>Conversations, Responses]
+    RouteWeb -->|/users| UserMVC[User Controller:<br/>CRUD, Roles, Beacons]
+    RouteWeb -->|/beacons| BeaconMVC[Beacon Controller:<br/>CRUD, Configuration]
+
+    RequestAPI --> ProcessRequest[Process Business Logic:<br/>Validate Input<br/>Check Permissions<br/>Execute Operation]
+    MessageAPI --> ProcessRequest
+    PaymentAPI --> ProcessRequest
+    DataExchange --> ProcessRequest
+    UserAPI --> ProcessRequest
+
+    DashboardMVC --> ProcessRequest
+    RequestMVC --> ProcessRequest
+    AccountingMVC --> ProcessRequest
+    RobotMVC --> ProcessRequest
+    MessageMVC --> ProcessRequest
+    UserMVC --> ProcessRequest
+    BeaconMVC --> ProcessRequest
+
+    ProcessRequest --> DatabaseOp{Database<br/>Operation?}
+
+    DatabaseOp -->|Read| QueryDB[EF Core Query:<br/>- Get Entities<br/>- Apply Filters<br/>- Include Relations]
+    DatabaseOp -->|Write| WriteDB[EF Core Write:<br/>- Add/Update/Delete<br/>- SaveChanges<br/>- Transaction]
+
+    QueryDB --> MapToDTO[Map Entity to DTO:<br/>Exclude Sensitive Data<br/>Format for Client]
+    WriteDB --> MapToDTO
+
+    MapToDTO --> FormatResponse{Response<br/>Format?}
+
+    FormatResponse -->|JSON API| ReturnJSON[Return JSON:<br/>Status Code<br/>Data Object<br/>Error Messages]
+    FormatResponse -->|HTML View| ReturnView[Return Razor View:<br/>Render HTML<br/>Include Data Model]
+
+    ReturnJSON --> ClientReceive[Client Receives Response]
+    ReturnView --> ClientReceive
+
+    ClientReceive --> ClientProcess{Success?}
+
+    ClientProcess -->|Yes| UpdateUI[Update Client UI:<br/>Display Data<br/>Show Confirmation]
+    ClientProcess -->|No| ShowError[Show Error Message:<br/>Validation Errors<br/>System Errors]
+
+    UpdateUI --> End([Request Complete])
+    ShowError --> End
+    Unauthorized --> End
+    RedirectLogin --> End
+
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style Unauthorized fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style ShowError fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style DataExchange fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style ProcessRequest fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style MapToDTO fill:#A4C5A8,stroke:#7A9E7F,stroke-width:2px,color:#3A5A3F
+```
+
+---
+
+## 18. Admin Request Management
+
+Administrator workflow for accepting, declining, and managing laundry requests.
+
+```mermaid
+flowchart TD
+    Start([Admin Opens Request Dashboard]) --> LoadRequests[Load All Requests<br/>with Filters:<br/>Status, Date, Customer]
+
+    LoadRequests --> DisplayRequests[Display Request List:<br/>- Pending Requests (Top)<br/>- Active Requests<br/>- Completed Requests<br/>- Available Robots Count]
+
+    DisplayRequests --> AdminSelect{Admin<br/>Selects Request?}
+
+    AdminSelect -->|No| AutoRefresh[Auto-refresh Every 5s]
+    AutoRefresh --> LoadRequests
+
+    AdminSelect -->|Yes| CheckReqStatus{Request<br/>Status?}
+
+    CheckReqStatus -->|Pending| ShowActions[Show Actions:<br/>- Accept<br/>- Decline]
+    CheckReqStatus -->|Accepted/InProgress| ShowMonitor[Show Monitoring:<br/>- Robot Status<br/>- Location<br/>- Cancel Option]
+    CheckReqStatus -->|ArrivedAtRoom| ShowWaiting[Waiting for Customer<br/>to Load Laundry<br/>- Cancel Option]
+    CheckReqStatus -->|Washing| ShowWashing[Laundry Washing<br/>- Mark Done<br/>- Start Delivery]
+    CheckReqStatus -->|Completed| ShowPayment[Payment Processing<br/>- Mark as Paid<br/>- Issue Refund]
+
+    ShowActions --> AdminChoice{Admin<br/>Action?}
+
+    AdminChoice -->|Accept| CheckRobots[Get Available Robots]
+    AdminChoice -->|Decline| EnterReason[Enter Decline Reason]
+
+    CheckRobots --> AnyRobots{Available<br/>Robots?}
+    AnyRobots -->|No| CheckBusy[Get All Active Robots]
+    CheckBusy --> SelectLRU[Select Least Recently Used Robot<br/>Reassign from Current Task]
+
+    AnyRobots -->|Yes| SelectAvailable[Select First Available Robot]
+
+    SelectAvailable --> AssignRobot[Assign Robot to Request:<br/>- Set AssignedRobotName<br/>- Update Robot Status = Busy<br/>- Set Robot Task]
+    SelectLRU --> AssignRobot
+
+    AssignRobot --> UpdateStatus[Update Request Status:<br/>Status = Accepted<br/>AcceptedAt = Now<br/>AcceptedBy = Admin]
+
+    UpdateStatus --> ConfigureNav[Configure Navigation:<br/>- Get Customer Beacon<br/>- Set as NavigationTarget<br/>- Start Line Following]
+
+    ConfigureNav --> NotifyCustomer[Send Notification:<br/>"Robot on the way!"]
+
+    EnterReason --> DeclineRequest[Update Request:<br/>Status = Declined<br/>DeclineReason<br/>DeclinedAt = Now]
+
+    DeclineRequest --> NotifyDecline[Send Notification:<br/>"Request Declined"]
+
+    ShowMonitor --> MonitorAction{Admin<br/>Action?}
+    MonitorAction -->|Cancel| ConfirmCancel{Confirm<br/>Cancellation?}
+    ConfirmCancel -->|No| ShowMonitor
+    ConfirmCancel -->|Yes| CancelRequest[Update Request:<br/>Status = Cancelled<br/>Free Robot<br/>Return to Base]
+
+    ShowWashing --> WashAction{Admin<br/>Action?}
+    WashAction -->|Mark Done| MarkFinished[Update Status:<br/>FinishedWashing]
+    WashAction -->|Start Delivery| StartDelivery[Update Status:<br/>FinishedWashingGoingToRoom<br/>Robot Delivers to Customer]
+
+    MarkFinished --> NotifyReady[Notify Customer:<br/>"Laundry Ready for Pickup"]
+    StartDelivery --> NotifyDelivering[Notify Customer:<br/>"Robot Delivering Clean Laundry"]
+
+    ShowWaiting --> WaitTimeout{Timeout<br/>Reached?}
+    WaitTimeout -->|Yes| AutoCancel[Auto-cancel Request<br/>Robot Returns to Base]
+    WaitTimeout -->|No| ContinueWait[Continue Monitoring]
+
+    ShowPayment --> PaymentAction{Payment<br/>Action?}
+    PaymentAction -->|Mark Paid| RecordPayment[Record Payment:<br/>Status = Completed<br/>Method = Cash/Card<br/>CompletedAt = Now]
+    PaymentAction -->|Refund| IssueRefund[Process Refund:<br/>Status = Refunded<br/>RefundAmount<br/>RefundReason]
+
+    NotifyCustomer --> UpdateDashboard[Refresh Dashboard:<br/>Update Request List]
+    NotifyDecline --> UpdateDashboard
+    CancelRequest --> UpdateDashboard
+    NotifyReady --> UpdateDashboard
+    NotifyDelivering --> UpdateDashboard
+    AutoCancel --> UpdateDashboard
+    RecordPayment --> UpdateDashboard
+    IssueRefund --> UpdateDashboard
+    ContinueWait --> UpdateDashboard
+
+    UpdateDashboard --> CheckQueue[Check Pending Queue]
+
+    CheckQueue --> HasPending{Pending<br/>Requests?}
+    HasPending -->|Yes| AutoProcess[Auto-process Next Pending<br/>If Auto-Accept Enabled]
+    HasPending -->|No| End([Dashboard Ready])
+
+    AutoProcess --> End
+
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style DeclineRequest fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style CancelRequest fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style AutoCancel fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style AssignRobot fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style NotifyCustomer fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style ShowWashing fill:#F5B895,stroke:#D49470,stroke-width:2px,color:#6B4830
+    style UpdateDashboard fill:#A4C5A8,stroke:#7A9E7F,stroke-width:2px,color:#3A5A3F
+```
+
+---
+
 ## Color Legend
 
 - 🟢 **Soft Green** - Start/Entry points
