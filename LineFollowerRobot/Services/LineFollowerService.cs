@@ -291,16 +291,6 @@ public class LineFollowerService : BackgroundService
             else if (error < 0)
                 _lastDirection = "right";
 
-            // Check for floor color detection (room arrival)
-            if (StopAtColor != null && !_floorColorDetected)
-            {
-                if (_cameraService.DetectFloorColor(StopAtColor))
-                {
-                    _floorColorDetected = true;
-                    _logger.LogWarning("FLOOR COLOR DETECTED - Arrived at room!");
-                }
-            }
-
             // Execute movement based on error magnitude - matching Python exactly
             await ExecuteMovement(error);
         }

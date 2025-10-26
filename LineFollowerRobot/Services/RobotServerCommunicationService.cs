@@ -212,18 +212,10 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
     }
 
     /// <summary>
-    /// Check if robot is near any navigation target beacon OR if floor color was detected
+    /// Check if robot is near any navigation target beacon
     /// </summary>
     private bool CheckIfAtNavigationTarget(List<BeaconInfo> detectedBeacons)
     {
-        // Check floor color detection first
-        var lineFollowerService = _serviceProvider.GetService<LineFollowerService>();
-        if (lineFollowerService != null && lineFollowerService.FloorColorDetected)
-        {
-            _logger.LogInformation("Robot reached target via floor color detection");
-            return true;
-        }
-
         // Check beacon proximity
         if (ActiveBeacons == null || !ActiveBeacons.Any())
             return false;
@@ -369,17 +361,17 @@ public class RobotServerCommunicationService : BackgroundService, IDisposable
                     _logger.LogInformation("Reset line color to default (black)");
                 }
 
-                // Update stop-at floor color from server
-                lineFollowerService.StopAtColor = serverResponse.StopAtColor;
-                if (serverResponse.StopAtColor != null && serverResponse.StopAtColor.Length >= 3)
-                {
-                    _logger.LogInformation("Updated stop-at floor color to RGB({R},{G},{B})",
-                        serverResponse.StopAtColor[0], serverResponse.StopAtColor[1], serverResponse.StopAtColor[2]);
-                }
-                else
-                {
-                    _logger.LogInformation("No floor color set (beacon-only navigation)");
-                }
+                // Floor color detection disabled - using beacon-only navigation
+                // lineFollowerService.StopAtColor = serverResponse.StopAtColor;
+                // if (serverResponse.StopAtColor != null && serverResponse.StopAtColor.Length >= 3)
+                // {
+                //     _logger.LogInformation("Updated stop-at floor color to RGB({R},{G},{B})",
+                //         serverResponse.StopAtColor[0], serverResponse.StopAtColor[1], serverResponse.StopAtColor[2]);
+                // }
+                // else
+                // {
+                //     _logger.LogInformation("No floor color set (beacon-only navigation)");
+                // }
             }
 
             // Update data exchange interval if changed
