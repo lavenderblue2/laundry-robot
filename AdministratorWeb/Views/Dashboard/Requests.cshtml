@@ -3,15 +3,21 @@
     ViewData["Title"] = "Manage Requests";
 }
 
-<div class="mb-8 flex justify-between items-center">
-    <div>
-        <h1 class="text-2xl font-bold text-white">Manage Requests</h1>
-        <p class="text-gray-400">Review and manage customer laundry requests</p>
-    </div>
-    <div>
-        <button onclick="openManualRequestModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            ➕ Create Manual Request
-        </button>
+<div class="mb-8 animate-slide-up">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Manage Requests</h1>
+            <p class="text-slate-400 flex items-center">
+                <i data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i>
+                Review and manage customer laundry requests
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="openManualRequestModal()" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
+                <i data-lucide="plus" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                <span>Create Manual Request</span>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -268,5 +274,8 @@
         if (requestTypeSelect) {
             requestTypeSelect.addEventListener('change', updateWeightField);
         }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
     });
 </script>
