@@ -282,6 +282,17 @@ namespace AdministratorWeb.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Check if any robots are active/online
+            var robots = await _robotService.GetAllRobotsAsync();
+            var activeRobots = robots.Where(r => r.IsActive && !r.IsOffline).ToList();
+
+            if (!activeRobots.Any())
+            {
+                TempData["Error"] = "No bots active - cannot start delivery. Please wait for a robot to come online.";
+                _logger.LogWarning("Attempted to start delivery for request {RequestId} but no active robots available", requestId);
+                return RedirectToAction(nameof(Index));
+            }
+
             try
             {
                 // Change status to GoingToRoom so robot starts moving

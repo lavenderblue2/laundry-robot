@@ -9,12 +9,6 @@
     @if (SignInManager.IsSignedIn(User))
     {
         <div class="flex items-center space-x-6">
-            <!-- Notification bell -->
-            <button class="relative p-2 text-slate-400 hover:text-white transition-colors duration-200 rounded-lg hover:bg-slate-700/50">
-                <i data-lucide="bell" class="w-5 h-5"></i>
-                <span class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-slate-800"></span>
-            </button>
-            
             <!-- User menu -->
             <div class="relative">
                 <button id="userMenuButton" class="flex items-center space-x-3 p-2 text-sm text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded-xl transition-all duration-200 hover:bg-slate-700/50">

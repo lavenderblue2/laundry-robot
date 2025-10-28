@@ -268,6 +268,10 @@ PUT    /api/requests/{id}/confirm-loaded  - Confirm laundry loaded
   - `POST /Requests/CreateManualRequest` - Create walk-in or robot delivery requests
   - Validates robot availability, customer beacon assignment
   - Supports manual weight entry for walk-in customers
+- **Delivery Start Validation** - Safety checks before dispatching robots
+  - `POST /Requests/StartDelivery` - Validates robot availability before starting delivery
+  - Prevents dispatch when no robots are online
+  - Error: "No bots active - cannot start delivery"
 - Robot monitoring and control
 - Beacon configuration
 - User management

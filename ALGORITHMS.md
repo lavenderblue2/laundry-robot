@@ -1171,10 +1171,14 @@ flowchart TD
 
     ShowWashing --> WashAction{Admin<br/>Action?}
     WashAction -->|Mark Done| MarkFinished[Update Status:<br/>FinishedWashing]
-    WashAction -->|Start Delivery| StartDelivery[Update Status:<br/>FinishedWashingGoingToRoom<br/>Robot Delivers to Customer]
+    WashAction -->|Start Delivery| CheckRobotsOnline{Any Robots<br/>Online?}
+
+    CheckRobotsOnline -->|No| ErrorNoBots([Error: No Bots Active<br/>Cannot Start Delivery])
+    CheckRobotsOnline -->|Yes| StartDelivery[Update Status:<br/>FinishedWashingGoingToRoom<br/>Robot Delivers to Customer]
 
     MarkFinished --> NotifyReady[Notify Customer:<br/>Laundry Ready for Pickup]
     StartDelivery --> NotifyDelivering[Notify Customer:<br/>Robot Delivering Clean Laundry]
+    ErrorNoBots --> UpdateDashboard
 
     ShowWaiting --> WaitTimeout{Timeout<br/>Reached?}
     WaitTimeout -->|Yes| AutoCancel[Auto-cancel Request<br/>Robot Returns to Base]
@@ -1207,6 +1211,7 @@ flowchart TD
     style DeclineRequest fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
     style CancelRequest fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
     style AutoCancel fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style ErrorNoBots fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
     style AssignRobot fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
     style NotifyCustomer fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
     style ShowWashing fill:#F5B895,stroke:#D49470,stroke-width:2px,color:#6B4830
