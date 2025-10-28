@@ -35,6 +35,10 @@ The system consists of:
 
 ### Request Management
 - Dual request types (Pickup and Delivery)
+- **Manual Request Creation** - Admin-initiated requests for walk-in customers or assisted service
+  - **Walk-In Mode**: Customer at shop with laundry, manual weight entry, skips robot pickup
+  - **Robot Delivery Mode**: Normal robot pickup with auto-assignment
+  - Visible admin badges in mobile app showing manual override
 - 13+ distinct status states tracking complete lifecycle
 - Automatic robot assignment
 - Real-time status updates
@@ -260,6 +264,10 @@ PUT    /api/requests/{id}/confirm-loaded  - Confirm laundry loaded
 ### Admin Web Endpoints
 - Dashboard and statistics
 - Request management (CRUD)
+- **Manual Request Creation** - Create requests on behalf of customers
+  - `POST /Requests/CreateManualRequest` - Create walk-in or robot delivery requests
+  - Validates robot availability, customer beacon assignment
+  - Supports manual weight entry for walk-in customers
 - Robot monitoring and control
 - Beacon configuration
 - User management
@@ -282,6 +290,22 @@ PUT    /api/requests/{id}/confirm-loaded  - Confirm laundry loaded
 2. Admin loads cleaned laundry onto robot
 3. Robot navigates to customer's room
 4. Customer receives laundry and confirms delivery
+
+### Manual Request (Admin-Created)
+#### Walk-In Service
+1. Customer brings laundry directly to shop
+2. Admin creates manual walk-in request via dashboard
+3. Admin enters customer selection and actual laundry weight
+4. System calculates cost based on weight (Status: Washing)
+5. Customer pays and collects laundry when ready
+6. Request reflects in customer's mobile app with admin badge
+
+#### Robot Delivery (Admin-Assisted)
+1. Admin creates manual robot delivery request
+2. System validates robot availability and customer beacon
+3. Robot auto-assigned and dispatched to customer room
+4. Normal pickup workflow proceeds
+5. Mobile app shows admin-created badge for transparency
 
 ## Request Lifecycle States
 

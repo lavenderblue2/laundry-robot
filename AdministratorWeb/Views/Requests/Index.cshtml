@@ -14,6 +14,12 @@
                 Process and manage customer laundry requests
             </p>
         </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="openManualRequestModal()" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
+                <i data-lucide="plus" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                <span>Create Manual Request</span>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -298,6 +304,86 @@
     </div>
 </div>
 
+<!-- Create Manual Request Modal -->
+<div id="manualRequestModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm hidden z-50 animate-fade-in">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-slate-800/95 backdrop-blur-xl rounded-2xl p-6 w-full max-w-md border border-slate-700/50 shadow-2xl animate-slide-up">
+            <div class="flex items-center mb-6">
+                <div class="p-2 bg-brand-500/20 rounded-xl mr-3">
+                    <i data-lucide="plus" class="h-6 w-6 text-brand-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white">Create Manual Request</h3>
+            </div>
+            <form asp-action="CreateManualRequest" method="post" class="space-y-6">
+                <!-- Robot Availability Indicator -->
+                <div class="bg-slate-700/30 border border-slate-600/50 rounded-xl p-4">
+                    <div class="text-sm text-slate-300">
+                        Available Robots: <span class="font-bold text-white">@Model.AvailableRobots.Count() online</span>
+                    </div>
+                    @if (!Model.AvailableRobots.Any())
+                    {
+                        <div class="text-xs text-red-400 mt-2">⚠️ No robots online - Only Walk-In service available</div>
+                    }
+                </div>
+
+                <!-- Customer Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-3">Customer <span class="text-red-400">*</span></label>
+                    <select name="CustomerId" id="customerId" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200">
+                        <option value="">-- Select Customer --</option>
+                        @foreach (var customer in Model.Customers)
+                        {
+                            <option value="@customer.Id">
+                                @customer.FullName @(customer.RoomName != null ? $"- {customer.RoomName}" : "(No room)")
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Request Type -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-3">Request Type <span class="text-red-400">*</span></label>
+                    <select name="RequestType" id="requestType" required class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200">
+                        @if (Model.AvailableRobots.Any())
+                        {
+                            <option value="RobotDelivery">🤖 Robot Delivery (Normal Pickup)</option>
+                        }
+                        <option value="WalkIn">🏪 Walk-In (Customer at Shop)</option>
+                    </select>
+                </div>
+
+                <!-- Weight Input (only for Walk-In) -->
+                <div id="weightInputDiv" style="display: none;">
+                    <label class="block text-sm font-medium text-slate-300 mb-3">Laundry Weight (kg) <span class="text-red-400">*</span></label>
+                    <input type="number" name="WeightKg" id="weightInput" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent transition-all duration-200"
+                           step="0.1" min="0.1" max="50" placeholder="2.5">
+                    <small class="text-slate-400 text-xs mt-2 block">Enter actual weight of laundry (0.1 - 50 kg)</small>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-3">Notes (Optional)</label>
+                    <textarea name="Notes" rows="2" class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-transparent resize-none transition-all duration-200"
+                              placeholder="Additional notes about this request..."></textarea>
+                </div>
+
+                <div class="flex space-x-3 pt-6">
+                    <button type="submit"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
+                        <i data-lucide="plus" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                        <span>Create Request</span>
+                    </button>
+                    <button type="button" onclick="closeManualRequestModal()"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200 whitespace-nowrap">
+                        <i data-lucide="x" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                        <span>Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @if (TempData["Success"] != null)
 {
     <div class="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg z-50 max-w-sm">
@@ -389,6 +475,40 @@
             setTimeout(() => notification.remove(), 300);
         });
     }, 5000);
+
+    // Manual Request Modal functions
+    function openManualRequestModal() {
+        document.getElementById('manualRequestModal').classList.remove('hidden');
+        updateWeightField();
+    }
+
+    function closeManualRequestModal() {
+        document.getElementById('manualRequestModal').classList.add('hidden');
+        document.getElementById('manualRequestModal').querySelector('form').reset();
+        document.getElementById('weightInputDiv').style.display = 'none';
+    }
+
+    function updateWeightField() {
+        var requestType = document.getElementById('requestType').value;
+        var weightDiv = document.getElementById('weightInputDiv');
+        var weightInput = document.getElementById('weightInput');
+
+        if (requestType === 'WalkIn') {
+            weightDiv.style.display = 'block';
+            weightInput.required = true;
+        } else {
+            weightDiv.style.display = 'none';
+            weightInput.required = false;
+        }
+    }
+
+    // Add event listener for request type change
+    document.addEventListener('DOMContentLoaded', function() {
+        var requestTypeSelect = document.getElementById('requestType');
+        if (requestTypeSelect) {
+            requestTypeSelect.addEventListener('change', updateWeightField);
+        }
+    });
 </script>
 
 <!-- Real-time requests script -->

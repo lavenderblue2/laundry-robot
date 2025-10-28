@@ -1060,7 +1060,64 @@ flowchart TD
 
 ---
 
-## 18. Admin Request Management
+## 18. Manual Request Creation (Admin-Initiated)
+
+Admin-created manual requests for walk-in customers or assisted requests.
+
+```mermaid
+flowchart TD
+    Start([Admin Clicks Create Manual Request]) --> LoadCustomers[Load Active Customers<br/>Load Available Robots]
+
+    LoadCustomers --> ShowModal[Display Modal:<br/>Customer Selection<br/>Request Type<br/>Weight Input<br/>Notes]
+
+    ShowModal --> AdminInput{Admin<br/>Submits?}
+    AdminInput -->|Cancel| Cancel([Modal Closed])
+
+    AdminInput -->|Submit| ValidateCustomer{Customer<br/>Selected?}
+    ValidateCustomer -->|No| Error1([Error: Customer Required])
+    ValidateCustomer -->|Yes| CheckDupe{Customer Has<br/>Active Request?}
+
+    CheckDupe -->|Yes| Error2([Error: Duplicate Active Request])
+    CheckDupe -->|No| CheckType{Request<br/>Type?}
+
+    CheckType -->|Walk-In| ValidateWeight{Weight<br/>Provided?}
+    ValidateWeight -->|No| Error3([Error: Weight Required for Walk-In])
+    ValidateWeight -->|Yes| CheckWeightRange{Weight<br/>0.1-50 kg?}
+    CheckWeightRange -->|No| Error4([Error: Invalid Weight Range])
+
+    CheckWeightRange -->|Yes| CreateWalkIn[Create Request:<br/>Type = WalkIn<br/>Status = Washing<br/>AssignedRobotName = WALK_IN<br/>Weight = Input<br/>Cost = Weight × Rate<br/>Instructions = ADMIN_MANUAL]
+
+    CheckType -->|Robot Delivery| CheckRobots{Robots<br/>Available?}
+    CheckRobots -->|No| Error5([Error: No Robots Online])
+    CheckRobots -->|Yes| AssignRobot[Auto-Assign Robot<br/>Get Customer Beacon]
+
+    AssignRobot --> CheckBeacon{Customer Has<br/>Beacon?}
+    CheckBeacon -->|No| Error6([Error: Customer Room Not Configured])
+    CheckBeacon -->|Yes| CreateRobotReq[Create Request:<br/>Type = RobotDelivery<br/>Status = Accepted<br/>AssignedRobotId<br/>Instructions = ADMIN_MANUAL<br/>Start Line Following]
+
+    CreateWalkIn --> NotifyCustomer[Send Notification:<br/>Admin Created Request<br/>Mobile App Badge]
+    CreateRobotReq --> NotifyCustomer
+
+    NotifyCustomer --> RefreshDash[Refresh Dashboard<br/>Show Success Message]
+
+    RefreshDash --> End([Request Created])
+
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style Error1 fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Error2 fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Error3 fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Error4 fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Error5 fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style Error6 fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style CreateWalkIn fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style CreateRobotReq fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style NotifyCustomer fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+```
+
+---
+
+## 19. Admin Request Management
 
 Administrator workflow for accepting, declining, and managing laundry requests.
 
@@ -1068,7 +1125,7 @@ Administrator workflow for accepting, declining, and managing laundry requests.
 flowchart TD
     Start([Admin Opens Request Dashboard]) --> LoadRequests[Load All Requests<br/>with Filters:<br/>Status, Date, Customer]
 
-    LoadRequests --> DisplayRequests[Display Request List:<br/>Pending Requests Top<br/>Active Requests<br/>Completed Requests<br/>Available Robots Count]
+    LoadRequests --> DisplayRequests[Display Request List:<br/>Pending Requests Top<br/>Active Requests<br/>Completed Requests<br/>Available Robots Count<br/>Create Manual Request Button]
 
     DisplayRequests --> AdminSelect{Admin<br/>Selects Request?}
 
