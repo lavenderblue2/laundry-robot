@@ -896,7 +896,7 @@ flowchart TD
 
     ShowMetrics --> AdminAction{Admin<br/>Action?}
 
-    AdminAction -->|Mark as Paid| SelectMethod[Select Payment Method:<br/>Cash, Card, PayPal, etc.]
+    AdminAction -->|Mark as Paid| SelectMethod[Select Payment Method:<br/>Cash or GCash]
     SelectMethod --> RecordPayment[Update Payment:<br/>Status = Completed<br/>CompletedAt = Now<br/>Method = Selected]
 
     AdminAction -->|Issue Refund| EnterRefund[Enter Refund Amount<br/>and Reason]
@@ -1185,7 +1185,7 @@ flowchart TD
     WaitTimeout -->|No| ContinueWait[Continue Monitoring]
 
     ShowPayment --> PaymentAction{Payment<br/>Action?}
-    PaymentAction -->|Mark Paid| RecordPayment[Record Payment:<br/>Status = Completed<br/>Method = Cash/Card<br/>CompletedAt = Now]
+    PaymentAction -->|Mark Paid| RecordPayment[Record Payment:<br/>Status = Completed<br/>Method = Cash/GCash<br/>CompletedAt = Now]
     PaymentAction -->|Refund| IssueRefund[Process Refund:<br/>Status = Refunded<br/>RefundAmount<br/>RefundReason]
 
     NotifyCustomer --> UpdateDashboard[Refresh Dashboard:<br/>Update Request List]

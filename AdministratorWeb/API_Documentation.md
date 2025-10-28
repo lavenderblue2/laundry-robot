@@ -91,9 +91,9 @@ Authorization: Bearer {jwt_token}
 Request Body:
 ```json
 {
-  "paymentMethod": 0,
-  "paymentReference": "CC-1234567890",
-  "notes": "Credit card payment"
+  "paymentMethod": 1,
+  "paymentReference": "GCASH-1234567890",
+  "notes": "GCash manual payment"
 }
 ```
 
@@ -127,7 +127,7 @@ Response:
   "payment": {
     "paymentId": 1,
     "amount": 78.00,
-    "method": "CreditCard",
+    "method": "GCash",
     "status": "Completed",
     "transactionId": "TXN_20250105_ABC12345",
     "processedAt": "2025-01-05T17:00:00Z"
@@ -149,7 +149,7 @@ Response:
   {
     "id": 1,
     "amount": 78.00,
-    "method": "CreditCard",
+    "method": "GCash",
     "status": "Completed",
     "transactionId": "TXN_20250105_ABC12345",
     "createdAt": "2025-01-05T17:00:00Z",
@@ -181,12 +181,8 @@ Response:
 - `5` = Cancelled
 
 ### PaymentMethod
-- `0` = CreditCard
-- `1` = DebitCard
-- `2` = PayPal
-- `3` = Cash
-- `4` = BankTransfer
-- `5` = DigitalWallet
+- `0` = Cash
+- `1` = GCash
 
 ### PaymentStatus
 - `0` = Pending

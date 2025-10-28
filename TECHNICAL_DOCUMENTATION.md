@@ -712,7 +712,7 @@ const API_URL = process.env.API_URL || 'https://laundry.nexusph.site/api';
 - **Payments**
   - Columns: Id, LaundryRequestId, Amount, Method, Status
   - TransactionId, PaymentReference, CreatedAt, ProcessedAt, ProcessedByUserId, FailureReason
-  - **Methods:** Cash, GCash, Card, BankTransfer
+  - **Methods:** Cash (in person), GCash (manual messages)
 
 #### Navigation
 - **BluetoothBeacons**
