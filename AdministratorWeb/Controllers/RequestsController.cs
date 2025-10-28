@@ -33,10 +33,19 @@ namespace AdministratorWeb.Controllers
             var robots = await _robotService.GetAllRobotsAsync();
             var availableRobots = robots.Where(r => r.IsActive && !r.IsOffline).ToList();
 
+            // Get all customers (members only) for manual request creation
+            var userManager = HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<ApplicationUser>>();
+            var allUsers = await userManager.GetUsersInRoleAsync("Member");
+            var customers = allUsers
+                .Where(u => u.IsActive)
+                .OrderBy(u => u.FullName)
+                .ToList();
+
             var dto = new RequestsIndexDto
             {
                 Requests = requests,
-                AvailableRobots = availableRobots
+                AvailableRobots = availableRobots,
+                Customers = customers
             };
 
             return View(dto);
@@ -307,6 +316,183 @@ namespace AdministratorWeb.Controllers
             }
 
             return View(request);
+        }
+
+        /// <summary>
+        /// Create a manual request initiated by admin (not from mobile app)
+        /// Supports two scenarios: RobotDelivery and WalkIn
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> CreateManualRequest(CreateManualRequestDto dto)
+        {
+            try
+            {
+                // Validate customer exists
+                var customer = await _context.Users.FindAsync(dto.CustomerId);
+                if (customer == null)
+                {
+                    TempData["Error"] = "Customer not found.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Check for duplicate active requests
+                var activeRequest = await _context.LaundryRequests
+                    .FirstOrDefaultAsync(r => r.CustomerId == dto.CustomerId &&
+                        (r.Status == RequestStatus.Pending ||
+                         r.Status == RequestStatus.Accepted ||
+                         r.Status == RequestStatus.InProgress ||
+                         r.Status == RequestStatus.RobotEnRoute ||
+                         r.Status == RequestStatus.ArrivedAtRoom ||
+                         r.Status == RequestStatus.LaundryLoaded ||
+                         r.Status == RequestStatus.Washing ||
+                         r.Status == RequestStatus.FinishedWashing ||
+                         r.Status == RequestStatus.FinishedWashingReadyToDeliver ||
+                         r.Status == RequestStatus.FinishedWashingGoingToRoom ||
+                         r.Status == RequestStatus.FinishedWashingArrivedAtRoom ||
+                         r.Status == RequestStatus.FinishedWashingGoingToBase));
+
+                if (activeRequest != null)
+                {
+                    TempData["Error"] = $"Customer already has an active request (#{activeRequest.Id} - {activeRequest.Status}). Please complete it first.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Get current admin user
+                var adminUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                if (dto.RequestType == ManualRequestType.WalkIn)
+                {
+                    // SCENARIO B: Walk-In Service (customer at shop, no robot pickup needed)
+
+                    // Validate weight
+                    if (!dto.WeightKg.HasValue || dto.WeightKg.Value < 0.1m || dto.WeightKg.Value > 50m)
+                    {
+                        TempData["Error"] = "Weight is required for walk-in service and must be between 0.1 and 50 kg.";
+                        return RedirectToAction(nameof(Index));
+                    }
+
+                    // Calculate cost
+                    var settings = await _context.LaundrySettings.FirstOrDefaultAsync();
+                    var ratePerKg = settings?.RatePerKg ?? 25.00m;
+                    var minCharge = settings?.MinimumCharge ?? 50.00m;
+                    var totalCost = Math.Max(dto.WeightKg.Value * ratePerKg, minCharge);
+
+                    // Create request
+                    var walkInRequest = new LaundryRequest
+                    {
+                        CustomerId = dto.CustomerId,
+                        CustomerName = customer.FullName,
+                        CustomerPhone = customer.PhoneNumber,
+                        Address = customer.RoomDescription ?? customer.RoomName ?? "Walk-in",
+                        RoomName = customer.RoomName,
+                        Type = RequestType.PickupAndDelivery,
+                        Status = RequestStatus.Washing, // Skip pickup - go straight to washing
+                        Weight = dto.WeightKg.Value,
+                        TotalCost = totalCost,
+                        PricePerKg = ratePerKg,
+                        MinimumCharge = minCharge,
+                        RequestedAt = DateTime.UtcNow,
+                        AcceptedAt = DateTime.UtcNow,
+                        LaundryLoadedAt = DateTime.UtcNow,
+                        ProcessedAt = DateTime.UtcNow,
+                        HandledById = adminUserId,
+                        AssignedRobotName = "WALK_IN", // Special marker for walk-in service
+                        Instructions = $"ADMIN_MANUAL: Walk-in service - {dto.Notes ?? "No additional notes"}"
+                    };
+
+                    _context.LaundryRequests.Add(walkInRequest);
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation(
+                        "Walk-in request #{RequestId} created by admin {AdminId} for customer {CustomerName}. Weight: {Weight}kg, Cost: ₱{Cost}",
+                        walkInRequest.Id, adminUserId, customer.FullName, dto.WeightKg.Value, totalCost);
+
+                    TempData["Success"] = $"Walk-in request #{walkInRequest.Id} created successfully. Weight: {dto.WeightKg.Value}kg, Cost: ₱{totalCost:F2}. Status: Washing";
+                }
+                else // RobotDelivery
+                {
+                    // SCENARIO A: Robot Delivery (normal flow with robot pickup)
+
+                    // Check robot availability
+                    var allRobots = await _robotService.GetAllRobotsAsync();
+                    var availableRobots = allRobots.Where(r => r.IsActive && !r.IsOffline).ToList();
+
+                    if (!availableRobots.Any())
+                    {
+                        TempData["Error"] = "No robots are currently online. Cannot create robot delivery request.";
+                        return RedirectToAction(nameof(Index));
+                    }
+
+                    // Validate customer has beacon assignment
+                    if (string.IsNullOrEmpty(customer.AssignedBeaconMacAddress))
+                    {
+                        TempData["Error"] = $"Customer {customer.FullName} does not have a beacon assigned. Please assign a beacon first.";
+                        return RedirectToAction(nameof(Index));
+                    }
+
+                    // Create request
+                    var robotRequest = new LaundryRequest
+                    {
+                        CustomerId = dto.CustomerId,
+                        CustomerName = customer.FullName,
+                        CustomerPhone = customer.PhoneNumber,
+                        Address = customer.RoomDescription ?? customer.RoomName ?? "Unknown",
+                        RoomName = customer.RoomName,
+                        Type = RequestType.PickupAndDelivery,
+                        Status = RequestStatus.Pending, // Will be auto-accepted if robot available
+                        RequestedAt = DateTime.UtcNow,
+                        ProcessedAt = DateTime.UtcNow,
+                        HandledById = adminUserId,
+                        AssignedBeaconMacAddress = customer.AssignedBeaconMacAddress,
+                        Instructions = $"ADMIN_MANUAL: Robot delivery - {dto.Notes ?? "No additional notes"}"
+                    };
+
+                    _context.LaundryRequests.Add(robotRequest);
+                    await _context.SaveChangesAsync();
+
+                    // Auto-assign robot and accept request immediately
+                    var assignedRobot = await AutoAssignRobotAsync(robotRequest.Id);
+                    if (assignedRobot == null)
+                    {
+                        TempData["Error"] = "Failed to assign robot. Please try again.";
+                        return RedirectToAction(nameof(Index));
+                    }
+
+                    // Update request with robot assignment and accept it
+                    robotRequest.Status = RequestStatus.Accepted;
+                    robotRequest.AssignedRobotName = assignedRobot.Name;
+                    robotRequest.AcceptedAt = DateTime.UtcNow;
+
+                    // Update robot status
+                    assignedRobot.Status = RobotStatus.Busy;
+                    assignedRobot.CurrentTask = $"Manual request #{robotRequest.Id} (Admin-created)";
+
+                    await _context.SaveChangesAsync();
+
+                    // Start robot line following
+                    var lineFollowingStarted = await _robotService.SetLineFollowingAsync(assignedRobot.Name, true);
+
+                    if (!lineFollowingStarted)
+                    {
+                        _logger.LogWarning("Failed to start line following for robot {RobotName} on manual request {RequestId}",
+                            assignedRobot.Name, robotRequest.Id);
+                    }
+
+                    _logger.LogInformation(
+                        "Manual robot delivery request #{RequestId} created by admin {AdminId} for customer {CustomerName}. Robot {RobotName} dispatched.",
+                        robotRequest.Id, adminUserId, customer.FullName, assignedRobot.Name);
+
+                    TempData["Success"] = $"Manual request #{robotRequest.Id} created and accepted. Robot {assignedRobot.Name} dispatched to {customer.RoomName ?? "customer room"}.";
+                }
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating manual request for customer {CustomerId}", dto.CustomerId);
+                TempData["Error"] = "An error occurred while creating the manual request. Please try again.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         /// <summary>

@@ -4,5 +4,6 @@ namespace AdministratorWeb.Models.DTOs
     {
         public IEnumerable<LaundryRequest> Requests { get; set; } = new List<LaundryRequest>();
         public IEnumerable<ConnectedRobot> AvailableRobots { get; set; } = new List<ConnectedRobot>();
+        public IEnumerable<ApplicationUser> Customers { get; set; } = new List<ApplicationUser>();
     }
 }

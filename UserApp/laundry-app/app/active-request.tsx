@@ -31,6 +31,7 @@ interface ActiveRequest {
         completedAt?: string;
         robotStatus?: string;
         atUserRoom?: boolean;
+        instructions?: string;
 }
 
 export default function ActiveRequestScreen() {
@@ -495,6 +496,26 @@ export default function ActiveRequestScreen() {
                                                 </View>
                                         </View>
 
+                                        {/* Admin Manual Request Badge */}
+                                        {activeRequest.instructions?.includes('ADMIN_MANUAL') && (
+                                                <View style={[styles.adminBadge, { backgroundColor: '#FEF3C7', borderColor: '#F59E0B' }]}>
+                                                        <Text style={styles.adminBadgeText}>⚠️ Manually created by admin</Text>
+                                                        {activeRequest.instructions && (
+                                                                <Text style={styles.adminBadgeNote}>
+                                                                        {activeRequest.instructions.replace('ADMIN_MANUAL:', '').replace('Robot delivery -', '').replace('Walk-in service -', '').trim()}
+                                                                </Text>
+                                                        )}
+                                                </View>
+                                        )}
+
+                                        {/* Walk-In Service Badge */}
+                                        {activeRequest.assignedRobot === 'WALK_IN' && (
+                                                <View style={[styles.walkInBadge, { backgroundColor: '#DBEAFE', borderColor: '#3B82F6' }]}>
+                                                        <Text style={styles.walkInBadgeText}>🏪 Walk-in service - No robot pickup</Text>
+                                                        <Text style={styles.walkInBadgeNote}>You brought your laundry to the shop</Text>
+                                                </View>
+                                        )}
+
                                         <View style={[styles.detailsCard, { backgroundColor: cardColor, borderColor: borderColor }]}>
                                                 <ThemedText style={styles.cardTitle}>Request Details</ThemedText>
 
@@ -908,5 +929,39 @@ const styles = StyleSheet.create({
                 color: '#ffffff',
                 fontSize: 14,
                 fontWeight: '600',
+        },
+        adminBadge: {
+                padding: 12,
+                borderRadius: 8,
+                borderWidth: 2,
+                marginHorizontal: 16,
+                marginBottom: 16,
+        },
+        adminBadgeText: {
+                fontSize: 14,
+                fontWeight: '600',
+                color: '#92400E',
+                marginBottom: 4,
+        },
+        adminBadgeNote: {
+                fontSize: 12,
+                color: '#78350F',
+        },
+        walkInBadge: {
+                padding: 12,
+                borderRadius: 8,
+                borderWidth: 2,
+                marginHorizontal: 16,
+                marginBottom: 16,
+        },
+        walkInBadgeText: {
+                fontSize: 14,
+                fontWeight: '600',
+                color: '#1E40AF',
+                marginBottom: 4,
+        },
+        walkInBadgeNote: {
+                fontSize: 12,
+                color: '#1E3A8A',
         },
 });

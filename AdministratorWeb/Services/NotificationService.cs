@@ -61,37 +61,58 @@ namespace AdministratorWeb.Services
                 // Check if this is a critical status that triggers mobile notifications
                 bool isCriticalStatus = IsCriticalStatusForNotification(request.Status);
 
+                // Check if this is an admin-created manual request
+                bool isAdminManual = request.Instructions?.Contains("ADMIN_MANUAL") ?? false;
+                bool isWalkIn = request.AssignedRobotName == "WALK_IN";
+
                 var logLevel = isCriticalStatus ? LogLevel.Warning : LogLevel.Information;
 
                 _logger.Log(
                     logLevel,
                     "NOTIFICATION: Request {RequestId} status update for customer {CustomerName} ({CustomerPhone}). " +
-                    "Status: {Status} ({StatusEnum}), Message: {Message}, Critical: {IsCritical}",
+                    "Status: {Status} ({StatusEnum}), Message: {Message}, Critical: {IsCritical}, AdminManual: {IsAdminManual}, WalkIn: {IsWalkIn}",
                     request.Id,
                     request.CustomerName,
                     request.CustomerPhone,
                     request.Status.ToString(),
                     (int)request.Status,
                     statusMessage,
-                    isCriticalStatus
+                    isCriticalStatus,
+                    isAdminManual,
+                    isWalkIn
                 );
 
                 // Log additional context for critical statuses
                 if (isCriticalStatus)
                 {
+                    var notificationType = isWalkIn ? "WALK-IN" : isAdminManual ? "ADMIN-CREATED" : "CUSTOMER-CREATED";
+
                     _logger.LogWarning(
                         "📱 CRITICAL STATUS - Mobile app will send local notification to customer. " +
-                        "Request #{RequestId}, Status: {Status}, Weight: {Weight}kg, Cost: ₱{Cost}",
+                        "Request #{RequestId}, Type: {NotificationType}, Status: {Status}, Weight: {Weight}kg, Cost: ₱{Cost}",
                         request.Id,
+                        notificationType,
                         request.Status,
                         request.Weight ?? 0,
                         request.TotalCost ?? 0
                     );
+
+                    // Log special context for admin-created requests
+                    if (isAdminManual)
+                    {
+                        _logger.LogInformation(
+                            "📋 Admin-created request notification - Customer will see admin badge in app. " +
+                            "Request #{RequestId}, Instructions: {Instructions}",
+                            request.Id,
+                            request.Instructions
+                        );
+                    }
                 }
 
                 // TODO: Implement server-side push notification mechanism (Firebase FCM, etc.)
                 // This would send push notifications even when the app is closed
                 // For now, the mobile app handles notifications locally via status change detection
+                // For admin-created requests, consider sending a special notification message
 
                 await Task.CompletedTask;
             }
