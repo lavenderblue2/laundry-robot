@@ -374,7 +374,7 @@ namespace AdministratorWeb.Controllers
                     // Calculate cost
                     var settings = await _context.LaundrySettings.FirstOrDefaultAsync();
                     var ratePerKg = settings?.RatePerKg ?? 25.00m;
-                    var minCharge = settings?.MinimumCharge ?? 50.00m;
+                    var minCharge = 50.00m; // Default minimum charge
                     var totalCost = Math.Max(dto.WeightKg.Value * ratePerKg, minCharge);
 
                     // Create request
