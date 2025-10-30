@@ -1,18 +1,17 @@
 @model AdministratorWeb.Models.Receipt
 @{
-    ViewData["Title"] = "Receipt - " + Model.ReceiptNumber;
+    Layout = null;
     var settings = (AdministratorWeb.Models.LaundrySettings?)ViewData["Settings"];
     var payment = Model.Payment;
     var request = payment.LaundryRequest;
     var isRefunded = payment.Status == AdministratorWeb.Models.PaymentStatus.Refunded;
 }
-
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"]</title>
+    <title>Receipt - @Model.ReceiptNumber</title>
     <style>
         * {
             margin: 0;
@@ -21,17 +20,17 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000;
+            background: white;
             padding: 20px;
-            background: #f5f5f5;
         }
 
         .receipt-container {
             max-width: 800px;
             margin: 0 auto;
-            background: white;
-            padding: 40px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
         .header {
@@ -42,26 +41,24 @@
         }
 
         .business-name {
-            font-size: 28px;
+            font-size: 24pt;
             font-weight: bold;
-            color: #333;
             margin-bottom: 10px;
         }
 
         .business-info {
-            font-size: 14px;
+            font-size: 10pt;
             color: #666;
             line-height: 1.6;
         }
 
         .receipt-number {
             text-align: center;
-            font-size: 20px;
+            font-size: 18pt;
             font-weight: bold;
             margin: 20px 0;
             padding: 10px;
             background: #f8f9fa;
-            border-radius: 5px;
         }
 
         .refund-banner {
@@ -70,7 +67,6 @@
             border: 2px solid #ffc107;
             padding: 15px;
             margin: 20px 0;
-            border-radius: 5px;
         }
 
         .refund-banner.full-refund {
@@ -81,7 +77,7 @@
         .refund-banner h3 {
             color: #856404;
             margin-bottom: 10px;
-            font-size: 18px;
+            font-size: 14pt;
         }
 
         .refund-banner.full-refund h3 {
@@ -89,11 +85,11 @@
         }
 
         .section {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .section-title {
-            font-size: 16px;
+            font-size: 12pt;
             font-weight: bold;
             margin-bottom: 10px;
             color: #333;
@@ -101,39 +97,38 @@
             padding-bottom: 5px;
         }
 
-        .info-row {
-            display: flex;
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .info-label {
-            flex: 0 0 150px;
+        .info-table td {
+            padding: 5px 0;
+            vertical-align: top;
+        }
+
+        .info-table td:first-child {
+            width: 150px;
             font-weight: 600;
             color: #666;
-        }
-
-        .info-value {
-            flex: 1;
-            color: #333;
         }
 
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .items-table th {
             background: #f8f9fa;
-            padding: 12px;
+            padding: 10px;
             text-align: left;
             font-weight: bold;
             border-bottom: 2px solid #dee2e6;
         }
 
         .items-table td {
-            padding: 12px;
+            padding: 10px;
             border-bottom: 1px solid #f0f0f0;
         }
 
@@ -147,16 +142,15 @@
         }
 
         .total-row {
-            padding: 8px 0;
-            font-size: 16px;
+            padding: 5px 0;
+            font-size: 11pt;
         }
 
         .total-row.grand-total {
-            font-size: 22px;
+            font-size: 16pt;
             font-weight: bold;
-            color: #333;
             border-top: 3px solid #333;
-            padding-top: 15px;
+            padding-top: 10px;
             margin-top: 10px;
         }
 
@@ -166,55 +160,15 @@
             padding-top: 20px;
             border-top: 2px solid #eee;
             color: #666;
-            font-size: 14px;
+            font-size: 10pt;
         }
 
-        .actions {
-            text-align: center;
-            margin: 30px 0;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            margin: 0 10px;
-            background: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .btn:hover {
-            background: #0056b3;
-        }
-
-        .btn-secondary {
-            background: #6c757d;
-        }
-
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-
-        /* Print styles */
         @@media print {
             body {
-                background: white;
                 padding: 0;
             }
 
-            .receipt-container {
-                box-shadow: none;
-                max-width: 100%;
-            }
-
-            .actions {
+            .no-print {
                 display: none;
             }
         }
@@ -253,31 +207,35 @@
 
         <!-- Date and Transaction -->
         <div class="section">
-            <div class="info-row">
-                <div class="info-label">Date Issued:</div>
-                <div class="info-value">@Model.GeneratedAt.ToString("MMMM dd, yyyy hh:mm tt")</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Transaction ID:</div>
-                <div class="info-value">@payment.TransactionId</div>
-            </div>
+            <table class="info-table">
+                <tr>
+                    <td>Date Issued:</td>
+                    <td>@Model.GeneratedAt.ToString("MMMM dd, yyyy hh:mm tt")</td>
+                </tr>
+                <tr>
+                    <td>Transaction ID:</td>
+                    <td>@payment.TransactionId</td>
+                </tr>
+            </table>
         </div>
 
         <!-- Customer Information -->
         <div class="section">
             <div class="section-title">Customer Information</div>
-            <div class="info-row">
-                <div class="info-label">Name:</div>
-                <div class="info-value">@payment.CustomerName</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Phone:</div>
-                <div class="info-value">@request.CustomerPhone</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Address:</div>
-                <div class="info-value">@request.Address</div>
-            </div>
+            <table class="info-table">
+                <tr>
+                    <td>Name:</td>
+                    <td>@payment.CustomerName</td>
+                </tr>
+                <tr>
+                    <td>Phone:</td>
+                    <td>@request.CustomerPhone</td>
+                </tr>
+                <tr>
+                    <td>Address:</td>
+                    <td>@request.Address</td>
+                </tr>
+            </table>
         </div>
 
         <!-- Service Details -->
@@ -338,65 +296,51 @@
         <!-- Payment Information -->
         <div class="section">
             <div class="section-title">Payment Information</div>
-            <div class="info-row">
-                <div class="info-label">Payment Method:</div>
-                <div class="info-value">@payment.Method</div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Payment Status:</div>
-                <div class="info-value">
-                    <strong style="color: @(isRefunded ? "#dc3545" : "#28a745");">@payment.Status</strong>
-                </div>
-            </div>
-            <div class="info-row">
-                <div class="info-label">Payment Date:</div>
-                <div class="info-value">@payment.ProcessedAt?.ToString("MMMM dd, yyyy hh:mm tt")</div>
-            </div>
-            @if (!string.IsNullOrEmpty(payment.PaymentReference))
-            {
-                <div class="info-row">
-                    <div class="info-label">Reference:</div>
-                    <div class="info-value">@payment.PaymentReference</div>
-                </div>
-            }
-            @if (!string.IsNullOrEmpty(payment.Notes))
-            {
-                <div class="info-row">
-                    <div class="info-label">Notes:</div>
-                    <div class="info-value">@payment.Notes</div>
-                </div>
-            }
+            <table class="info-table">
+                <tr>
+                    <td>Payment Method:</td>
+                    <td>@payment.Method</td>
+                </tr>
+                <tr>
+                    <td>Payment Status:</td>
+                    <td><strong style="color: @(isRefunded ? "#dc3545" : "#28a745");">@payment.Status</strong></td>
+                </tr>
+                <tr>
+                    <td>Payment Date:</td>
+                    <td>@payment.ProcessedAt?.ToString("MMMM dd, yyyy hh:mm tt")</td>
+                </tr>
+                @if (!string.IsNullOrEmpty(payment.PaymentReference))
+                {
+                    <tr>
+                        <td>Reference:</td>
+                        <td>@payment.PaymentReference</td>
+                    </tr>
+                }
+                @if (!string.IsNullOrEmpty(payment.Notes))
+                {
+                    <tr>
+                        <td>Notes:</td>
+                        <td>@payment.Notes</td>
+                    </tr>
+                }
+            </table>
         </div>
 
         <!-- Footer -->
         <div class="footer">
             <p>Thank you for your business!</p>
-            <p style="margin-top: 10px; font-size: 12px;">
+            <p style="margin-top: 10px;">
                 This is an official receipt generated by the Autonomous Laundry System.<br>
                 For inquiries, please contact us at @(settings?.CompanyEmail ?? "")
             </p>
         </div>
     </div>
 
-    <!-- Action Buttons (hidden when printing) -->
-    <div class="actions">
-        <a href="@Url.Action("ViewReceiptPrint", new { id = Model.Id })" target="_blank" class="btn">
-            Print Receipt
-        </a>
-
-        @if (!Model.SentToCustomer)
-        {
-            <form asp-action="ResendReceipt" asp-route-receiptId="@Model.Id"
-                  method="post" style="display: inline;">
-                <button type="submit" class="btn">
-                    Send to Customer
-                </button>
-            </form>
-        }
-
-        <a href="@Url.Action("Payments")" class="btn btn-secondary">
-            Back to Payments
-        </a>
+    <!-- Print button for screen view -->
+    <div class="no-print" style="text-align: center; margin-top: 30px;">
+        <button onclick="window.print()" style="padding: 12px 30px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14pt;">
+            🖨️ Print Receipt
+        </button>
     </div>
 </body>
 </html>

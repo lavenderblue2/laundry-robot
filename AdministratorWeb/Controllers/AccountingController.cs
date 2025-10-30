@@ -1022,6 +1022,26 @@ namespace AdministratorWeb.Controllers
             return View(receipt);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ViewReceiptPrint(int id)
+        {
+            var receipt = await _context.Receipts
+                .Include(r => r.Payment)
+                    .ThenInclude(p => p.LaundryRequest)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (receipt == null)
+            {
+                return NotFound("Receipt not found");
+            }
+
+            var settings = await _context.LaundrySettings.FirstOrDefaultAsync();
+
+            ViewData["Settings"] = settings;
+
+            return View(receipt);
+        }
+
         [HttpPost]
         public async Task<IActionResult> ResendReceipt(int receiptId)
         {
