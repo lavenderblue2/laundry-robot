@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<LaundrySettings> LaundrySettings { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<PaymentAdjustment> PaymentAdjustments { get; set; }
+    public DbSet<Receipt> Receipts { get; set; }
     public DbSet<BluetoothBeacon> BluetoothBeacons { get; set; }
     public DbSet<Room> Rooms { get; set; }
     public DbSet<RobotState> RobotStates { get; set; }
@@ -99,7 +100,25 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.HasIndex(e => e.EffectiveDate);
             entity.HasIndex(e => e.CreatedAt);
         });
-        
+
+        builder.Entity<Receipt>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ReceiptNumber).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.SentMethod).HasMaxLength(50);
+
+            entity.HasOne(e => e.Payment)
+                  .WithMany()
+                  .HasForeignKey(e => e.PaymentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Create unique index on receipt number
+            entity.HasIndex(e => e.ReceiptNumber).IsUnique();
+
+            // Create index on PaymentId for faster lookups
+            entity.HasIndex(e => e.PaymentId);
+        });
+
         builder.Entity<BluetoothBeacon>(entity =>
         {
             entity.HasKey(e => e.Id);

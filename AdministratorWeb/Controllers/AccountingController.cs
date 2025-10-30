@@ -126,8 +126,51 @@ namespace AdministratorWeb.Controllers
 
         public async Task<IActionResult> Payments(string? status, string? method, DateTime? from, DateTime? to, string? customerSearch, decimal? minAmount, decimal? maxAmount)
         {
-            var query = _context.Payments.Include(p => p.LaundryRequest).AsQueryable();
+            var query = _context.Payments
+                .Include(p => p.LaundryRequest)
+                .AsQueryable();
 
+            // Load receipts separately to avoid Include issues
+            var payments = await ApplyPaymentFilters(query, status, method, from, to, customerSearch, minAmount, maxAmount)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            // Load receipts for all payments
+            var paymentIds = payments.Select(p => p.Id).ToList();
+            var receipts = await _context.Receipts
+                .Where(r => paymentIds.Contains(r.PaymentId))
+                .ToListAsync();
+
+            // Attach receipts to payments (manual join)
+            ViewData["Receipts"] = receipts.ToDictionary(r => r.PaymentId);
+
+            var filterDto = new PaymentsFilterDto
+            {
+                StatusFilter = status,
+                MethodFilter = method,
+                FromFilter = from?.ToString("yyyy-MM-dd"),
+                ToFilter = to?.ToString("yyyy-MM-dd"),
+                CustomerSearch = customerSearch,
+                MinAmount = minAmount,
+                MaxAmount = maxAmount,
+                PaymentStatuses = Enum.GetNames<PaymentStatus>(),
+                PaymentMethods = Enum.GetNames<PaymentMethod>()
+            };
+            ViewData["PaymentsFilterData"] = filterDto;
+
+            return View(payments);
+        }
+
+        private IQueryable<Payment> ApplyPaymentFilters(
+            IQueryable<Payment> query,
+            string? status,
+            string? method,
+            DateTime? from,
+            DateTime? to,
+            string? customerSearch,
+            decimal? minAmount,
+            decimal? maxAmount)
+        {
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<PaymentStatus>(status, out var paymentStatus))
             {
                 query = query.Where(p => p.Status == paymentStatus);
@@ -163,23 +206,7 @@ namespace AdministratorWeb.Controllers
                 query = query.Where(p => p.Amount <= maxAmount.Value);
             }
 
-            var payments = await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
-
-            var filterDto = new PaymentsFilterDto
-            {
-                StatusFilter = status,
-                MethodFilter = method,
-                FromFilter = from?.ToString("yyyy-MM-dd"),
-                ToFilter = to?.ToString("yyyy-MM-dd"),
-                CustomerSearch = customerSearch,
-                MinAmount = minAmount,
-                MaxAmount = maxAmount,
-                PaymentStatuses = Enum.GetNames<PaymentStatus>(),
-                PaymentMethods = Enum.GetNames<PaymentMethod>()
-            };
-            ViewData["PaymentsFilterData"] = filterDto;
-
-            return View(payments);
+            return query;
         }
 
         public async Task<IActionResult> Outstanding()
@@ -203,6 +230,8 @@ namespace AdministratorWeb.Controllers
 
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
+            Payment? paymentToReceipt = null;
+
             // Check if there's an existing pending payment for this request
             var existingPayment = await _context.Payments
                 .FirstOrDefaultAsync(p => p.LaundryRequestId == requestId && p.Status == PaymentStatus.Pending);
@@ -218,6 +247,7 @@ namespace AdministratorWeb.Controllers
                 {
                     existingPayment.Notes = (existingPayment.Notes ?? "") + $"\nPayment confirmed: {notes}";
                 }
+                paymentToReceipt = existingPayment;
             }
             else
             {
@@ -237,12 +267,25 @@ namespace AdministratorWeb.Controllers
                 };
 
                 _context.Payments.Add(payment);
+                paymentToReceipt = payment;
             }
 
             request.IsPaid = true;
 
             await _context.SaveChangesAsync();
-            TempData["Success"] = "Payment recorded successfully.";
+
+            // Auto-generate receipt and send notification
+            try
+            {
+                var receipt = await GenerateReceiptAsync(paymentToReceipt.Id);
+                await SendReceiptNotificationAsync(receipt.Id, request.CustomerId);
+                TempData["Success"] = $"Payment recorded and receipt #{receipt.ReceiptNumber} sent to customer.";
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the payment
+                TempData["Warning"] = $"Payment recorded successfully, but failed to generate receipt: {ex.Message}";
+            }
 
             return RedirectToAction(nameof(Outstanding));
         }
@@ -287,6 +330,35 @@ namespace AdministratorWeb.Controllers
             // Creating an adjustment would double-count the refund.
 
             await _context.SaveChangesAsync();
+
+            // Send refund notification to customer
+            try
+            {
+                var receipt = await _context.Receipts
+                    .FirstOrDefaultAsync(r => r.PaymentId == paymentId);
+
+                if (receipt != null)
+                {
+                    var receiptUrl = $"{Request.Scheme}://{Request.Host}/Accounting/ViewReceipt/{receipt.Id}";
+                    var refundMessage = new Message
+                    {
+                        SenderId = "System",
+                        SenderName = "System",
+                        SenderType = "Admin",
+                        CustomerId = payment.CustomerId,
+                        CustomerName = payment.CustomerName,
+                        Content = $"REFUND ISSUED\n\nA refund of ₱{refundAmount:N2} has been issued for your payment.\n\nReason: {refundReason}\n\nView updated receipt: {receiptUrl}",
+                        SentAt = DateTime.UtcNow,
+                        IsRead = false
+                    };
+                    _context.Messages.Add(refundMessage);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch
+            {
+                // Don't fail the refund if notification fails
+            }
 
             TempData["Success"] = $"Refund of ₱{refundAmount:N2} issued successfully.";
             return RedirectToAction(nameof(Payments));
@@ -925,6 +997,149 @@ namespace AdministratorWeb.Controllers
             // PDF export uses browser's print-to-PDF functionality
             // Just redirect back to show the print-friendly view
             return RedirectToAction(nameof(SalesReport), new { from, to });
+        }
+
+        // ==================== RECEIPT MANAGEMENT ====================
+
+        [HttpGet]
+        public async Task<IActionResult> ViewReceipt(int id)
+        {
+            var receipt = await _context.Receipts
+                .Include(r => r.Payment)
+                    .ThenInclude(p => p.LaundryRequest)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (receipt == null)
+            {
+                return NotFound("Receipt not found");
+            }
+
+            var settings = await _context.LaundrySettings.FirstOrDefaultAsync();
+
+            ViewData["Receipt"] = receipt;
+            ViewData["Settings"] = settings;
+
+            return View(receipt);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResendReceipt(int receiptId)
+        {
+            var receipt = await _context.Receipts
+                .Include(r => r.Payment)
+                .FirstOrDefaultAsync(r => r.Id == receiptId);
+
+            if (receipt == null)
+            {
+                TempData["Error"] = "Receipt not found.";
+                return RedirectToAction(nameof(Payments));
+            }
+
+            try
+            {
+                await SendReceiptNotificationAsync(receiptId, receipt.Payment.CustomerId, isResend: true);
+                TempData["Success"] = $"Receipt #{receipt.ReceiptNumber} resent to customer.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Failed to resend receipt: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Payments));
+        }
+
+        // ==================== HELPER METHODS ====================
+
+        private async Task<Receipt> GenerateReceiptAsync(int paymentId)
+        {
+            var payment = await _context.Payments
+                .Include(p => p.LaundryRequest)
+                .FirstOrDefaultAsync(p => p.Id == paymentId);
+
+            if (payment == null)
+            {
+                throw new Exception("Payment not found");
+            }
+
+            // Check if receipt already exists
+            var existingReceipt = await _context.Receipts
+                .FirstOrDefaultAsync(r => r.PaymentId == paymentId);
+
+            if (existingReceipt != null)
+            {
+                return existingReceipt;
+            }
+
+            // Generate receipt number
+            var receiptNumber = await GenerateReceiptNumberAsync();
+
+            var receipt = new Receipt
+            {
+                PaymentId = paymentId,
+                ReceiptNumber = receiptNumber,
+                GeneratedAt = DateTime.UtcNow,
+                SentToCustomer = false
+            };
+
+            _context.Receipts.Add(receipt);
+            await _context.SaveChangesAsync();
+
+            return receipt;
+        }
+
+        private async Task<string> GenerateReceiptNumberAsync()
+        {
+            var year = DateTime.UtcNow.Year;
+            var prefix = $"RCP-{year}";
+
+            var lastReceipt = await _context.Receipts
+                .Where(r => r.ReceiptNumber.StartsWith(prefix))
+                .OrderByDescending(r => r.Id)
+                .FirstOrDefaultAsync();
+
+            var sequence = 1;
+            if (lastReceipt != null)
+            {
+                var parts = lastReceipt.ReceiptNumber.Split('-');
+                if (parts.Length == 3 && int.TryParse(parts[2], out int lastSeq))
+                {
+                    sequence = lastSeq + 1;
+                }
+            }
+
+            return $"{prefix}-{sequence:D6}"; // RCP-2025-000001
+        }
+
+        private async Task SendReceiptNotificationAsync(int receiptId, string customerId, bool isResend = false)
+        {
+            var receipt = await _context.Receipts
+                .Include(r => r.Payment)
+                .FirstOrDefaultAsync(r => r.Id == receiptId);
+            if (receipt == null) return;
+
+            var receiptUrl = $"{Request.Scheme}://{Request.Host}/Accounting/ViewReceipt/{receiptId}";
+
+            var message = new Message
+            {
+                SenderId = "System",
+                SenderName = "System",
+                SenderType = "Admin",
+                CustomerId = customerId,
+                CustomerName = receipt.Payment.CustomerName,
+                Content = isResend
+                    ? $"PAYMENT RECEIPT (RESENT)\n\nYour payment receipt #{receipt.ReceiptNumber} has been resent.\n\nView it here: {receiptUrl}"
+                    : $"PAYMENT RECEIPT\n\nYour payment has been received! Receipt #{receipt.ReceiptNumber} is ready.\n\nView it here: {receiptUrl}",
+                SentAt = DateTime.UtcNow,
+                IsRead = false
+            };
+
+            _context.Messages.Add(message);
+
+            receipt.SentToCustomer = true;
+            receipt.SentAt = DateTime.UtcNow;
+            receipt.SentMethod = "Notification";
+
+            await _context.SaveChangesAsync();
         }
     }
 }
