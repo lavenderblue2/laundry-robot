@@ -43,6 +43,7 @@ export interface LaundryRequestResponse {
   weight?: number;
   totalCost?: number;
   pricePerKg?: number;
+  isPaid: boolean;
   requestedAt: string;
   scheduledAt: string;
   acceptedAt?: string;

@@ -256,6 +256,8 @@ namespace AdministratorWeb.Controllers.Api
                     Status = r.Status.ToString(),
                     r.Weight,
                     r.TotalCost,
+                    r.IsPaid,
+                    r.PricePerKg,
                     r.RequestedAt,
                     r.ScheduledAt,
                     r.CompletedAt,

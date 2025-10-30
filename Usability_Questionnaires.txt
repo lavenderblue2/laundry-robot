@@ -1,0 +1,370 @@
+================================================================================
+USABILITY QUESTIONNAIRES FOR LAUNDRY ROBOT SYSTEM
+================================================================================
+
+PARTICIPANT ID: _____________    DATE: _____________    AGE: _____    GENDER: _____
+
+ROLE: [ ] Customer (Mobile App)    [ ] Administrator (Web Dashboard)
+
+================================================================================
+
+
+                    PART 1: SYSTEM USABILITY SCALE (SUS)
+
+================================================================================
+
+Instructions:
+For each statement, please mark the box that best represents your level of
+agreement or disagreement with the statement.
+
+Scale:
+1 = Strongly Disagree
+2 = Disagree
+3 = Neutral
+4 = Agree
+5 = Strongly Agree
+
+Please respond to all questions. There are no right or wrong answers.
+
+================================================================================
+
+1. I think that I would like to use this system frequently.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+2. I found the system unnecessarily complex.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+3. I thought the system was easy to use.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+4. I think that I would need the support of a technical person to be able to
+   use this system.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+5. I found the various functions in this system were well integrated.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+6. I thought there was too much inconsistency in this system.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+7. I would imagine that most people would learn to use this system very quickly.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+8. I found the system very cumbersome to use.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+9. I felt very confident using the system.
+
+   [ ] 1 - Strongly Disagree
+   [ ] 2 - Disagree
+   [ ] 3 - Neutral
+   [ ] 4 - Agree
+   [ ] 5 - Strongly Agree
+
+--------------------------------------------------------------------------------
+
+10. I needed to learn a lot of things before I could get going with this system.
+
+    [ ] 1 - Strongly Disagree
+    [ ] 2 - Disagree
+    [ ] 3 - Neutral
+    [ ] 4 - Agree
+    [ ] 5 - Strongly Agree
+
+================================================================================
+
+SUS SCORING INSTRUCTIONS:
+================================================================================
+
+For odd-numbered questions (1, 3, 5, 7, 9):
+Score = (response - 1)
+
+For even-numbered questions (2, 4, 6, 8, 10):
+Score = (5 - response)
+
+SUS Score = Sum of all scores × 2.5
+
+SUS Score Range: 0-100
+
+Interpretation:
+- Below 50: Poor usability
+- 50-70: OK usability
+- 70-85: Good usability
+- Above 85: Excellent usability
+- Industry average: ~68
+
+================================================================================
+
+
+           PART 2: POST-STUDY SYSTEM USABILITY QUESTIONNAIRE (PSSUQ)
+
+================================================================================
+
+Instructions:
+This questionnaire is designed to assess your satisfaction with the system.
+Please think about the tasks you have just completed and rate your level of
+agreement or disagreement with each statement.
+
+Scale:
+1 = Strongly Disagree
+2 = Disagree
+3 = Somewhat Disagree
+4 = Neutral
+5 = Somewhat Agree
+6 = Agree
+7 = Strongly Agree
+N/A = Not Applicable
+
+Please respond to all questions. If a question does not apply, mark N/A.
+
+================================================================================
+
+SECTION 1: SYSTEM USEFULNESS (SYSUSE)
+
+1. Overall, I am satisfied with how easy it is to use this system.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+2. It was simple to use this system.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+3. I was able to complete the tasks and scenarios quickly using this system.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+4. I felt comfortable using this system.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+5. It was easy to learn to use this system.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+6. I believe I became productive quickly using this system.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+================================================================================
+
+SECTION 2: INFORMATION QUALITY (INFOQUAL)
+
+7. The system gave error messages that clearly told me how to fix problems.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+8. Whenever I made a mistake using the system, I could recover easily and quickly.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+9. The information (such as online help, on-screen messages, and other
+   documentation) provided with this system was clear.
+
+   [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+10. It was easy to find the information I needed.
+
+    [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+11. The information provided for the system was easy to understand.
+
+    [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+12. The information was effective in helping me complete the tasks and scenarios.
+
+    [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+13. The organization of information on the system screens was clear.
+
+    [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+================================================================================
+
+SECTION 3: INTERFACE QUALITY (INTERQUAL)
+
+14. The interface of this system was pleasant.
+
+    [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+15. I liked using the interface of this system.
+
+    [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+16. This system has all the functions and capabilities I expect it to have.
+
+    [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+17. Overall, I am satisfied with this system.
+
+    [ ] 1  [ ] 2  [ ] 3  [ ] 4  [ ] 5  [ ] 6  [ ] 7  [ ] N/A
+
+--------------------------------------------------------------------------------
+
+================================================================================
+
+PSSUQ SCORING INSTRUCTIONS:
+================================================================================
+
+To calculate scores, exclude N/A responses and calculate the mean:
+
+OVERALL SCORE (All 17 items):
+Sum of all responses / Number of items answered
+
+SUBSCALE SCORES:
+
+1. SYSTEM USEFULNESS (SYSUSE) - Questions 1-6:
+   Sum of Q1-Q6 / Number answered
+
+2. INFORMATION QUALITY (INFOQUAL) - Questions 7-13:
+   Sum of Q7-Q13 / Number answered
+
+3. INTERFACE QUALITY (INTERQUAL) - Questions 14-17:
+   Sum of Q14-Q17 / Number answered
+
+Score Range: 1-7 (lower scores = better usability)
+
+Interpretation:
+- 1.0-2.5: Excellent usability
+- 2.6-4.0: Good usability
+- 4.1-5.5: Fair usability
+- 5.6-7.0: Poor usability
+- Industry benchmark: ~3.5
+
+================================================================================
+
+
+                        PART 3: OPEN-ENDED QUESTIONS
+
+================================================================================
+
+1. What did you like MOST about this system?
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+
+2. What did you like LEAST about this system?
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+
+3. What improvements would you suggest for this system?
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+
+4. Did you encounter any difficulties while using the system? Please describe.
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+
+5. How likely are you to recommend this system to others? (Rate 1-10): _____
+
+   Why? ________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+
+6. Any additional comments or feedback?
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+________________________________________________________________________________
+
+================================================================================
+
+Thank you for completing this questionnaire!
+
+Your feedback is valuable for improving the Autonomous Laundry Robot System.
+
+================================================================================

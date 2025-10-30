@@ -153,7 +153,7 @@ namespace AdministratorWeb.Controllers.Api
                     businessAddress = settings?.CompanyAddress ?? "",
                     businessPhone = settings?.CompanyPhone ?? "",
                     businessEmail = settings?.CompanyEmail ?? "",
-                    taxIdentificationNumber = settings?.TaxIdentificationNumber
+                    taxIdentificationNumber = (string?)null
                 },
                 customer = new
                 {
