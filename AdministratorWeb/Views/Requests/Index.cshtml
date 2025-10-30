@@ -15,6 +15,10 @@
             </p>
         </div>
         <div class="flex items-center space-x-3">
+            <button onclick="openForceCancelAllModal()" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
+                <i data-lucide="x-circle" class="w-4 h-4 mr-2 flex-shrink-0"></i>
+                <span>Force Cancel All</span>
+            </button>
             <button onclick="openManualRequestModal()" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
                 <i data-lucide="plus" class="w-4 h-4 mr-2 flex-shrink-0"></i>
                 <span>Create Manual Request</span>
@@ -384,6 +388,53 @@
     </div>
 </div>
 
+<!-- Force Cancel All Modal -->
+<div id="forceCancelAllModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm hidden z-50 animate-fade-in">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="relative bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-red-500/50 max-w-md w-full p-8 animate-scale-up">
+            <!-- Warning Icon -->
+            <div class="flex justify-center mb-6">
+                <div class="p-4 bg-red-500/20 rounded-full">
+                    <i data-lucide="alert-triangle" class="h-12 w-12 text-red-400"></i>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="text-center mb-6">
+                <h3 class="text-2xl font-bold text-white mb-3">Force Cancel All Requests?</h3>
+                <p class="text-slate-300 mb-2">
+                    This will cancel <strong>ALL active requests</strong> including:
+                </p>
+                <ul class="text-left text-slate-300 space-y-1 mb-4 pl-8">
+                    <li>• Pending pickups</li>
+                    <li>• In-progress deliveries</li>
+                    <li>• Robot-assigned requests</li>
+                    <li>• Requests at any stage</li>
+                </ul>
+                <p class="text-red-400 font-semibold">
+                    ⚠️ This action cannot be undone!
+                </p>
+            </div>
+
+            <!-- Actions -->
+            <form asp-action="ForceCancelAll" method="post">
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeForceCancelAllModal()"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white font-medium rounded-xl transition-all duration-200">
+                        <i data-lucide="x" class="w-4 h-4 mr-2"></i>
+                        <span>Cancel</span>
+                    </button>
+                    <button type="submit"
+                            class="flex-1 inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-medium rounded-xl transition-all duration-200 shadow-lg">
+                        <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                        <span>Yes, Cancel All</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @if (TempData["Success"] != null)
 {
     <div class="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-md shadow-lg z-50 max-w-sm">
@@ -486,6 +537,15 @@
         document.getElementById('manualRequestModal').classList.add('hidden');
         document.getElementById('manualRequestModal').querySelector('form').reset();
         document.getElementById('weightInputDiv').style.display = 'none';
+    }
+
+    // Force Cancel All Modal functions
+    function openForceCancelAllModal() {
+        document.getElementById('forceCancelAllModal').classList.remove('hidden');
+    }
+
+    function closeForceCancelAllModal() {
+        document.getElementById('forceCancelAllModal').classList.add('hidden');
     }
 
     function updateWeightField() {

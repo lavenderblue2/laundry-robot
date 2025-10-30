@@ -673,5 +673,70 @@ namespace AdministratorWeb.Controllers
                 return StatusCode(500, new { error = "Failed to get requests data" });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ForceCancelAll()
+        {
+            try
+            {
+                // Get all requests that are NOT already completed or cancelled
+                var requestsToCancel = await _context.LaundryRequests
+                    .Where(r => r.Status != RequestStatus.Completed &&
+                                r.Status != RequestStatus.Cancelled &&
+                                r.Status != RequestStatus.Declined)
+                    .ToListAsync();
+
+                if (requestsToCancel.Count == 0)
+                {
+                    TempData["Warning"] = "No active requests to cancel.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var count = requestsToCancel.Count;
+
+                // Cancel all requests
+                foreach (var request in requestsToCancel)
+                {
+                    request.Status = RequestStatus.Cancelled;
+                    request.DeclineReason = "Force cancelled by administrator";
+                    request.HandledById = userId;
+                    request.ProcessedAt = DateTime.UtcNow;
+
+                    // Send notification to customer
+                    try
+                    {
+                        var message = new Message
+                        {
+                            SenderId = "System",
+                            SenderName = "System",
+                            SenderType = "Admin",
+                            CustomerId = request.CustomerId,
+                            CustomerName = request.CustomerName,
+                            Content = $"REQUEST CANCELLED\n\nYour laundry request #{request.Id} has been cancelled.\n\nReason: Force cancelled by administrator\n\nPlease contact support if you have any questions.",
+                            SentAt = DateTime.UtcNow,
+                            IsRead = false
+                        };
+                        _context.Messages.Add(message);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, $"Failed to send cancellation notification for request {request.Id}");
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = $"Successfully force cancelled {count} request(s).";
+                _logger.LogWarning($"Administrator {userId} force cancelled {count} requests");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error force cancelling all requests");
+                TempData["Error"] = "Failed to cancel requests. Please try again.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }
