@@ -13,7 +13,7 @@ import { laundryService, LaundryRequestResponse } from '../services/laundryServi
 import { useThemeColor } from '../hooks/useThemeColor';
 import { ThemedView } from '../components/ThemedView';
 import { ThemedText } from '../components/ThemedText';
-import { Package, MapPin, Clock, CheckCircle, Truck, ArrowLeft, User, Calendar, DollarSign } from 'lucide-react-native';
+import { Package, MapPin, Clock, CheckCircle, Truck, ArrowLeft, User, Calendar, DollarSign, FileText } from 'lucide-react-native';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { useCustomAlert } from '../components/CustomAlert';
 
@@ -324,6 +324,20 @@ export default function RequestDetailsScreen() {
             </View>
           )}
 
+          {request.isPaid && (
+            <View style={styles.detailRow}>
+              <View style={styles.detailIcon}>
+                <CheckCircle size={16} color={secondaryColor} />
+              </View>
+              <View style={styles.detailContent}>
+                <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Payment Status:</ThemedText>
+                <ThemedText style={[styles.detailValue, { color: secondaryColor, fontWeight: '600' }]}>
+                  Paid
+                </ThemedText>
+              </View>
+            </View>
+          )}
+
           {request.completedAt && (
             <View style={styles.detailRow}>
               <View style={styles.detailIcon}>
@@ -392,6 +406,17 @@ export default function RequestDetailsScreen() {
               {request.instructions}
             </ThemedText>
           </View>
+        )}
+
+        {/* View Receipt Button */}
+        {request.isPaid && (
+          <TouchableOpacity
+            style={[styles.receiptButton, { backgroundColor: secondaryColor }]}
+            onPress={() => router.push(`/receipt?requestId=${request.id}`)}
+          >
+            <FileText size={20} color="#ffffff" />
+            <Text style={styles.receiptButtonText}>View Receipt</Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
       <AlertComponent />
@@ -524,5 +549,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 16,
     textAlign: 'center',
+  },
+  receiptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 16,
+    marginTop: 8,
+    padding: 16,
+    borderRadius: 12,
+  },
+  receiptButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

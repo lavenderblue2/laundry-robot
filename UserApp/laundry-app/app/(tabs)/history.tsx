@@ -13,6 +13,7 @@ import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { formatRelativeTime } from '../../utils/dateUtils';
+import { FileText } from 'lucide-react-native';
 
 import { useCustomAlert } from '../../components/CustomAlert';
 
@@ -173,6 +174,24 @@ export default function HistoryScreen() {
                       </ThemedText>
                     </View>
                   )}
+                  {request.isPaid && (
+                    <TouchableOpacity
+                      style={styles.receiptRow}
+                      onPress={() => router.push(`/receipt?requestId=${request.id}`)}
+                    >
+                      <View style={styles.detailRow}>
+                        <View style={styles.receiptLabel}>
+                          <FileText size={14} color={secondaryColor} />
+                          <ThemedText style={[styles.detailLabel, { color: secondaryColor, marginLeft: 6 }]}>
+                            Receipt Available
+                          </ThemedText>
+                        </View>
+                        <ThemedText style={[styles.receiptLink, { color: secondaryColor }]}>
+                          View →
+                        </ThemedText>
+                      </View>
+                    </TouchableOpacity>
+                  )}
                   {request.declineReason && (
                     <View style={[styles.declineReason, { backgroundColor: dangerColor + '20', borderLeftColor: dangerColor }]}>
                       <ThemedText style={[styles.declineLabel, { color: dangerColor }]}>Decline Reason:</ThemedText>
@@ -305,6 +324,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   trackButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  receiptRow: {
+    marginTop: 4,
+  },
+  receiptLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  receiptLink: {
     fontSize: 14,
     fontWeight: '600',
   },
