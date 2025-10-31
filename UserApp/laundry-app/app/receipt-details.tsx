@@ -8,35 +8,17 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { apiGet } from '../services/api';
+import { laundryService, LaundryRequestResponse } from '../services/laundryService';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { ThemedView } from '../components/ThemedView';
 import { ThemedText } from '../components/ThemedText';
 import { useCustomAlert } from '../components/CustomAlert';
 import { ArrowLeft, FileText } from 'lucide-react-native';
 
-interface ReceiptData {
-  receiptNumber: string;
-  generatedAt: string;
-  customerName: string;
-  customerId: string;
-  amount: number;
-  paymentMethod: string;
-  paidAt: string;
-  transactionId: string;
-  paymentReference?: string;
-  weight?: number;
-  ratePerKg: number;
-  requestId: number;
-  scheduledAt?: string;
-  completedAt?: string;
-  notes?: string;
-}
-
 export default function ReceiptDetailsScreen() {
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
   const router = useRouter();
-  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [request, setRequest] = useState<LaundryRequestResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { showAlert, AlertComponent } = useCustomAlert();
 
@@ -44,24 +26,17 @@ export default function ReceiptDetailsScreen() {
   const textColor = useThemeColor({}, 'text');
   const primaryColor = useThemeColor({}, 'primary');
   const secondaryColor = useThemeColor({}, 'secondary');
-  const cardColor = useThemeColor({}, 'card');
-  const borderColor = useThemeColor({}, 'border');
   const mutedColor = useThemeColor({}, 'muted');
 
   useEffect(() => {
-    loadReceipt();
+    loadReceiptData();
   }, [requestId]);
 
-  const loadReceipt = async () => {
+  const loadReceiptData = async () => {
     try {
       setIsLoading(true);
-      const response = await apiGet(`/api/Payment/receipt/${requestId}`);
-
-      if (response && !response.message) {
-        setReceipt(response);
-      } else {
-        showAlert('Error', response?.message || 'Receipt not found');
-      }
+      const requestData = await laundryService.getRequestStatus(Number(requestId));
+      setRequest(requestData);
     } catch (error: any) {
       console.error('Error loading receipt:', error);
       showAlert('Error', 'Failed to load receipt');
@@ -98,13 +73,16 @@ export default function ReceiptDetailsScreen() {
     );
   }
 
-  if (!receipt) {
+  if (!request || !request.isPaid) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.errorContainer}>
           <FileText size={64} color={mutedColor} />
           <ThemedText style={[styles.errorText, { color: mutedColor }]}>
-            Receipt not found
+            Receipt not available
+          </ThemedText>
+          <ThemedText style={[styles.errorSubtext, { color: mutedColor }]}>
+            {!request ? 'Request not found' : 'This request has not been paid yet'}
           </ThemedText>
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: primaryColor }]}
@@ -118,133 +96,130 @@ export default function ReceiptDetailsScreen() {
     );
   }
 
+  // Generate receipt number from request ID
+  const receiptNumber = `RCP-${new Date().getFullYear()}-${String(request.id).padStart(6, '0')}`;
+
   return (
-    <ThemedView style={styles.container}>
-      <View style={[styles.header, { backgroundColor: cardColor, borderBottomColor: borderColor }]}>
+    <View style={[styles.container, { backgroundColor: '#ffffff' }]}>
+      <View style={[styles.header, { backgroundColor: '#ffffff', borderBottomColor: '#e5e7eb' }]}>
         <TouchableOpacity
           style={styles.headerBackButton}
           onPress={() => router.back()}
         >
-          <ArrowLeft size={24} color={textColor} />
+          <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Receipt</ThemedText>
+        <Text style={[styles.headerTitle, { color: '#000000' }]}>Receipt</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Receipt Header */}
-        <View style={[styles.receiptCard, { backgroundColor: cardColor, borderColor: borderColor }]}>
+        {/* Receipt Card - White background with clean design */}
+        <View style={[styles.receiptCard, { backgroundColor: '#ffffff', borderColor: '#d1d5db' }]}>
+          {/* Receipt Header */}
           <View style={styles.receiptHeader}>
             <FileText size={48} color={secondaryColor} />
-            <ThemedText style={styles.receiptNumber}>{receipt.receiptNumber}</ThemedText>
-            <ThemedText style={[styles.generatedAt, { color: mutedColor }]}>
-              Generated: {formatDate(receipt.generatedAt)}
-            </ThemedText>
+            <Text style={[styles.receiptNumber, { color: '#000000' }]}>{receiptNumber}</Text>
+            <Text style={[styles.generatedAt, { color: '#6b7280' }]}>
+              Issued: {formatDate(request.completedAt || request.createdAt)}
+            </Text>
           </View>
 
           {/* Divider */}
-          <View style={[styles.divider, { backgroundColor: borderColor }]} />
+          <View style={[styles.divider, { backgroundColor: '#e5e7eb' }]} />
+
+          {/* Company/Service Info */}
+          <View style={styles.section}>
+            <Text style={[styles.companyName, { color: '#000000' }]}>LAUNDRY SERVICE</Text>
+            <Text style={[styles.companySubtext, { color: '#6b7280' }]}>Official Payment Receipt</Text>
+          </View>
+
+          {/* Divider */}
+          <View style={[styles.divider, { backgroundColor: '#e5e7eb' }]} />
 
           {/* Customer Info */}
           <View style={styles.section}>
-            <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>CUSTOMER INFORMATION</ThemedText>
+            <Text style={[styles.sectionTitle, { color: '#6b7280' }]}>CUSTOMER INFORMATION</Text>
             <View style={styles.infoRow}>
-              <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Name:</ThemedText>
-              <ThemedText style={styles.infoValue}>{receipt.customerName}</ThemedText>
+              <Text style={[styles.infoLabel, { color: '#000000' }]}>Name:</Text>
+              <Text style={[styles.infoValue, { color: '#000000' }]}>{request.customerName || 'N/A'}</Text>
             </View>
             <View style={styles.infoRow}>
-              <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Request #:</ThemedText>
-              <ThemedText style={styles.infoValue}>{receipt.requestId}</ThemedText>
+              <Text style={[styles.infoLabel, { color: '#000000' }]}>Request #:</Text>
+              <Text style={[styles.infoValue, { color: '#000000' }]}>{request.id}</Text>
             </View>
           </View>
 
           {/* Divider */}
-          <View style={[styles.divider, { backgroundColor: borderColor }]} />
+          <View style={[styles.divider, { backgroundColor: '#e5e7eb' }]} />
 
           {/* Service Details */}
           <View style={styles.section}>
-            <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>SERVICE DETAILS</ThemedText>
-            {receipt.weight && (
+            <Text style={[styles.sectionTitle, { color: '#6b7280' }]}>SERVICE DETAILS</Text>
+            {request.weight && (
               <View style={styles.infoRow}>
-                <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Weight:</ThemedText>
-                <ThemedText style={styles.infoValue}>{receipt.weight} kg</ThemedText>
+                <Text style={[styles.infoLabel, { color: '#000000' }]}>Weight:</Text>
+                <Text style={[styles.infoValue, { color: '#000000' }]}>{request.weight} kg</Text>
               </View>
             )}
             <View style={styles.infoRow}>
-              <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Rate per kg:</ThemedText>
-              <ThemedText style={styles.infoValue}>{formatCurrency(receipt.ratePerKg)}</ThemedText>
+              <Text style={[styles.infoLabel, { color: '#000000' }]}>Rate per kg:</Text>
+              <Text style={[styles.infoValue, { color: '#000000' }]}>{formatCurrency(request.totalCost && request.weight ? request.totalCost / request.weight : 0)}</Text>
             </View>
-            {receipt.scheduledAt && (
+            {request.scheduledAt && (
               <View style={styles.infoRow}>
-                <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Scheduled:</ThemedText>
-                <ThemedText style={styles.infoValue}>{formatDate(receipt.scheduledAt)}</ThemedText>
+                <Text style={[styles.infoLabel, { color: '#000000' }]}>Scheduled:</Text>
+                <Text style={[styles.infoValue, { color: '#000000' }]}>{formatDate(request.scheduledAt)}</Text>
               </View>
             )}
-            {receipt.completedAt && (
+            {request.completedAt && (
               <View style={styles.infoRow}>
-                <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Completed:</ThemedText>
-                <ThemedText style={styles.infoValue}>{formatDate(receipt.completedAt)}</ThemedText>
+                <Text style={[styles.infoLabel, { color: '#000000' }]}>Completed:</Text>
+                <Text style={[styles.infoValue, { color: '#000000' }]}>{formatDate(request.completedAt)}</Text>
               </View>
             )}
           </View>
 
           {/* Divider */}
-          <View style={[styles.divider, { backgroundColor: borderColor }]} />
+          <View style={[styles.divider, { backgroundColor: '#e5e7eb' }]} />
 
           {/* Payment Details */}
           <View style={styles.section}>
-            <ThemedText style={[styles.sectionTitle, { color: mutedColor }]}>PAYMENT DETAILS</ThemedText>
+            <Text style={[styles.sectionTitle, { color: '#6b7280' }]}>PAYMENT DETAILS</Text>
             <View style={styles.infoRow}>
-              <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Transaction ID:</ThemedText>
-              <ThemedText style={[styles.infoValue, styles.monospace]}>{receipt.transactionId}</ThemedText>
+              <Text style={[styles.infoLabel, { color: '#000000' }]}>Payment Status:</Text>
+              <Text style={[styles.infoValue, { color: '#000000' }]}>PAID</Text>
             </View>
             <View style={styles.infoRow}>
-              <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Payment Method:</ThemedText>
-              <ThemedText style={styles.infoValue}>{receipt.paymentMethod}</ThemedText>
+              <Text style={[styles.infoLabel, { color: '#000000' }]}>Paid At:</Text>
+              <Text style={[styles.infoValue, { color: '#000000' }]}>{formatDate(request.completedAt)}</Text>
             </View>
-            {receipt.paymentReference && (
-              <View style={styles.infoRow}>
-                <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Reference:</ThemedText>
-                <ThemedText style={[styles.infoValue, styles.monospace]}>{receipt.paymentReference}</ThemedText>
-              </View>
-            )}
-            <View style={styles.infoRow}>
-              <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Paid At:</ThemedText>
-              <ThemedText style={styles.infoValue}>{formatDate(receipt.paidAt)}</ThemedText>
-            </View>
-            {receipt.notes && (
-              <View style={styles.notesContainer}>
-                <ThemedText style={[styles.infoLabel, { color: mutedColor }]}>Notes:</ThemedText>
-                <ThemedText style={styles.notesText}>{receipt.notes}</ThemedText>
-              </View>
-            )}
           </View>
 
           {/* Divider */}
-          <View style={[styles.divider, { backgroundColor: borderColor }]} />
+          <View style={[styles.divider, { backgroundColor: '#e5e7eb' }]} />
 
           {/* Total Amount */}
           <View style={styles.totalSection}>
-            <ThemedText style={[styles.totalLabel, { color: mutedColor }]}>TOTAL PAID</ThemedText>
-            <ThemedText style={[styles.totalAmount, { color: secondaryColor }]}>
-              {formatCurrency(receipt.amount)}
-            </ThemedText>
+            <Text style={[styles.totalLabel, { color: '#6b7280' }]}>TOTAL PAID</Text>
+            <Text style={[styles.totalAmount, { color: secondaryColor }]}>
+              {formatCurrency(request.totalCost || 0)}
+            </Text>
           </View>
         </View>
 
         {/* Footer Note */}
         <View style={styles.footerNote}>
-          <ThemedText style={[styles.footerText, { color: mutedColor }]}>
+          <Text style={[styles.footerText, { color: '#6b7280' }]}>
             Thank you for your business!
-          </ThemedText>
-          <ThemedText style={[styles.footerText, { color: mutedColor }]}>
+          </Text>
+          <Text style={[styles.footerText, { color: '#6b7280' }]}>
             This is an official receipt for your laundry service.
-          </ThemedText>
+          </Text>
         </View>
       </ScrollView>
 
       <AlertComponent />
-    </ThemedView>
+    </View>
   );
 }
 
@@ -270,6 +245,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     marginTop: 16,
+    fontWeight: '600',
+  },
+  errorSubtext: {
+    fontSize: 14,
+    marginTop: 8,
     marginBottom: 24,
   },
   backButton: {
@@ -287,8 +267,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
+    paddingTop: 48,
+    paddingBottom: 12,
     borderBottomWidth: 1,
   },
   headerBackButton: {
@@ -303,6 +283,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: '#f9fafb',
   },
   scrollContent: {
     padding: 16,
@@ -329,6 +310,16 @@ const styles = StyleSheet.create({
   generatedAt: {
     fontSize: 14,
     marginTop: 4,
+  },
+  companyName: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  companySubtext: {
+    fontSize: 12,
+    textAlign: 'center',
   },
   divider: {
     height: 1,
@@ -358,18 +349,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
-  },
-  monospace: {
-    fontFamily: 'monospace',
-    fontSize: 12,
-  },
-  notesContainer: {
-    marginTop: 8,
-  },
-  notesText: {
-    fontSize: 14,
-    marginTop: 4,
-    lineHeight: 20,
   },
   totalSection: {
     alignItems: 'center',

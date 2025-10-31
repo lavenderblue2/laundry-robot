@@ -394,8 +394,11 @@ export default function RequestDetailsScreen() {
           </View>
         )}
 
-        {/* View Receipt Button */}
-        {request.isPaid && (
+      </ScrollView>
+
+      {/* View Receipt Button - Fixed at bottom */}
+      {request.isPaid && (
+        <View style={[styles.receiptButtonContainer, { backgroundColor: backgroundColor, borderTopColor: borderColor }]}>
           <TouchableOpacity
             style={[styles.receiptButton, { backgroundColor: secondaryColor }]}
             onPress={() => router.push(`/receipt-details?requestId=${request.id}`)}
@@ -403,8 +406,9 @@ export default function RequestDetailsScreen() {
             <FileText size={20} color="#ffffff" />
             <Text style={styles.receiptButtonText}>View Receipt</Text>
           </TouchableOpacity>
-        )}
-      </ScrollView>
+        </View>
+      )}
+
       <AlertComponent />
     </ThemedView>
     </>
@@ -536,12 +540,16 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: 'center',
   },
+  receiptButtonContainer: {
+    borderTopWidth: 1,
+    paddingTop: 8,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+  },
   receiptButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: 16,
-    marginTop: 8,
     padding: 16,
     borderRadius: 12,
   },

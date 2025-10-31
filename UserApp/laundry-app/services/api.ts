@@ -7,14 +7,16 @@ const API_BASE_URL = 'https://laundry.nexusph.site/api';
 async function getAuthHeaders() {
         try {
                 const token = await AsyncStorage.getItem('jwt_token');
+                console.log(`🔑 [API] Token from AsyncStorage:`, token ? `${token.substring(0, 20)}...` : 'NULL');
                 if (token) {
                         return {
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'
                         };
                 }
+                console.log(`🔑 [API] No token found, returning headers without Authorization`);
         } catch (error) {
-                console.warn('Failed to retrieve JWT token from AsyncStorage:', error);
+                console.warn('❌ [API] Failed to retrieve JWT token from AsyncStorage:', error);
         }
         return {
                 'Content-Type': 'application/json'
