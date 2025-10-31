@@ -1220,6 +1220,72 @@ flowchart TD
 
 ---
 
+## 20. Receipt Generation & Viewing
+
+Simplified receipt workflow - generating receipts from payment data and displaying in mobile app.
+
+```mermaid
+flowchart TD
+    Start([Payment Completed]) --> CreatePayment[Create Payment Record:<br/>LaundryRequestId<br/>Amount = TotalCost<br/>Method = Selected<br/>Status = Completed]
+
+    CreatePayment --> GenerateReceipt{Generate<br/>Receipt?}
+
+    GenerateReceipt -->|Yes| CreateReceiptRecord[Create Receipt Record:<br/>ReceiptNumber = RCP-YYYY-NNNNNN<br/>PaymentId<br/>GeneratedAt = Now]
+
+    GenerateReceipt -->|No| SkipReceipt[Receipt Optional<br/>Can Generate Later]
+
+    CreateReceiptRecord --> StoreDB[Save to Database:<br/>Payments Table<br/>Receipts Table<br/>Link to Request]
+    SkipReceipt --> StoreDB
+
+    StoreDB --> MobileRequest[Customer Opens App:<br/>View Request History]
+
+    MobileRequest --> CheckPaid{Request<br/>IsPaid?}
+
+    CheckPaid -->|No| NoReceipt[Hide View Receipt Button<br/>Show Payment Pending]
+    CheckPaid -->|Yes| ShowButton[Show View Receipt Button]
+
+    ShowButton --> ClickReceipt{Customer Clicks<br/>View Receipt?}
+    ClickReceipt -->|No| End1([Stay on Request List])
+
+    ClickReceipt -->|Yes| FetchRequest[GET /api/requests/status/:id<br/>Fetch Request Data]
+
+    FetchRequest --> ValidateOwner{Request Belongs<br/>to Customer?}
+    ValidateOwner -->|No| Unauthorized([403 Forbidden])
+
+    ValidateOwner -->|Yes| CheckPaidStatus{Request<br/>IsPaid = true?}
+    CheckPaidStatus -->|No| NotPaid([Show Error: Not Paid Yet])
+
+    CheckPaidStatus -->|Yes| LoadData[Load Receipt Data:<br/>Request.Id<br/>Request.TotalCost<br/>Request.Weight<br/>Request.CustomerName<br/>Request.CompletedAt<br/>Request.ScheduledAt]
+
+    LoadData --> GenReceiptNum[Generate Receipt Number:<br/>RCP-{Year}-{RequestId padded}]
+
+    GenReceiptNum --> CalcRate[Calculate Rate Per Kg:<br/>TotalCost / Weight]
+
+    CalcRate --> RenderReceipt[Render Receipt UI:<br/>White Background<br/>Receipt Number<br/>Customer Info<br/>Service Details<br/>Payment Details<br/>Total Amount]
+
+    RenderReceipt --> DisplayReceipt[Display Receipt:<br/>Professional Format<br/>Clean Layout<br/>Printable Style]
+
+    DisplayReceipt --> UserAction{User<br/>Action?}
+
+    UserAction -->|Back| End2([Return to Request List])
+    UserAction -->|Share| ShareReceipt[Share Receipt:<br/>Screenshot/PDF]
+
+    ShareReceipt --> End2
+    NoReceipt --> End1
+
+    style Start fill:#A8D5BA,stroke:#5A9279,stroke-width:3px,color:#2C4A3A
+    style End1 fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style End2 fill:#6B9AC4,stroke:#3D5A80,stroke-width:3px,color:#1E3A5F
+    style Unauthorized fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style NotPaid fill:#E8A0A0,stroke:#C67373,stroke-width:2px,color:#6B3A3A
+    style CreatePayment fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style CreateReceiptRecord fill:#F4D19B,stroke:#D4A574,stroke-width:2px,color:#6B4E2A
+    style RenderReceipt fill:#B8A4C9,stroke:#9181A8,stroke-width:2px,color:#4A3E5A
+    style DisplayReceipt fill:#A4C5A8,stroke:#7A9E7F,stroke-width:2px,color:#3A5A3F
+```
+
+---
+
 ## Color Legend
 
 - 🟢 **Soft Green** - Start/Entry points
