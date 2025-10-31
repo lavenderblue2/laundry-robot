@@ -1,4 +1,4 @@
-import { api } from './api';
+import { apiGet } from './api';
 
 export interface ReceiptLineItem {
   description: string;
@@ -45,9 +45,9 @@ export const receiptService = {
    */
   async getReceiptByRequest(requestId: number): Promise<Receipt | null> {
     try {
-      const response = await api.get(`/Receipt/by-request/${requestId}`);
+      const response = await apiGet(`/Receipt/by-request/${requestId}`);
 
-      if (response.data && response.data.id) {
+      if (response && response.data && response.data.id) {
         // Fetch full receipt details
         return await this.getReceipt(response.data.id);
       }
@@ -65,7 +65,10 @@ export const receiptService = {
    * Get receipt by ID
    */
   async getReceipt(receiptId: number): Promise<Receipt> {
-    const response = await api.get(`/Receipt/view/${receiptId}`);
+    const response = await apiGet(`/Receipt/view/${receiptId}`);
+    if (!response) {
+      throw new Error('Failed to fetch receipt');
+    }
     return response.data;
   },
 
@@ -73,8 +76,8 @@ export const receiptService = {
    * Get web URL for receipt (for opening in browser)
    */
   getReceiptWebUrl(receiptId: number): string {
-    // Get base URL from api configuration
-    const baseUrl = api.defaults.baseURL?.replace('/api', '') || 'https://laundry.nexusph.site';
+    // Use the production URL
+    const baseUrl = 'https://laundry.nexusph.site';
     return `${baseUrl}/Accounting/ViewReceiptPrint/${receiptId}`;
   },
 };
