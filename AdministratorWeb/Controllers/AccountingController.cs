@@ -272,20 +272,19 @@ namespace AdministratorWeb.Controllers
 
             request.IsPaid = true;
 
-            await _context.SaveChangesAsync();
-
-            // Auto-generate receipt and send notification
+            // Auto-generate receipt (for record keeping)
             try
             {
                 var receipt = await GenerateReceiptAsync(paymentToReceipt.Id);
-                await SendReceiptNotificationAsync(receipt.Id, request.CustomerId);
-                TempData["Success"] = $"Payment recorded and receipt #{receipt.ReceiptNumber} sent to customer.";
+                TempData["Success"] = $"Payment recorded. Receipt #{receipt.ReceiptNumber} generated. Customer can view it in the mobile app.";
             }
             catch (Exception ex)
             {
                 // Log error but don't fail the payment
                 TempData["Warning"] = $"Payment recorded successfully, but failed to generate receipt: {ex.Message}";
             }
+
+            await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Outstanding));
         }
@@ -1023,6 +1022,7 @@ namespace AdministratorWeb.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> ViewReceiptPrint(int id)
         {
             var receipt = await _context.Receipts
@@ -1042,29 +1042,44 @@ namespace AdministratorWeb.Controllers
             return View(receipt);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ResendReceipt(int receiptId)
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> ViewReceiptByRequest(int requestId)
         {
+            // Find payment by request ID with all required includes
+            var payment = await _context.Payments
+                .Include(p => p.LaundryRequest)
+                .FirstOrDefaultAsync(p => p.LaundryRequestId == requestId);
+
+            if (payment == null)
+            {
+                return NotFound("No payment found for this request");
+            }
+
+            // Find receipt by payment ID
             var receipt = await _context.Receipts
                 .Include(r => r.Payment)
-                .FirstOrDefaultAsync(r => r.Id == receiptId);
+                    .ThenInclude(p => p.LaundryRequest)
+                .FirstOrDefaultAsync(r => r.PaymentId == payment.Id);
 
             if (receipt == null)
             {
-                TempData["Error"] = "Receipt not found.";
-                return RedirectToAction(nameof(Payments));
+                return NotFound("No receipt found for this payment");
             }
 
-            try
-            {
-                await SendReceiptNotificationAsync(receiptId, receipt.Payment.CustomerId, isResend: true);
-                TempData["Success"] = $"Receipt #{receipt.ReceiptNumber} resent to customer.";
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Failed to resend receipt: {ex.Message}";
-            }
+            // Get settings
+            var settings = await _context.LaundrySettings.FirstOrDefaultAsync();
 
+            // Return the receipt view directly (NOT a redirect - keeps [AllowAnonymous] context)
+            ViewData["Settings"] = settings;
+            return View("ViewReceiptPrint", receipt);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResendReceipt(int receiptId)
+        {
+            // Resend functionality removed - receipts now viewed natively in app
+            TempData["Info"] = "Receipts are now displayed natively in the mobile app.";
             return RedirectToAction(nameof(Payments));
         }
 
@@ -1130,36 +1145,5 @@ namespace AdministratorWeb.Controllers
             return $"{prefix}-{sequence:D6}"; // RCP-2025-000001
         }
 
-        private async Task SendReceiptNotificationAsync(int receiptId, string customerId, bool isResend = false)
-        {
-            var receipt = await _context.Receipts
-                .Include(r => r.Payment)
-                .FirstOrDefaultAsync(r => r.Id == receiptId);
-            if (receipt == null) return;
-
-            var receiptUrl = $"{Request.Scheme}://{Request.Host}/Accounting/ViewReceipt/{receiptId}";
-
-            var message = new Message
-            {
-                SenderId = "System",
-                SenderName = "System",
-                SenderType = "Admin",
-                CustomerId = customerId,
-                CustomerName = receipt.Payment.CustomerName,
-                Content = isResend
-                    ? $"PAYMENT RECEIPT (RESENT)\n\nYour payment receipt #{receipt.ReceiptNumber} has been resent.\n\nView it here: {receiptUrl}"
-                    : $"PAYMENT RECEIPT\n\nYour payment has been received! Receipt #{receipt.ReceiptNumber} is ready.\n\nView it here: {receiptUrl}",
-                SentAt = DateTime.UtcNow,
-                IsRead = false
-            };
-
-            _context.Messages.Add(message);
-
-            receipt.SentToCustomer = true;
-            receipt.SentAt = DateTime.UtcNow;
-            receipt.SentMethod = "Notification";
-
-            await _context.SaveChangesAsync();
-        }
     }
 }

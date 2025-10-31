@@ -227,7 +227,8 @@ namespace AdministratorWeb.Controllers.Api
                 AssignedRobot = request.AssignedRobotName,
                 request.DeclineReason,
                 request.RoomName,
-                request.AssignedBeaconMacAddress
+                request.AssignedBeaconMacAddress,
+                request.IsPaid
             });
         }
 

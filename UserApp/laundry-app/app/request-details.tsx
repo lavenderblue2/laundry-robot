@@ -274,18 +274,6 @@ export default function RequestDetailsScreen() {
             </View>
           </View>
 
-          <View style={styles.detailRow}>
-            <View style={styles.detailIcon}>
-              <Clock size={16} color={mutedColor} />
-            </View>
-            <View style={styles.detailContent}>
-              <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Scheduled:</ThemedText>
-              <ThemedText style={styles.detailValue}>
-                {formatRelativeTime(request.scheduledAt)}
-              </ThemedText>
-            </View>
-          </View>
-
           {request.assignedRobot && (
             <View style={styles.detailRow}>
               <View style={styles.detailIcon}>
@@ -324,19 +312,17 @@ export default function RequestDetailsScreen() {
             </View>
           )}
 
-          {request.isPaid && (
-            <View style={styles.detailRow}>
-              <View style={styles.detailIcon}>
-                <CheckCircle size={16} color={secondaryColor} />
-              </View>
-              <View style={styles.detailContent}>
-                <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Payment Status:</ThemedText>
-                <ThemedText style={[styles.detailValue, { color: secondaryColor, fontWeight: '600' }]}>
-                  Paid
-                </ThemedText>
-              </View>
+          <View style={styles.detailRow}>
+            <View style={styles.detailIcon}>
+              <CheckCircle size={16} color={request.isPaid ? secondaryColor : warningColor} />
             </View>
-          )}
+            <View style={styles.detailContent}>
+              <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Payment Status:</ThemedText>
+              <ThemedText style={[styles.detailValue, { color: request.isPaid ? secondaryColor : warningColor, fontWeight: '600' }]}>
+                {request.isPaid ? 'Paid' : 'Unpaid'}
+              </ThemedText>
+            </View>
+          </View>
 
           {request.completedAt && (
             <View style={styles.detailRow}>
@@ -412,7 +398,7 @@ export default function RequestDetailsScreen() {
         {request.isPaid && (
           <TouchableOpacity
             style={[styles.receiptButton, { backgroundColor: secondaryColor }]}
-            onPress={() => router.push(`/receipt?requestId=${request.id}`)}
+            onPress={() => router.push(`/receipt-details?requestId=${request.id}`)}
           >
             <FileText size={20} color="#ffffff" />
             <Text style={styles.receiptButtonText}>View Receipt</Text>

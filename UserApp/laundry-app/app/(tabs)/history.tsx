@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
@@ -13,7 +13,6 @@ import { ThemedView } from '../../components/ThemedView';
 import { ThemedText } from '../../components/ThemedText';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { formatRelativeTime } from '../../utils/dateUtils';
-import { FileText } from 'lucide-react-native';
 
 import { useCustomAlert } from '../../components/CustomAlert';
 
@@ -101,116 +100,112 @@ export default function HistoryScreen() {
     router.push(`/request-details?requestId=${requestId}`);
   };
 
+  const renderRequestCard = ({ item: request }: { item: LaundryRequestResponse }) => (
+    <View style={[styles.requestCard, { backgroundColor: cardColor, borderColor: borderColor }]}>
+      <View style={styles.requestHeader}>
+        <View>
+          <ThemedText style={styles.requestId}>Request #{request.id}</ThemedText>
+          <ThemedText style={[styles.requestType, { color: mutedColor }]}>
+            {getRequestTypeLabel(request.type || 2)}
+          </ThemedText>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(request.status) }]}>
+          <Text style={styles.statusText}>{request.status}</Text>
+        </View>
+      </View>
+
+      <View style={styles.requestDetails}>
+        <View style={styles.detailRow}>
+          <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Requested:</ThemedText>
+          <ThemedText style={[styles.detailValue, { color: textColor }]}>
+            {formatRelativeTime(request.requestedAt)}
+          </ThemedText>
+        </View>
+        <View style={styles.detailRow}>
+          <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Scheduled:</ThemedText>
+          <ThemedText style={[styles.detailValue, { color: textColor }]}>
+            {formatRelativeTime(request.scheduledAt)}
+          </ThemedText>
+        </View>
+        {request.weight && (
+          <View style={styles.detailRow}>
+            <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Weight:</ThemedText>
+            <ThemedText style={[styles.detailValue, { color: textColor }]}>{request.weight}kg</ThemedText>
+          </View>
+        )}
+        {request.totalCost && (
+          <View style={styles.detailRow}>
+            <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Cost:</ThemedText>
+            <ThemedText style={[styles.detailValue, { color: secondaryColor }]}>₱{request.totalCost}</ThemedText>
+          </View>
+        )}
+        {request.assignedRobot && (
+          <View style={styles.detailRow}>
+            <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Robot:</ThemedText>
+            <ThemedText style={[styles.detailValue, { color: textColor }]}>{request.assignedRobot}</ThemedText>
+          </View>
+        )}
+        {request.completedAt && (
+          <View style={styles.detailRow}>
+            <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Completed:</ThemedText>
+            <ThemedText style={[styles.detailValue, { color: textColor }]}>
+              {formatRelativeTime(request.completedAt)}
+            </ThemedText>
+          </View>
+        )}
+        {request.declineReason && (
+          <View style={[styles.declineReason, { backgroundColor: dangerColor + '20', borderLeftColor: dangerColor }]}>
+            <ThemedText style={[styles.declineLabel, { color: dangerColor }]}>Decline Reason:</ThemedText>
+            <ThemedText style={[styles.declineText, { color: dangerColor }]}>{request.declineReason}</ThemedText>
+          </View>
+        )}
+      </View>
+
+      <TouchableOpacity
+        style={[styles.trackButton, { backgroundColor: cardColor, borderColor: borderColor }]}
+        onPress={() => handleViewRequest(request.id)}
+      >
+        <ThemedText style={[styles.trackButtonText, { color: primaryColor }]}>View Details</ThemedText>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <ThemedText style={styles.title}>Request History</ThemedText>
+      <ThemedText style={[styles.subtitle, { color: mutedColor }]}>Track your laundry requests</ThemedText>
+    </View>
+  );
+
+  const renderEmpty = () => (
+    <View style={styles.emptyState}>
+      <ThemedText style={[styles.emptyText, { color: mutedColor }]}>No requests yet</ThemedText>
+      <ThemedText style={[styles.emptySubtext, { color: mutedColor }]}>Your laundry requests will appear here</ThemedText>
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollContainer}
+      <FlatList
+        data={requests}
+        renderItem={renderRequestCard}
+        keyExtractor={(item) => item.id.toString()}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
+        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={loadRequests} />
         }
-      >
-        <View style={styles.header}>
-          <ThemedText style={styles.title}>Request History</ThemedText>
-          <ThemedText style={[styles.subtitle, { color: mutedColor }]}>Track your laundry requests</ThemedText>
-        </View>
-
-        {requests.length === 0 ? (
-          <View style={styles.emptyState}>
-            <ThemedText style={[styles.emptyText, { color: mutedColor }]}>No requests yet</ThemedText>
-            <ThemedText style={[styles.emptySubtext, { color: mutedColor }]}>Your laundry requests will appear here</ThemedText>
-          </View>
-      ) : (
-          <View style={styles.requestsList}>
-            {requests.map((request) => (
-              <View key={request.id} style={[styles.requestCard, { backgroundColor: cardColor, borderColor: borderColor }]}>
-                <View style={styles.requestHeader}>
-                  <View>
-                    <ThemedText style={styles.requestId}>Request #{request.id}</ThemedText>
-                    <ThemedText style={[styles.requestType, { color: mutedColor }]}>
-                      {getRequestTypeLabel(request.type || 2)}
-                    </ThemedText>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(request.status) }]}>
-                    <Text style={styles.statusText}>{request.status}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.requestDetails}>
-                  <View style={styles.detailRow}>
-                    <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Requested:</ThemedText>
-                    <ThemedText style={[styles.detailValue, { color: textColor }]}>
-                      {formatRelativeTime(request.requestedAt)}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Scheduled:</ThemedText>
-                    <ThemedText style={[styles.detailValue, { color: textColor }]}>
-                      {formatRelativeTime(request.scheduledAt)}
-                    </ThemedText>
-                  </View>
-                  {request.weight && (
-                    <View style={styles.detailRow}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Weight:</ThemedText>
-                      <ThemedText style={[styles.detailValue, { color: textColor }]}>{request.weight}kg</ThemedText>
-                    </View>
-                  )}
-                  {request.totalCost && (
-                    <View style={styles.detailRow}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Cost:</ThemedText>
-                      <ThemedText style={[styles.detailValue, { color: secondaryColor }]}>₱{request.totalCost}</ThemedText>
-                    </View>
-                  )}
-                  {request.assignedRobot && (
-                    <View style={styles.detailRow}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Robot:</ThemedText>
-                      <ThemedText style={[styles.detailValue, { color: textColor }]}>{request.assignedRobot}</ThemedText>
-                    </View>
-                  )}
-                  {request.completedAt && (
-                    <View style={styles.detailRow}>
-                      <ThemedText style={[styles.detailLabel, { color: mutedColor }]}>Completed:</ThemedText>
-                      <ThemedText style={[styles.detailValue, { color: textColor }]}>
-                        {formatRelativeTime(request.completedAt)}
-                      </ThemedText>
-                    </View>
-                  )}
-                  {request.isPaid && (
-                    <TouchableOpacity
-                      style={styles.receiptRow}
-                      onPress={() => router.push(`/receipt?requestId=${request.id}`)}
-                    >
-                      <View style={styles.detailRow}>
-                        <View style={styles.receiptLabel}>
-                          <FileText size={14} color={secondaryColor} />
-                          <ThemedText style={[styles.detailLabel, { color: secondaryColor, marginLeft: 6 }]}>
-                            Receipt Available
-                          </ThemedText>
-                        </View>
-                        <ThemedText style={[styles.receiptLink, { color: secondaryColor }]}>
-                          View →
-                        </ThemedText>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                  {request.declineReason && (
-                    <View style={[styles.declineReason, { backgroundColor: dangerColor + '20', borderLeftColor: dangerColor }]}>
-                      <ThemedText style={[styles.declineLabel, { color: dangerColor }]}>Decline Reason:</ThemedText>
-                      <ThemedText style={[styles.declineText, { color: dangerColor }]}>{request.declineReason}</ThemedText>
-                    </View>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.trackButton, { backgroundColor: cardColor, borderColor: borderColor }]}
-                  onPress={() => handleViewRequest(request.id)}
-                >
-                  <ThemedText style={[styles.trackButtonText, { color: primaryColor }]}>View Details</ThemedText>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        removeClippedSubviews={true}
+        getItemLayout={(data, index) => ({
+          length: 350,
+          offset: 350 * index,
+          index,
+        })}
+      />
       <AlertComponent />
     </ThemedView>
   );
@@ -220,8 +215,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContainer: {
-    flex: 1,
+  listContent: {
+    flexGrow: 1,
   },
   header: {
     padding: 24,
@@ -248,14 +243,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
-  requestsList: {
-    padding: 16,
-    paddingTop: 0,
-  },
   requestCard: {
+    marginHorizontal: 16,
+    marginVertical: 8,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -324,17 +316,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   trackButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  receiptRow: {
-    marginTop: 4,
-  },
-  receiptLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  receiptLink: {
     fontSize: 14,
     fontWeight: '600',
   },

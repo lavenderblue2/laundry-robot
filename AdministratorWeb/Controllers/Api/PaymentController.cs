@@ -85,20 +85,19 @@ namespace AdministratorWeb.Controllers.Api
             // Mark request as paid
             laundryRequest.IsPaid = true;
 
-            await _context.SaveChangesAsync();
-
-            // Auto-generate receipt and send notification
+            // Auto-generate receipt (for record keeping)
             Receipt? receipt = null;
             try
             {
                 receipt = await GenerateReceiptAsync(payment.Id);
-                await SendReceiptNotificationAsync(receipt.Id, customerId);
             }
             catch (Exception ex)
             {
                 // Log error but don't fail the payment
                 Console.WriteLine($"Failed to generate receipt: {ex.Message}");
             }
+
+            await _context.SaveChangesAsync();
 
             return Ok(new
             {
@@ -254,36 +253,65 @@ namespace AdministratorWeb.Controllers.Api
             return $"{prefix}-{sequence:D6}"; // RCP-2025-000001
         }
 
-        private async Task SendReceiptNotificationAsync(int receiptId, string customerId)
+        [HttpGet("receipt/{requestId}")]
+        public async Task<IActionResult> GetReceiptByRequest(int requestId)
         {
-            var receipt = await _context.Receipts
-                .Include(r => r.Payment)
-                .FirstOrDefaultAsync(r => r.Id == receiptId);
-            if (receipt == null) return;
-
-            // Use request host from HttpContext for notification URL
-            var receiptUrl = $"{Request.Scheme}://{Request.Host}/Accounting/ViewReceipt/{receiptId}";
-
-            var message = new Message
+            var customerId = User.FindFirst("CustomerId")?.Value;
+            if (string.IsNullOrEmpty(customerId))
             {
-                SenderId = "System",
-                SenderName = "System",
-                SenderType = "Admin",
-                CustomerId = customerId,
-                CustomerName = receipt.Payment.CustomerName,
-                Content = $"PAYMENT RECEIPT\n\nYour payment has been received! Receipt #{receipt.ReceiptNumber} is ready.\n\nView it here: {receiptUrl}",
-                SentAt = DateTime.UtcNow,
-                IsRead = false
-            };
+                return Unauthorized("Invalid customer token");
+            }
 
-            _context.Messages.Add(message);
+            // Get the laundry request to verify ownership
+            var laundryRequest = await _context.LaundryRequests
+                .FirstOrDefaultAsync(r => r.Id == requestId && r.CustomerId == customerId);
 
-            receipt.SentToCustomer = true;
-            receipt.SentAt = DateTime.UtcNow;
-            receipt.SentMethod = "Notification";
+            if (laundryRequest == null)
+            {
+                return NotFound("Request not found or not authorized");
+            }
 
-            await _context.SaveChangesAsync();
+            // Get payment and receipt
+            var payment = await _context.Payments
+                .Include(p => p.LaundryRequest)
+                .FirstOrDefaultAsync(p => p.LaundryRequestId == requestId);
+
+            if (payment == null)
+            {
+                return NotFound(new { message = "No payment found for this request" });
+            }
+
+            var receipt = await _context.Receipts
+                .FirstOrDefaultAsync(r => r.PaymentId == payment.Id);
+
+            if (receipt == null)
+            {
+                return NotFound(new { message = "No receipt found for this payment" });
+            }
+
+            // Get settings for rate information
+            var settings = await _context.LaundrySettings.FirstOrDefaultAsync();
+
+            return Ok(new
+            {
+                receiptNumber = receipt.ReceiptNumber,
+                generatedAt = receipt.GeneratedAt,
+                customerName = payment.CustomerName,
+                customerId = payment.CustomerId,
+                amount = payment.Amount,
+                paymentMethod = payment.Method.ToString(),
+                paidAt = payment.ProcessedAt,
+                transactionId = payment.TransactionId,
+                paymentReference = payment.PaymentReference,
+                weight = laundryRequest.Weight,
+                ratePerKg = settings?.RatePerKg ?? 0,
+                requestId = laundryRequest.Id,
+                scheduledAt = laundryRequest.ScheduledAt,
+                completedAt = laundryRequest.CompletedAt,
+                notes = payment.Notes
+            });
         }
+
     }
 
     public class PaymentRequest
